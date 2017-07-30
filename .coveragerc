@@ -1,0 +1,16 @@
+[paths]
+source =
+   src/fluctmatch
+   */site-packages/fluctmatch
+
+[run]
+branch = true
+source =
+    fluctmatch
+    tests
+parallel = true
+
+[report]
+show_missing = true
+precision = 2
+omit = *migrations*
