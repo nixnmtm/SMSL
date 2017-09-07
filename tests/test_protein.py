@@ -9,7 +9,6 @@ from __future__ import (
     unicode_literals,
 )
 
-import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.tests.datafiles import (
     PSF,
