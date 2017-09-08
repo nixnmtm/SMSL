@@ -9,14 +9,27 @@ from __future__ import (
     unicode_literals,
 )
 
-import MDAnalysis as mda
-from MDAnalysis.tests.datafiles import (
-    PSF,
-    CRD,
-    TPR,
-    XTC,
-)
+from future.utils import raise_from
 
+import MDAnalysis as mda
+try:
+    from MDAnalysis.tests.datafiles import (
+        PSF,
+        CRD,
+        TPR,
+        XTC,
+    )
+except ImportError as exc:
+    print("*** ERROR ***")
+    print("In order to run the fluctmatch test cases you must install the")
+    print("MDAnalysisTestData package (which has been separated from the ")
+    print("library code itself since release 0.7.4). Go to ")
+    print()
+    print("     http://pypi.python.org/pypi/MDAnalysisTests")
+    print()
+    print("and download and install the `MDAnalysisTests-x.y.z.tar.gz'")
+    print("that matches your MDAnalysis release.")
+    raise_from(ImportError("MDAnalysisTests package not installed."), exc)
 
 from fluctmatch.models import protein
 from fluctmatch.models.selection import *
