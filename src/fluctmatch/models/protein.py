@@ -26,13 +26,13 @@ class Calpha(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["CA"] = "calpha"
         self._mapping["ions"] = "bioion"
 
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
 
         # Update the masses and charges
         ca_atu = self.atu.select_atoms("protein").split("residue")
@@ -56,15 +56,15 @@ class Caside(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["CA"] = "calpha"
         self._mapping["CB"] = "hsidechain"
         self._mapping["ions"] = "bioion"
         _back = "hbackbone"
 
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
 
         # Update the masses and charges
         ca_atu = self.atu.select_atoms(_back).split("residue")
@@ -96,8 +96,8 @@ class Ncsc(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["N"] = "amine"
         self._mapping["CB"] = "hsidechain"
         self._mapping["C"] = "carboxyl"
@@ -105,7 +105,7 @@ class Ncsc(universe._Universe):
         _back = "hcalpha"
 
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
 
         # Update the masses and charges
         ca_atu = self.atu.select_atoms(_back).split("residue")

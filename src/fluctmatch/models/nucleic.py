@@ -10,7 +10,6 @@ from future.builtins import (
     super,
     zip,
 )
-
 from collections import OrderedDict
 
 from MDAnalysis.core import topologyattrs
@@ -23,14 +22,14 @@ class Nucleic3(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["P"] = "nucleicphosphate"
         self._mapping["C4'"] = "hnucleicsugar"
         self._mapping["C5"] = "hnucleicbase"
 
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
 
     def _add_bonds(self):
         bonds = []
@@ -61,23 +60,23 @@ class Nucleic4(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["P"] = "nucleicphosphate"
-        self._mapping["C4'"] = "C4'"
-        self._mapping["C3'"] = "C3'"
+        self._mapping["C4'"] = "sugarC4"
+        self._mapping["C3'"] = "sugarC3"
         self._mapping["C5"] = "nucleiccenter"
         _nucl = "hnucleicbase"
 
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
 
         # Update the masses and charges
         nucl_base = self.atu.select_atoms(_nucl).split("residue")
         self.atoms.select_atoms("name C5").masses = np.array([_.total_mass() for _ in nucl_base])
 
         try:
-            self.atoms.select_atoms("name C5").charges = np.array([_.total_charge() for _ in nucl_atu])
+            self.atoms.select_atoms("name C5").charges = np.array([_.total_charge() for _ in nucl_base])
         except AttributeError:
             pass
 

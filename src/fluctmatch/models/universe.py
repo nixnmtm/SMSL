@@ -112,7 +112,7 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
     bonds, angles, dihedrals
         master ConnectivityGroups for each connectivity type
     """
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
 
         Mapping must be a dictionary with atom names as keys.
@@ -127,11 +127,9 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         # Make a blank Universe for myself.
         super().__init__()
 
-        self.topfn = topfn
-        self.crdfn = crdfn
-        self._com = com
-        self._extended = extended
-        self._xplor = xplor
+        self._com = kwargs.pop("com", True)
+        self._extended = kwargs.pop("extended", True)
+        self._xplor = kwargs.pop("xplor", True)
 
     def __repr__(self):
         message = "<CG Universe with {} beads".format(len(self.atoms._beads))
@@ -143,15 +141,15 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
             message += ">"
         return message
 
-    def _initialize(self, topfn, crdfn, **kwargs):
+    def _initialize(self, *args, **kwargs):
         try:
             mapping = kwargs.pop("mapping")
         except KeyError:
-            raise ValueError("CGUniverse requires the mapping keyword")
+            raise ValueError("CG mapping has not been defined.")
 
         # Atomistic Universe
         try:
-            self.atu = mda.Universe(topfn, crdfn, **kwargs)
+            self.atu = mda.Universe(*args, **kwargs)
         except (IOError, OSError, ValueError) as exc:
             raise_from(RuntimeError("Failed to create a universe."), exc)
 

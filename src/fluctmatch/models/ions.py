@@ -23,13 +23,13 @@ class SolventIons(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["ION"] = "name LI LIT K NA F CL BR I"
 
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
         resnames = np.unique(self.residues.names)
         restypes = {
             k: v
@@ -52,13 +52,13 @@ class BioIons(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._mapping["ions"] = "bioion"
 
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
         resnames = np.unique(self.residues.names)
         restypes = {
             k: v
@@ -81,12 +81,12 @@ class NobleAtoms(universe._Universe):
     """
     _mapping = OrderedDict()
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
-        self._initialize(topfn, crdfn, **kwargs)
+        self._initialize(*args, **kwargs)
         resnames = np.unique(self.residues.names)
         restypes = {
             k: v

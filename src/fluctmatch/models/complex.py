@@ -22,24 +22,23 @@ from MDAnalysis.core import topologyattrs
 from MDAnalysis.lib.distances import distance_array
 
 from . import universe
-from . import topattrs
 
 
 class Complex(universe._Universe):
     _rmin = 0.
     _rmax = 10.
 
-    def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
-        super().__init__(topfn, crdfn, com, extended, xplor, **kwargs)
-        self._initialize(topfn, crdfn, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._initialize(*args, **kwargs)
 
         # Numeric types for CHARMM PSF
         np.copyto(self.atoms.numtypes, self.atoms.types)
 
-    def _initialize(self, topfn, crdfn, **kwargs):
+    def _initialize(self, *args, **kwargs):
         # Atomistic Universe
         try:
-            self.atu = mda.Universe(topfn, crdfn, **kwargs)
+            self.atu = mda.Universe(*args, **kwargs)
         except (IOError, OSError, ValueError) as exc:
             raise_from(RuntimeError("Failed to create a universe."), exc)
         self._topology = self.atu._topology
