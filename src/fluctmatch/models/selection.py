@@ -115,7 +115,7 @@ class BioIonSelection(selection.Selection):
     ion_atoms = np.array(["MG", "CAL", "MN", "FE", "CU", "ZN", "AG"])
 
     def __init__(self, parser, tokens):
-        super().__init__(parser, tokens)
+        pass
 
     def apply(self, group):
         mask = np.in1d(group.resnames, self.ion_atoms)
