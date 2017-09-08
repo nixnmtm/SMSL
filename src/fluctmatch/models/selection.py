@@ -124,14 +124,15 @@ class BioIonSelection(selection.Selection):
 
 class AdditionalNucleicSelection(selection.NucleicSelection):
     """Contains additional nucleic acid residues."""
-    nucl_res = np.concatenate(
-        (nucl_res,
-         ["OXG", "HPX"]),
-        axis=0
-    )
+    token = "nucleic"
 
     def __init__(self, parser, tokens):
         super().__init__(parser, tokens)
+        self.nucl_res = np.concatenate(
+            (self.nucl_res,
+             ["OXG", "HPX"]),
+            axis=0
+        )
 
     def apply(self, group):
         mask = np.in1d(group.resnames, self.nucl_res)
@@ -142,14 +143,36 @@ class HNucleicSugarSelection(AdditionalNucleicSelection, selection.NucleicSugarS
     """Contains the additional atoms definitions for the sugar.
     """
     token = "hnucleicsugar"
-    sug_atoms = np.concatenate(
-        (sug_atoms,
-         np.array(["H1'", "O1'", "O2'", "H2'", "H2''", "O3'", "H3'", "H3T", "H4'"])),
-        axis=0
-    )
+
+    def __init__(self, parser, tokens):
+        super().__init__(parser, tokens)
+        self.sug_atoms = np.concatenate(
+            (self.sug_atoms,
+             np.array(["H1'", "O1'", "O2'", "H2'", "H2''", "O3'", "H3'", "H3T", "H4'"])),
+            axis=0
+        )
 
     def apply(self, group):
         mask = np.in1d(group.names, self.sug_atoms)
+        mask &= np.in1d(group.resnames, self.nucl_res)
+        return group[mask].unique
+
+
+class HBaseSelection(AdditionalNucleicSelection, selection.BaseSelection):
+    """Contains additional atoms on the base region of the nucleic acids.
+    """
+    token = "hnucleicbase"
+
+    def __init__(self, parser, tokens):
+        super().__init__(parser, tokens)
+        self.base_atoms = np.concatenate((
+            self.base_atoms,
+            ["O8", "H8", "H21", "H22", "H2", "O6", "H6", "H61", "H62", "H41", "H42", "H5",
+             "H51", "H52", "H53", "H3", "H7"]
+        ), axis=0)
+
+    def apply(self, group):
+        mask = np.in1d(group.names, self.base_atoms)
         mask &= np.in1d(group.resnames, self.nucl_res)
         return group[mask].unique
 
@@ -182,26 +205,10 @@ class NucleicC43Selection(AdditionalNucleicSelection):
     """Contains the definition for the C4' region.
     """
     token = "C4'"
-    c3_atoms = np.array(["C4'", "O4'", "H4'", "C1'", "H1'", "C2'", "H2'", "O2'", "H2''"])
+    c3_atoms = np.array(["C4'", "O4'", "H4'", "C1'", "H1'"])
 
     def apply(self, group):
         mask = np.in1d(group.names, self.c3_atoms)
-        mask &= np.in1d(group.resnames, self.nucl_res)
-        return group[mask].unique
-
-
-class HBaseSelection(AdditionalNucleicSelection, selection.BaseSelection):
-    """Contains additional atoms on the base region of the nucleic acids.
-    """
-    token = "hnucleicbase"
-    base_atoms = np.concatenate((
-        base_atoms,
-        ["O8", "H8", "H21", "H22", "H2", "O6", "H6", "H61", "H62", "H41", "H42", "H5",
-         "H51", "H52", "H53", "H3"]
-    ), axis=0)
-
-    def apply(self, group):
-        mask = np.in1d(group.names, self.base_atoms)
         mask &= np.in1d(group.resnames, self.nucl_res)
         return group[mask].unique
 
