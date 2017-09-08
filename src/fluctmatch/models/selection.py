@@ -13,6 +13,20 @@ from future.builtins import (
 )
 
 
+class BioIonSelection(selection.Selection):
+    """Contains atoms commonly found in proteins.
+    """
+    token = "bioion"
+    ion_atoms = np.array(["MG", "CAL", "MN", "FE", "CU", "ZN", "AG"])
+
+    def __init__(self, parser, tokens):
+        pass
+
+    def apply(self, group):
+        mask = np.in1d(group.resnames, self.ion_atoms)
+        return group[mask].unique
+
+
 class BackboneSelection(selection.BackboneSelection):
     """Contains all heavy atoms within a protein backbone including the terminal carboxyl oxygens.
     """
@@ -105,20 +119,6 @@ class HSidechainSelection(HBackboneSelection):
     def apply(self, group):
         mask = np.in1d(group.names, np.concatenate([self.bb_atoms, self.oxy_atoms, self.hbb_atoms]), invert=True)
         mask &= np.in1d(group.resnames, self.prot_res)
-        return group[mask].unique
-
-
-class BioIonSelection(selection.Selection):
-    """Contains atoms commonly found in proteins.
-    """
-    token = "bioion"
-    ion_atoms = np.array(["MG", "CAL", "MN", "FE", "CU", "ZN", "AG"])
-
-    def __init__(self, parser, tokens):
-        pass
-
-    def apply(self, group):
-        mask = np.in1d(group.resnames, self.ion_atoms)
         return group[mask].unique
 
 

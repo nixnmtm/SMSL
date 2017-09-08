@@ -11,6 +11,10 @@ from future.builtins import (
     zip,
 )
 
+from future.utils import (
+    raise_from,
+)
+
 import numpy as np
 
 import MDAnalysis as mda
@@ -32,27 +36,15 @@ class Complex(universe._Universe):
         # Numeric types for CHARMM PSF
         np.copyto(self.atoms.numtypes, self.atoms.types)
 
-    def __repr__(self):
-        message = "<CG Universe with {} beads".format(len(self.atoms))
-        if hasattr(self._topology, "bonds"):
-            message += " and {:d} bonds".format(len(self._topology.bonds.values))
-        message += ">"
-        return message
-
     def _initialize(self, topfn, crdfn, **kwargs):
         # Atomistic Universe
-        universe = mda.Universe(topfn, crdfn, **kwargs)
-        self.__dict__.update(universe.__dict__)
-        self._topology = self.universe._topology
+        try:
+            self.atu = mda.Universe(topfn, crdfn, **kwargs)
+        except (IOError, OSError, ValueError) as exc:
+            raise_from(RuntimeError("Failed to create a universe."), exc)
+        self._topology = self.atu._topology
 
         universe.rename_universe(self)
-        xplortypes = topattrs.XplorTypes(universe.atoms.names)
-        try:
-            numtypes = topattrs.NumTypes(universe.atoms.types.astype(np.int))
-        except ValueError:
-            numtypes = topattrs.NumTypes(np.arange(universe.atoms.n_atoms)+1)
-        self._topology.add_TopologyAttr(xplortypes)
-        self._topology.add_TopologyAttr(numtypes)
         self._generate_from_topology()
 
         self._add_bonds()

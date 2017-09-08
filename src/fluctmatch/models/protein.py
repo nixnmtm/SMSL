@@ -22,6 +22,8 @@ from .selection import *
 
 
 class Calpha(universe._Universe):
+    """Create a universe defined by the protein C-alpha.
+    """
     _mapping = OrderedDict()
 
     def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
@@ -50,6 +52,8 @@ class Calpha(universe._Universe):
 
 
 class Caside(universe._Universe):
+    """Create a universe consisting of the C-alpha and sidechains of a protein.
+    """
     _mapping = OrderedDict()
 
     def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
@@ -88,6 +92,8 @@ class Caside(universe._Universe):
 
 
 class Ncsc(universe._Universe):
+    """Create a universe consisting of the amine, carboxyl, and sidechain regions of a protein.
+    """
     _mapping = OrderedDict()
 
     def __init__(self, topfn, crdfn, com=True, extended=True, xplor=True, **kwargs):
