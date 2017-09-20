@@ -329,15 +329,3 @@ def rename_universe(universe):
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))
     universe._generate_from_topology()
     return universe
-
-
-def change_types(universe, xplor=False):
-    """Change the atom types to a numerical value for CHARMM PSF."""
-    if xplor:
-        types = np.array(["{}{:0>3d}".format(lett, i)
-                          for lett, _ in zip(string.ascii_uppercase, universe.segments)
-                          for i, _ in enumerate(s.atoms)])
-    else:
-        types = np.arange(universe._topology.n_atoms) + 100
-    universe._topology.add_TopologyAttr(topologyattrs.Atomtypes(types))
-    universe._generate_from_topology()
