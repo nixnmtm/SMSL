@@ -16,6 +16,7 @@ __all__ = [
     "PDB_prot", "PDB_dna",
     "TIP3P", "TIP4P", "IONS", "DMA",
     "TPR", "XTC",   # Gromacs
+    "NCSC",
 ]
 
 from pkg_resources import resource_filename
@@ -29,3 +30,4 @@ TIP3P = resource_filename(__name__, path.join("data", "spc216.gro"))
 TIP4P = resource_filename(__name__, path.join("data", "tip4p.gro"))
 IONS = resource_filename(__name__, path.join("data", "ions.pdb"))
 DMA = resource_filename(__name__, path.join("data", "dma.gro"))
+NCSC = resource_filename(__name__, path.join("data", "ncsc.pdb"))

@@ -21,6 +21,7 @@ from future.builtins import (
 
 import abc
 import itertools
+import string
 
 import numpy as np
 import MDAnalysis as mda
@@ -318,11 +319,11 @@ def Merge(*args):
 def rename_universe(universe):
     """Rename the atoms and residues."""
     atomnames = np.array(["{}{:0>3d}".format(lett, i)
-                          for lett, _ in zip(string.ascii_uppercase, universe.segments)
-                          for i, _ in enumerate(s.atoms)])
-    resnames = np.array(["{}{:0>3d}".format(lett, i + 1)
-                         for lett, _ in zip(string.ascii_uppercase, universe.segments)
-                         for i, _ in enumerate(s.residues)])
+                          for lett, segment in zip(string.ascii_uppercase, universe.segments)
+                          for i, _ in enumerate(segment.atoms, 1)])
+    resnames = np.array(["{}{:0>3d}".format(lett, i)
+                         for lett, segment in zip(string.ascii_uppercase, universe.segments)
+                         for i, _ in enumerate(segment.residues, 1)])
 
     universe._topology.add_TopologyAttr(topologyattrs.Atomnames(atomnames))
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))

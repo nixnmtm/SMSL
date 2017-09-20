@@ -12,7 +12,7 @@ from future.builtins import (
 )
 
 from future.utils import (
-    raise_from,
+    raise_with_traceback,
 )
 
 import numpy as np
@@ -24,7 +24,7 @@ from MDAnalysis.lib.distances import distance_array
 from . import universe
 
 
-class Complex(universe._Universe):
+class Enm(universe._Universe):
     _rmin = 0.
     _rmax = 10.
 
@@ -32,16 +32,23 @@ class Complex(universe._Universe):
         super().__init__(*args, **kwargs)
         self._initialize(*args, **kwargs)
 
-        # Numeric types for CHARMM PSF
-        np.copyto(self.atoms.numtypes, self.atoms.types)
+    def __repr__(self):
+        message = "<CG Universe with {} beads".format(self.atoms.n_atoms)
+        try:
+            message += " and {:d} bonds".format(len(self._topology.bonds.values))
+        except AttributeError as exc:
+            pass
+        finally:
+            message += ">"
+        return message
 
     def _initialize(self, *args, **kwargs):
         # Atomistic Universe
         try:
             self.atu = mda.Universe(*args, **kwargs)
         except (IOError, OSError, ValueError) as exc:
-            raise_from(RuntimeError("Failed to create a universe."), exc)
-        self._topology = self.atu._topology
+            raise_with_traceback(RuntimeError("Failed to create a universe."))
+        self.__dict__.update(self.atu.__dict__)
 
         universe.rename_universe(self)
         self._generate_from_topology()
