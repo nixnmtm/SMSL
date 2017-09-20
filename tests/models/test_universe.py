@@ -9,7 +9,6 @@ from __future__ import (
     unicode_literals,
 )
 
-import numpy as np
 import pytest
 
 from fluctmatch.models import (
@@ -19,7 +18,6 @@ from fluctmatch.models import (
     universe,
 )
 from fluctmatch.models.selection import *
-
 from tests.datafiles import (
     PDB_prot,
     TIP3P,
