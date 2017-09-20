@@ -15,13 +15,13 @@ from fluctmatch.models import enm
 from fluctmatch.models.selection import *
 
 from tests.datafiles import (
-    ENM,
+    NCSC,
 )
 
 
 def test_enm_creation():
-    aa_universe = mda.Universe(ENM)
-    cg_universe = enm.Enm(ENM)
+    aa_universe = mda.Universe(NCSC)
+    cg_universe = enm.Enm(NCSC)
     cg_natoms = (
         aa_universe.select_atoms("all").n_atoms
     )
@@ -31,11 +31,11 @@ def test_enm_creation():
 
 
 def test_enm_names():
-    cg_universe = enm.Enm(ENM)
+    cg_universe = enm.Enm(NCSC)
     assert (cg_universe.atoms[0].name == "A001") & (cg_universe.residues[0].resname == "A001")
 
 
 def test_enm_positions():
-    aa_universe = mda.Universe(ENM)
-    cg_universe = enm.Enm(ENM)
+    aa_universe = mda.Universe(NCSC)
+    cg_universe = enm.Enm(NCSC)
     assert np.allclose(aa_universe.atoms.positions, cg_universe.atoms.positions)
