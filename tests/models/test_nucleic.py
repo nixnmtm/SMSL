@@ -14,7 +14,7 @@ import MDAnalysis as mda
 from fluctmatch.models import nucleic
 from fluctmatch.models.selection import *
 
-from .datafiles import (
+from tests.datafiles import (
     PDB_dna,
     TPR,
     XTC,
@@ -34,7 +34,7 @@ def test_nucleic3_creation():
 
 
 def test_nucleic3_positions():
-    positions = list()
+    positions = []
     cg_universe = nucleic.Nucleic3(PDB_dna)
     for _ in mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG").residues:
         positions.append(_.atoms.select_atoms("nucleicphosphate").center_of_mass())
@@ -63,7 +63,7 @@ def test_nucleic4_creation():
 
 
 def test_nucleic4_positions():
-    positions = list()
+    positions = []
     cg_universe = nucleic.Nucleic4(PDB_dna)
     for _ in mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG").residues:
         positions.append(_.atoms.select_atoms("nucleicphosphate").center_of_mass())

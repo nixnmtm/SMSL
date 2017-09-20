@@ -23,7 +23,21 @@ class BioIonSelection(selection.Selection):
         pass
 
     def apply(self, group):
-        mask = np.in1d(group.resnames, self.ion_atoms)
+        mask = np.in1d(group.names, self.ion_atoms)
+        return group[mask].unique
+
+
+class WaterSelection(selection.Selection):
+    """Contains atoms commonly found in water.
+    """
+    token = "water"
+    water_atoms = np.array(["OW", "HW1", "HW2", "MW"])
+
+    def __init__(self, parser, tokens):
+        pass
+
+    def apply(self, group):
+        mask = np.in1d(group.names, self.water_atoms)
         return group[mask].unique
 
 

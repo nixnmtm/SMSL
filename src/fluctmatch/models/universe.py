@@ -10,7 +10,7 @@ from __future__ import (
 )
 
 from future.utils import (
-    raise_from,
+    raise_with_traceback,
     viewitems,
     with_metaclass,
 )
@@ -151,7 +151,7 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         try:
             self.atu = mda.Universe(*args, **kwargs)
         except (IOError, OSError, ValueError) as exc:
-            raise_from(RuntimeError("Failed to create a universe."), exc)
+            raise_with_traceback(RuntimeError("Failed to create a universe."))
 
         # Fake up some beads
         self._topology = self._apply_map(mapping)
@@ -164,9 +164,9 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
 
         # This replaces load_new in a traditional Universe
         try:
-            self.trajectory = trajectory._Trajectory(self.atu.trajectory, self.atoms, com=self._com)
+            self.trajectory = trajectory._Trajectory(self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com)
         except (IOError, TypeError) as exc:
-            raise_from(RuntimeError("Unable to open {}".format(self.atu.trajectory.filename)), exc)
+            raise_with_traceback(RuntimeError("Unable to open {}".format(self.atu.trajectory.filename)))
 
     def _apply_map(self, mapping):
         """Apply the mapping scheme to the beads"""
@@ -180,9 +180,8 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         charges = []
         masses = []
 
-        i = 0
-        residues = self.atu.select_atoms("all").split("residue")
-        for res, (name, selection) in itertools.product(residues, viewitems(mapping)):
+        residues = self.atu.atoms.split("residue")
+        for i, (res, (name, selection)) in enumerate(itertools.product(residues, viewitems(mapping))):
             bead = res.select_atoms(selection)
             if bead:
                 _beads.append(bead)
@@ -191,24 +190,20 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
                 resids.append(bead.resids[0])
                 resnames.append(bead.resnames[0])
                 segids.append(bead.segids[0])
-                if hasattr(bead, "total_charge"):
+                try:
                     charges.append(bead.total_charge())
-                else:
+                except AttributeError:
                     charges.append(0.)
                 masses.append(bead.total_mass())
-                i += 1
 
-        _beads = np.asarray(_beads)
-        n_atoms = _beads.size
-        _beads = _beads.reshape((n_atoms,))
+        _beads = np.array(_beads)
+        n_atoms = len(_beads)
 
         # Atom
         _beads = topattrs._Beads(_beads)
         vdwradii = np.zeros_like(atomids)
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
-        xplortypes = np.empty_like(atomnames)
-        np.copyto(xplortypes, atomnames)
         atomnames = topologyattrs.Atomnames(np.asarray(atomnames))
         atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms)+100))
         charges = topologyattrs.Charges(np.asarray(charges))
@@ -227,7 +222,7 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         residuenames = topologyattrs.Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids, ) = topbase.change_squash((new_segids,), (new_segids,))
+        segidx, (perseg_segids,) = topbase.change_squash((new_segids,), (new_segids,))
         segids = topologyattrs.Segids(perseg_segids)
 
         # Setup topology
@@ -244,25 +239,28 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         pass
 
     def _add_angles(self):
-        if not hasattr(self, "bonds"):
-            return
-        angles = guessers.guess_angles(self.bonds)
-        self._topology.add_TopologyAttr(topologyattrs.Angles(angles))
-        self._generate_from_topology()
+        try:
+            angles = guessers.guess_angles(self.bonds)
+            self._topology.add_TopologyAttr(topologyattrs.Angles(angles))
+            self._generate_from_topology()
+        except AttributeError:
+            pass
 
     def _add_dihedrals(self):
-        if not hasattr(self, "angles"):
-            return
-        dihedrals = guessers.guess_dihedrals(self.angles)
-        self._topology.add_TopologyAttr(topologyattrs.Dihedrals(dihedrals))
-        self._generate_from_topology()
+        try:
+            dihedrals = guessers.guess_dihedrals(self.angles)
+            self._topology.add_TopologyAttr(topologyattrs.Dihedrals(dihedrals))
+            self._generate_from_topology()
+        except AttributeError:
+            pass
 
     def _add_impropers(self):
-        if not hasattr(self, "angles"):
-            return
-        impropers = guessers.guess_improper_dihedrals(self.angles)
-        self._topology.add_TopologyAttr((topologyattrs.Impropers(impropers)))
-        self._generate_from_topology()
+        try:
+            impropers = guessers.guess_improper_dihedrals(self.angles)
+            self._topology.add_TopologyAttr((topologyattrs.Impropers(impropers)))
+            self._generate_from_topology()
+        except AttributeError:
+            pass
 
     @property
     def cguniverse(self):

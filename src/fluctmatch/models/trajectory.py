@@ -9,13 +9,22 @@ from __future__ import (
     unicode_literals,
 )
 
+from future.utils import (
+    raise_with_traceback,
+    viewitems,
+    with_metaclass,
+)
 from future.builtins import (
     super,
 )
 
+import itertools
+
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
+
+from .selection import *
 
 
 class _Trajectory(base.ReaderBase):
@@ -28,18 +37,19 @@ class _Trajectory(base.ReaderBase):
     coarse grained trajectories.
     """
 
-    def __init__(self, trajectory, beads, convert_units=True, com=True, **kwargs):
+    def __init__(self, universe, mapping, n_atoms=1, convert_units=True, com=True, **kwargs):
         """
         Arguments:
             universe - the atomistic Universe you start with
-            mapping - list of list of indices
+            mapping - dictionary of selections
         """
-        super().__init__(trajectory.filename, convert_units=convert_units, **kwargs)
-        self._t = trajectory
-        self.beads = beads
+        super().__init__(universe.trajectory.filename, convert_units=convert_units, **kwargs)
+        self._u = universe
+        self._t = universe.trajectory
+        self._mapping = mapping
         self.com = com
 
-        self.n_atoms = self.beads.n_atoms
+        self.n_atoms = n_atoms
         self.n_frames = len(self._t)
         self.format = self._t.format
         self.units.update(self._t.units)
@@ -80,19 +90,37 @@ class _Trajectory(base.ReaderBase):
         """
         self.ts.frame = other_ts.frame
         self.ts._unitcell = other_ts._unitcell
-        if isinstance(self.beads._beads[0], groups.AtomGroup):
-            if self.com:
-                self.ts._pos[:] = [bead.center_of_mass() for bead in self.beads._beads]
-            else:
-                self.ts._pos[:] = [bead.center_of_geometry() for bead in self.beads._beads]
-        elif isinstance(self.beads._beads[0], groups.Atom):
-            self.ts._pos[:] = [bead.position for bead in self.beads._beads]
+        residues = self._u.atoms.split("residue")
+        if self.com:
+            self.ts._pos[:] = [
+                res.select_atoms(selection).center_of_mass()
+                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
+                if res.select_atoms(selection)
+            ]
         else:
-            raise TypeError("The bead should be either an Atom or an AtomGroup.")
-        if hasattr(self.beads, "_velocities"):
-            self.ts._velocities[:] = [bead.velocities.sum() for bead in self.beads._beads]
-        if hasattr(self.beads, "_forces"):
-            self.ts._forces[:] = [bead.forces.sum() for bead in self.beads._beads]
+            self.ts._pos[:] = [
+                res.select_atoms(selection).center_of_geometry()
+                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
+                if res.select_atoms(selection)
+            ]
+
+        try:
+            self.ts._velocities[:] = [
+                res.select_atoms(selection).velocities.sum()
+                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
+                if res.select_atoms(selection)
+            ]
+        except (AttributeError, MDAnalysis.NoDataError):
+            pass
+
+        try:
+            self.ts._forces[:] = [
+                res.select_atoms(selection).forces.sum()
+                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
+                if res.select_atoms(selection)
+            ]
+        except (AttributeError, MDAnalysis.NoDataError):
+            pass
 
     def _reopen(self):
         # Rewind my reference trajectory

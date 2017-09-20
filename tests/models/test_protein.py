@@ -14,7 +14,7 @@ import MDAnalysis as mda
 from fluctmatch.models import protein
 from fluctmatch.models.selection import *
 
-from .datafiles import (
+from tests.datafiles import (
     PDB_prot,
     TPR,
     XTC,
@@ -30,8 +30,9 @@ def test_calpha_creation():
     )
     assert cg_universe.atoms.n_atoms == cg_natoms
 
+
 def test_calpha_positions():
-    positions = list()
+    positions = []
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Calpha(PDB_prot)
     for _ in aa_universe.select_atoms("protein").residues:
@@ -59,7 +60,7 @@ def test_caside_creation():
 
 
 def test_caside_positions():
-    positions = list()
+    positions = []
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Caside(PDB_prot)
     for _ in aa_universe.select_atoms("protein").residues:
@@ -90,7 +91,7 @@ def test_ncsc_creation():
 
 
 def test_ncsc_positions():
-    positions = list()
+    positions = []
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Ncsc(PDB_prot)
     for _ in aa_universe.select_atoms("protein").residues:

@@ -25,7 +25,7 @@ class Water(universe._Universe):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["OW"] = "segid SOL WAT and name OW HW* MW"
+        self._mapping["OW"] = "water"
 
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
@@ -42,9 +42,9 @@ class Tip3p(universe._Universe):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["OW"] = "segid SOL WAT and name OW MW"
-        self._mapping["HW1"] = "segid SOL WAT and name HW1"
-        self._mapping["HW2"] = "segid SOL WAT and name HW2"
+        self._mapping["OW"] = "name OW MW"
+        self._mapping["HW1"] = "name HW1"
+        self._mapping["HW2"] = "name HW2"
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)

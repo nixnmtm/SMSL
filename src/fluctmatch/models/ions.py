@@ -13,7 +13,6 @@ from future.builtins import (
 
 from collections import OrderedDict
 
-
 from . import universe
 from .selection import *
 
@@ -30,7 +29,7 @@ class SolventIons(universe._Universe):
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-        resnames = np.unique(self.residues.names)
+        resnames = np.unique(self.residues.resnames)
         restypes = {
             k: v
             for k, v in zip(resnames, np.arange(resnames.size)+10)
@@ -39,9 +38,6 @@ class SolventIons(universe._Universe):
             restypes[atom.resname]
             for atom in self.atoms
         ])
-
-        # Numeric types for CHARMM PSF
-        np.copyto(self.atoms.numtypes, self.atoms.types)
 
     def _add_bonds(self):
         pass
@@ -59,7 +55,7 @@ class BioIons(universe._Universe):
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-        resnames = np.unique(self.residues.names)
+        resnames = np.unique(self.residues.resnames)
         restypes = {
             k: v
             for k, v in zip(resnames, np.arange(resnames.size)+20)
@@ -68,9 +64,6 @@ class BioIons(universe._Universe):
             restypes[atom.resname]
             for atom in self.atoms
         ])
-
-        # Numeric types for CHARMM PSF
-        np.copyto(self.atoms.numtypes, self.atoms.types)
 
     def _add_bonds(self):
         pass
@@ -87,7 +80,7 @@ class NobleAtoms(universe._Universe):
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-        resnames = np.unique(self.residues.names)
+        resnames = np.unique(self.residues.resnames)
         restypes = {
             k: v
             for k, v in zip(resnames, np.arange(resnames.size)+40)
@@ -96,9 +89,6 @@ class NobleAtoms(universe._Universe):
             restypes[atom.resname]
             for atom in self.atoms
         ])
-
-        # Numeric types for CHARMM PSF
-        np.copyto(self.atoms.numtypes, self.atoms.types)
 
     def _add_bonds(self):
         pass
