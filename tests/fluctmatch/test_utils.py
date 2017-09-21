@@ -37,3 +37,13 @@ def test_average_bonds():
     ], axis=0)
     bonds = fmutils.average_bonds(TPR, XTC)
     assert np.allclose(bonds, avg_bonds)
+
+
+def test_bond_fluctuation():
+    universe = mda.Universe(TPR, XTC)
+    avg_bonds = np.std([
+        universe.bonds.bonds()
+        for _ in universe.trajectory
+    ], axis=0)
+    bonds = fmutils.bond_fluctuation(TPR, XTC)
+    assert np.allclose(bonds, avg_bonds)
