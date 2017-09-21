@@ -6,20 +6,13 @@ from __future__ import (
     unicode_literals,
 )
 
+import numpy as np
+from MDAnalysis.core import topologyattrs
+from MDAnalysis.lib.distances import distance_array
 from future.builtins import (
     super,
     zip,
 )
-
-from future.utils import (
-    raise_with_traceback,
-)
-
-import numpy as np
-
-import MDAnalysis as mda
-from MDAnalysis.core import topologyattrs
-from MDAnalysis.lib.distances import distance_array
 
 from . import universe
 
@@ -43,11 +36,6 @@ class Enm(universe._Universe):
         return message
 
     def _initialize(self, *args, **kwargs):
-        # Atomistic Universe
-        try:
-            self.atu = mda.Universe(*args, **kwargs)
-        except (IOError, OSError, ValueError) as exc:
-            raise_with_traceback(RuntimeError("Failed to create a universe."))
         self.__dict__.update(self.atu.__dict__)
 
         universe.rename_universe(self)
