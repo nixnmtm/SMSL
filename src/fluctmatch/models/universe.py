@@ -9,29 +9,27 @@ from __future__ import (
     unicode_literals,
 )
 
+import abc
+import itertools
+import string
+
+import MDAnalysis as mda
+import numpy as np
+from MDAnalysis.core import (
+    topology,
+    topologyattrs,
+)
+from MDAnalysis.topology import base as topbase
+from MDAnalysis.topology import guessers
+from future.builtins import (
+    super,
+    zip,
+)
 from future.utils import (
     raise_with_traceback,
     viewitems,
     with_metaclass,
 )
-from future.builtins import (
-    super,
-    zip,
-)
-
-import abc
-import itertools
-import string
-
-import numpy as np
-import MDAnalysis as mda
-from MDAnalysis.core import (
-    topology,
-    topologyattrs,
-)
-
-from MDAnalysis.topology import base as topbase
-from MDAnalysis.topology import guessers
 
 from . import (
     topattrs,
@@ -132,6 +130,13 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         self._extended = kwargs.pop("extended", True)
         self._xplor = kwargs.pop("xplor", True)
 
+        # Atomistic Universe
+        try:
+            self.atu = mda.Universe(*args, **kwargs)
+        except (IOError, OSError, ValueError) as exc:
+            raise_with_traceback(RuntimeError("Failed to create a universe."))
+
+
     def __repr__(self):
         message = "<CG Universe with {} beads".format(len(self.atoms._beads))
         try:
@@ -147,12 +152,6 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
             mapping = kwargs.pop("mapping")
         except KeyError:
             raise ValueError("CG mapping has not been defined.")
-
-        # Atomistic Universe
-        try:
-            self.atu = mda.Universe(*args, **kwargs)
-        except (IOError, OSError, ValueError) as exc:
-            raise_with_traceback(RuntimeError("Failed to create a universe."))
 
         # Fake up some beads
         self._topology = self._apply_map(mapping)
@@ -307,7 +306,10 @@ def Merge(*args):
     universe._generate_from_topology()
 
     if args[0].trajectory.n_frames > 1:
-        coordinates = [AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results or u in ag]
+        coordinates = [
+            AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results
+            for u in ag
+        ]
         coordinates = np.concatenate(coordinates, axis=1)
         if universe.atoms.n_atoms != coordinates.shape[1]:
             raise RuntimeError("The number of sites does not match the number of coordinates.")
