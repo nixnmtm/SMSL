@@ -133,9 +133,8 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         # Atomistic Universe
         try:
             self.atu = mda.Universe(*args, **kwargs)
-        except (IOError, OSError, ValueError) as exc:
+        except (IOError, OSError, ValueError):
             raise_with_traceback(RuntimeError("Failed to create a universe."))
-
 
     def __repr__(self):
         message = "<CG Universe with {} beads".format(len(self.atoms._beads))
