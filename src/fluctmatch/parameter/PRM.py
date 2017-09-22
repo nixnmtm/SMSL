@@ -9,24 +9,22 @@ from __future__ import (
     unicode_literals,
 )
 
-from future.utils import (
-    native_str,
-)
-from future.builtins import (
-    dict,
-    open,
-    super,
-)
-
 import time
 from collections import OrderedDict
 from os import environ
 
 import numpy as np
 import pandas as pd
-
-
 from MDAnalysis.lib import util
+from future.builtins import (
+    dict,
+    open,
+)
+from future.utils import (
+    bytes_to_native_str,
+    native_str,
+)
+
 from ..topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 
@@ -35,12 +33,21 @@ class ParamReader(TopologyReaderBase):
     units = dict(time=None, length="Angstrom")
 
     parameters = OrderedDict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
-    _prmindex = dict(ATOMS=np.arange(1, 4), BONDS=np.arange(4), ANGLES=np.arange(5), DIHEDRALS=np.arange(6))
-    _prmcolumns = dict(ATOMS=["type", "atom", "mass"], BONDS=["I", "J", "Kb", "b0"],
-                       ANGLES=["I", "J", "K", "Ktheta", "theta0"], DIHEDRALS=["I", "J", "K", "L", "Kchi", "n", "delta"],
-                       IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"])
+    _prmindex = dict(
+        ATOMS=np.arange(1, 4),
+        BONDS=np.arange(4),
+        ANGLES=np.arange(5),
+        DIHEDRALS=np.arange(6)
+    )
+    _prmcolumns = dict(
+        ATOMS=["type", "atom", "mass"],
+        BONDS=["I", "J", "Kb", "b0"],
+        ANGLES=["I", "J", "K", "Ktheta", "theta0"],
+        DIHEDRALS=["I", "J", "K", "L", "Kchi", "n", "delta"],
+        IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"]
+    )
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename):
         """
         Parameters
         ----------
@@ -48,7 +55,6 @@ class ParamReader(TopologyReaderBase):
              name of the output file or a stream
         """
         self.filename = util.filename(filename, ext="prm")
-        super().__init__(self.filename, **kwargs)
 
     def read(self):
         """Parse the parameter file.
@@ -103,7 +109,7 @@ class ParamWriter(TopologyWriterBase):
                 NONBONDED="%-4s %5.1f %13.4f %10.4f",
                 NONBONDED_C36="%-6s %5.1f %13.4f %10.4f",)
 
-    def __init__(self, filename, title=None, charmm36=True, nonbonded=True, **kwargs):
+    def __init__(self, filename, title=None, charmm36=True, nonbonded=True):
         """
         Parameters
         ----------
@@ -118,8 +124,6 @@ class ParamWriter(TopologyWriterBase):
         """
 
         self.filename = util.filename(filename, ext="prm")
-        super().__init__(self.filename, **kwargs)
-
         self.charmm36 = charmm36
         self.nonbonded = nonbonded
         self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),

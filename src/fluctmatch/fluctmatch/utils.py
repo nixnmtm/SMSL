@@ -12,6 +12,7 @@ from __future__ import (
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
 import numpy as np
+import pandas as pd
 
 
 def average_structure(*args, **kwargs):
@@ -135,6 +136,8 @@ def average_bonds(*args, **kwargs):
     universe = mda.Universe(*args, **kwargs)
     system = analysis.AnalysisFromFunction(lambda bonds: bonds.bonds(), universe.trajectory, universe.bonds).run()
     bonds = np.mean(system.results, axis=0)
+    bonds = pd.concat([universe.bonds.atom1.names, universe.bonds.atom2.names, bonds], axis=1)
+    bonds.columns = ["I", "J", "r_IJ"]
     return bonds
 
 def bond_fluctuation(*args, **kwargs):
@@ -196,4 +199,6 @@ def bond_fluctuation(*args, **kwargs):
     universe = mda.Universe(*args, **kwargs)
     system = analysis.AnalysisFromFunction(lambda bonds: bonds.bonds(), universe.trajectory, universe.bonds).run()
     bonds = np.std(system.results, axis=0)
+    bonds = pd.concat([universe.bonds.atom1.names, universe.bonds.atom2.names, bonds], axis=1)
+    bonds.columns = ["I", "J", "r_IJ"]
     return bonds

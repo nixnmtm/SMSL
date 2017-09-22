@@ -9,22 +9,20 @@ from __future__ import (
     unicode_literals,
 )
 
-from future.utils import (
-    native_str,
-)
-from future.builtins import (
-    dict,
-    open,
-    super,
-)
-
-from os import (path, environ)
 import time
+from os import (environ)
 
 import numpy as np
 import pandas as pd
-
 from MDAnalysis.lib import util
+from future.builtins import (
+    dict,
+    open,
+)
+from future.utils import (
+    native_str,
+)
+
 from . import base
 
 
@@ -33,9 +31,7 @@ class STRWriter(base.TopologyWriterBase):
     units = dict(time=None, length="Angstrom")
 
     def __init__(self, filename, title=None, **kwargs):
-        self.filename = util.filename(filename, ext="str")
-        super().__init__(self.filename, **kwargs)
-
+        self.filename = util.filename(filename, ext="stream")
         self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
                       "* User: {}\n".format(environ["USER"])) if title is None else title
         self.fmt = "IC EDIT\nDIST %4s %10d %4s %4s %10d %4s%5.1f\nEND\n"

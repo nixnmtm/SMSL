@@ -10,10 +10,11 @@ from __future__ import (
 )
 
 import MDAnalysis as mda
+from future.utils import native_str
+from numpy import testing
 
 from fluctmatch.models import protein
 from fluctmatch.models.selection import *
-
 from tests.datafiles import (
     PDB_prot,
     TPR,
@@ -28,7 +29,12 @@ def test_calpha_creation():
         aa_universe.select_atoms("calpha").n_atoms +
         aa_universe.select_atoms("bioion").n_atoms
     )
-    assert cg_universe.atoms.n_atoms == cg_natoms
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        cg_natoms,
+        err_msg=native_str("Number of sites not equal."),
+        verbose=True,
+    )
 
 
 def test_calpha_positions():
@@ -39,13 +45,22 @@ def test_calpha_positions():
         positions.append(_.atoms.select_atoms("calpha").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.select_atoms("bioion").center_of_mass())
-    assert np.allclose(np.array(positions), cg_universe.atoms.positions)
+    testing.assert_allclose(
+        np.array(positions),
+        cg_universe.atoms.positions,
+        err_msg=native_str("The coordinates do not match."),
+    )
 
 
 def test_calpha_trajectory():
     aa_universe = mda.Universe(TPR, XTC)
     cg_universe = protein.Calpha(TPR, XTC)
-    assert aa_universe.trajectory.n_frames == cg_universe.trajectory.n_frames
+    testing.assert_equal(
+        cg_universe.trajectory.n_frames,
+        aa_universe.trajectory.n_frames,
+        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        verbose=True,
+    )
 
 
 def test_caside_creation():
@@ -56,7 +71,12 @@ def test_caside_creation():
         aa_universe.select_atoms("cbeta").n_atoms +
         aa_universe.select_atoms("bioion").n_atoms
     )
-    assert cg_universe.atoms.n_atoms == cg_natoms
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        cg_natoms,
+        err_msg=native_str("Number of sites not equal."),
+        verbose=True,
+    )
 
 
 def test_caside_positions():
@@ -69,13 +89,22 @@ def test_caside_positions():
             positions.append(_.atoms.select_atoms("hsidechain").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
-    assert np.allclose(np.array(positions), cg_universe.atoms.positions)
+    testing.assert_allclose(
+        np.array(positions),
+        cg_universe.atoms.positions,
+        err_msg=native_str("The coordinates do not match."),
+    )
 
 
 def test_caside_trajectory():
     aa_universe = mda.Universe(TPR, XTC)
     cg_universe = protein.Caside(TPR, XTC)
-    assert aa_universe.trajectory.n_frames == cg_universe.trajectory.n_frames
+    testing.assert_equal(
+        cg_universe.trajectory.n_frames,
+        aa_universe.trajectory.n_frames,
+        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        verbose=True,
+    )
 
 
 def test_ncsc_creation():
@@ -87,7 +116,12 @@ def test_ncsc_creation():
         aa_universe.select_atoms("cbeta").n_atoms +
         aa_universe.select_atoms("bioion").n_atoms
     )
-    assert cg_universe.atoms.n_atoms == cg_natoms
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        cg_natoms,
+        err_msg=native_str("Number of sites not equal."),
+        verbose=True,
+    )
 
 
 def test_ncsc_positions():
@@ -101,10 +135,19 @@ def test_ncsc_positions():
         positions.append(_.atoms.select_atoms("carboxyl").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
-    assert np.allclose(np.array(positions), cg_universe.atoms.positions)
+    testing.assert_allclose(
+        np.array(positions),
+        cg_universe.atoms.positions,
+        err_msg=native_str("The coordinates do not match."),
+    )
 
 
 def test_ncsc_trajectory():
     aa_universe = mda.Universe(TPR, XTC)
     cg_universe = protein.Ncsc(TPR, XTC)
-    assert aa_universe.trajectory.n_frames == cg_universe.trajectory.n_frames
+    testing.assert_equal(
+        cg_universe.trajectory.n_frames,
+        aa_universe.trajectory.n_frames,
+        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        verbose=True,
+    )

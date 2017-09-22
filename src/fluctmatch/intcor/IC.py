@@ -9,22 +9,20 @@ from __future__ import (
     unicode_literals,
 )
 
-from future.utils import (
-    native_str,
-)
-from future.builtins import (
-    dict,
-    open,
-    super,
-)
-
 import time
 from os import environ
 
 import numpy as np
 import pandas as pd
-
 from MDAnalysis.lib import util
+from future.builtins import (
+    dict,
+    open,
+)
+from future.utils import (
+    native_str,
+)
+
 from ..topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 
@@ -50,7 +48,7 @@ class IntcorReader(TopologyReaderBase):
                        "segidK", "resK", "K", "segidL", "resL", "L",
                        "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"],)
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename):
         """
         Parameters
         ----------
@@ -59,7 +57,6 @@ class IntcorReader(TopologyReaderBase):
         """
 
         self.filename = util.filename(filename, ext="ic")
-        super().__init__(self.filename, **kwargs)
 
     def read(self):
         """Read the internal coordinates file.
@@ -117,10 +114,8 @@ class IntcorWriter(TopologyWriterBase):
                    "%-8s %-8s %-8s: %-8s %-8s %-8s:"
                    "%12.6f%12.4f%12.4f%12.4f%12.6f"),)
 
-    def __init__(self, filename, extended=True, resid=True, title=None, **kwargs):
+    def __init__(self, filename, extended=True, resid=True, title=None):
         self.filename = util.filename(filename, ext="ic")
-        super().__init__(self.filename, **kwargs)
-
         self.intcor = None
         self.extended = extended
         self.resid = resid

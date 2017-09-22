@@ -10,10 +10,10 @@ from __future__ import (
 )
 
 import MDAnalysis as mda
+from future.utils import native_str
+from numpy import testing
 
 from fluctmatch.models import enm
-from fluctmatch.models.selection import *
-
 from tests.datafiles import (
     NCSC,
 )
@@ -25,17 +25,31 @@ def test_enm_creation():
     cg_natoms = (
         aa_universe.select_atoms("all").n_atoms
     )
-    assert cg_universe.atoms.n_atoms == cg_natoms
-    assert cg_universe.atoms[0].name == "A001"
-    assert cg_universe.residues[0].resname == "A001"
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        cg_natoms,
+        err_msg=native_str("The number of beads don't match."),
+        verbose=True,
+    )
 
 
 def test_enm_names():
     cg_universe = enm.Enm(NCSC)
-    assert (cg_universe.atoms[0].name == "A001") & (cg_universe.residues[0].resname == "A001")
+    testing.assert_string_equal(
+        native_str(cg_universe.atoms[0].name),
+        native_str("A001"),
+    )
+    testing.assert_string_equal(
+        native_str(cg_universe.residues[0].resname),
+        native_str("A001"),
+    )
 
 
 def test_enm_positions():
     aa_universe = mda.Universe(NCSC)
     cg_universe = enm.Enm(NCSC)
-    assert np.allclose(aa_universe.atoms.positions, cg_universe.atoms.positions)
+    testing.assert_allclose(
+        cg_universe.atoms.positions,
+        aa_universe.atoms.positions,
+        err_msg=native_str("Coordinates don't match."),
+    )

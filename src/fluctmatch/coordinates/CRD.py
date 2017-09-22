@@ -34,21 +34,19 @@ from __future__ import (
     unicode_literals,
 )
 
-=from future.builtins import (
+import itertools
+import warnings
+
+import numpy as np
+from MDAnalysis.coordinates import CRD
+from MDAnalysis.exceptions import NoDataError
+from MDAnalysis.lib import util
+from future.builtins import (
     range,
     str,
     super,
     zip,
 )
-
-import itertools
-import warnings
-
-import numpy as np
-
-from MDAnalysis.coordinates import CRD
-from MDAnalysis.exceptions import NoDataError
-from MDAnalysis.lib import util
 
 
 class CRDWriter(CRD.CRDWriter):
@@ -88,7 +86,7 @@ class CRDWriter(CRD.CRDWriter):
 
     def __init__(self, filename, **kwargs):
         self.filename = util.filename(filename, ext="crd")
-        super().__init__(self.filename, **kwargs)
+        super().__init__(filename, **kwargs)
         self.crd = None
 
     def write(self, selection, frame=None):

@@ -9,22 +9,20 @@ from __future__ import (
     unicode_literals,
 )
 
-from future.utils import (
-    native_str,
-)
-from future.builtins import (
-    dict,
-    open,
-    super,
-)
-
 import time
 from os import environ
 
 import numpy as np
 import pandas as pd
-
 from MDAnalysis.lib import util
+from future.builtins import (
+    dict,
+    open,
+)
+from future.utils import (
+    native_str,
+)
+
 from . import base
 
 
@@ -71,8 +69,6 @@ class PSFWriter(base.TopologyWriterBase):
         """
 
         self.filename = util.filename(filename, ext="psf")
-        super().__init__(self.filename, **kwargs)
-
         self.extended = extended
         self.cmap = cmap
         self.cheq = cheq

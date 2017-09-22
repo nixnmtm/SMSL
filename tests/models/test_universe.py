@@ -9,7 +9,8 @@ from __future__ import (
     unicode_literals,
 )
 
-import pytest
+from future.utils import native_str
+from numpy import testing
 
 from fluctmatch.models import (
     protein,
@@ -26,8 +27,7 @@ from tests.datafiles import (
 
 
 def test_universe():
-    with pytest.raises(TypeError):
-        u = universe._Universe(PDB_prot)
+    testing.assert_raises(TypeError, universe._Universe, PDB_prot)
 
 
 def test_merge_creation():
@@ -37,7 +37,12 @@ def test_merge_creation():
 
     cg_universe = universe.Merge(prot, water, solvions)
     cg_natoms = prot.atoms.n_atoms + water.atoms.n_atoms + solvions.atoms.n_atoms
-    assert cg_natoms == cg_universe.atoms.n_atoms
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        cg_natoms,
+        err_msg=native_str("Number of sites don't match."),
+        verbose=True,
+    )
 
 
 def test_merge_positions():
@@ -50,10 +55,21 @@ def test_merge_positions():
         (prot.atoms.positions, water.atoms.positions, solvions.atoms.positions),
         axis=0
     )
-    assert np.allclose(positions, cg_universe.atoms.positions)
+    testing.assert_allclose(
+        cg_universe.atoms.positions,
+        positions,
+        err_msg=native_str("Coordinates don't match."),
+    )
 
 
 def test_rename_universe():
     cg_universe = protein.Ncsc(PDB_prot)
     universe.rename_universe(cg_universe)
-    assert (cg_universe.atoms[0].name == "A001") & (cg_universe.residues[0].resname == "A001")
+    testing.assert_string_equal(
+        native_str(cg_universe.atoms[0].name),
+        native_str("A001"),
+    )
+    testing.assert_string_equal(
+        native_str(cg_universe.residues[0].resname),
+        native_str("A001"),
+    )

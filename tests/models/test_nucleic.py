@@ -10,10 +10,11 @@ from __future__ import (
 )
 
 import MDAnalysis as mda
+from future.utils import native_str
+from numpy import testing
 
 from fluctmatch.models import nucleic
 from fluctmatch.models.selection import *
-
 from tests.datafiles import (
     PDB_dna,
     TPR,
@@ -30,7 +31,12 @@ def test_nucleic3_creation():
     )
     cg_universe = nucleic.Nucleic3(PDB_dna)
 
-    assert n_atoms == cg_universe.atoms.n_atoms
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        n_atoms,
+        err_msg=native_str("Number of sites do not match."),
+        verbose=True,
+    )
 
 
 def test_nucleic3_positions():
@@ -40,13 +46,22 @@ def test_nucleic3_positions():
         positions.append(_.atoms.select_atoms("nucleicphosphate").center_of_mass())
         positions.append(_.atoms.select_atoms("hnucleicsugar").center_of_mass())
         positions.append(_.atoms.select_atoms("hnucleicbase").center_of_mass())
-    assert np.allclose(np.array(positions), cg_universe.atoms.positions)
+    testing.assert_allclose(
+        np.array(positions),
+        cg_universe.atoms.positions,
+        err_msg=native_str("The coordinates do not match."),
+    )
 
 
 def test_nucleic3_trajectory():
     aa_universe = mda.Universe(TPR, XTC)
     cg_universe = nucleic.Nucleic3(TPR, XTC)
-    assert aa_universe.trajectory.n_frames == cg_universe.trajectory.n_frames
+    testing.assert_equal(
+        cg_universe.trajectory.n_frames,
+        aa_universe.trajectory.n_frames,
+        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        verbose=True,
+    )
 
 
 def test_nucleic4_creation():
@@ -59,7 +74,12 @@ def test_nucleic4_creation():
     )
     cg_universe = nucleic.Nucleic4(PDB_dna)
 
-    assert n_atoms == cg_universe.atoms.n_atoms
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        n_atoms,
+        err_msg=native_str("Number of sites do not match."),
+        verbose=True,
+    )
 
 
 def test_nucleic4_positions():
@@ -70,10 +90,19 @@ def test_nucleic4_positions():
         positions.append(_.atoms.select_atoms("sugarC4").center_of_mass())
         positions.append(_.atoms.select_atoms("sugarC3").center_of_mass())
         positions.append(_.atoms.select_atoms("nucleiccenter").center_of_mass())
-    assert np.allclose(np.array(positions), cg_universe.atoms.positions)
+    testing.assert_allclose(
+        np.array(positions),
+        cg_universe.atoms.positions,
+        err_msg=native_str("The coordinates do not match."),
+    )
 
 
 def test_nucleic4_trajectory():
     aa_universe = mda.Universe(TPR, XTC)
     cg_universe = nucleic.Nucleic4(TPR, XTC)
-    assert aa_universe.trajectory.n_frames == cg_universe.trajectory.n_frames
+    testing.assert_equal(
+        cg_universe.trajectory.n_frames,
+        aa_universe.trajectory.n_frames,
+        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        verbose=True,
+    )
