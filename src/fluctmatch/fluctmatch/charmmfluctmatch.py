@@ -163,13 +163,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Self consistent error information.
         self.error = pd.DataFrame(columns=self.error_hdr)
 
-    def _restart(self):
-        """Check whether to restart from a previous run."""
-        # Load target data
-        if not self.target:
-            try:
-
-
     def initialize(self, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
 
