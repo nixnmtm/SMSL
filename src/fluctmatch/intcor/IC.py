@@ -27,45 +27,54 @@ from ..topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 
 class IntcorReader(TopologyReaderBase):
+    """
+    Parameters
+    ----------
+    filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
+         name of the output file or a stream
+    """
     format = "IC"
     units = dict(time=None, length="Angstrom")
 
     fmt = dict(
         # fortran_format = "(I5,1X,4(I3,1X,A4),F9.4,3F8.2,F9.4)"
-        STD = "I5,1X,I3,1X,A4,I3,1X,A4,I3,1X,A4,I3,1X,A4,F9.4,3F8.2,F9.4",
+        STD = (
+            "I5,1X,I3,1X,A4,I3,1X,A4,I3,1X,A4,I3,1X,A4,F9.4,3F8.2,F9.4"
+        ),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
-        STD_EXT = ("I9,1X,I5,1X,A8,I5,1X,A8,I5,1X,A8,I5,1X,A8,F9.4,"
-                   "3F8.2,F9.4"),
+        STD_EXT = (
+            "I9,1X,I5,1X,A8,I5,1X,A8,I5,1X,A8,I5,1X,A8,F9.4,3F8.2,F9.4"
+        ),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        RESID = ("I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,"
-                 "1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"),
+        RESID = (
+            "I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"
+        ),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        RESID_EXT = ("I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,"
-                      "A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,F12.6,"
-                      "3F12.4,F12.6"),
+        RESID_EXT = (
+            "I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,F12.6,3F12.4,F12.6"
+        ),
     )
-    cols = np.asarray(["segidI", "resI", "I", "segidJ", "resJ", "J",
-                       "segidK", "resK", "K", "segidL", "resL", "L",
-                       "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"],)
+    cols = np.asarray([
+        "segidI", "resI", "I", "segidJ", "resJ", "J",
+        "segidK", "resK", "K", "segidL", "resL", "L",
+        "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
+    ])
 
     def __init__(self, filename):
-        """
-        Parameters
-        ----------
-        filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
-             name of the output file or a stream
-        """
-
         self.filename = util.filename(filename, ext="ic")
 
     def read(self):
         """Read the internal coordinates file.
 
-        :return: pandas.DataFrame
+        Returns
+        -------
+        :class:`~pandas.DataFrame`
+            An internal coordinates table.
         """
-        with open(self.filename, "rb") as icfile:
+        table = pd.DataFrame()
+        with open(self.filename, "r") as icfile:
             for line in icfile:
-                line = bytes_to_native_str(line).split("!")[0].strip()
+                line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
                     continue       # ignore TITLE and empty lines
                 line = np.fromiter(line.strip().split(), dtype=np.int)
@@ -79,17 +88,21 @@ class IntcorReader(TopologyReaderBase):
             if resid != line[1]:
                 raise IOError("A mismatch has occurred on determining the IC format.")
 
-            table = pd.DataFrame([TableParser.read(bytes_to_native_str(line)) for line in icfile], dtype=np.unicode)
+            table = pd.DataFrame([TableParser.read(line) for line in icfile], dtype=np.unicode)
             table = table[table != ":"].dropna(axis=1).apply(pd.to_numeric, errors="ignore")
             table.set_index(0, inplace=True)
             if nlines != table.shape[0]:
-                raise IOError(("A mismatch has occurred between the number "
-                               "of lines expected and the number of lines "
-                               "read. (%d != %d)") % (nlines, len(table)))
+                raise IOError(
+                    "A mismatch has occurred between the number ",
+                    "of lines expected and the number of lines ",
+                    "read. ({:d} != {:d})".format(nlines, len(table))
+                )
 
             if key == "STD":
-                idx = np.where((self.cols != "segidI") & (self.cols != "segidJ") &
-                               (self.cols != "segidK") & (self.cols != "segidL"))
+                idx = np.where(
+                    (self.cols != "segidI") & (self.cols != "segidJ") &
+                    (self.cols != "segidK") & (self.cols != "segidL")
+                )
                 columns = self.cols[idx]
             else:
                 columns = self.cols
@@ -98,38 +111,70 @@ class IntcorReader(TopologyReaderBase):
 
 
 class IntcorWriter(TopologyWriterBase):
+    """Write a CHARMM-formatted internal coordinate file.
+
+    Parameters
+    ----------
+    filename : str
+        Filename for output.
+    n_atoms : int, optional
+        The number of atoms in the output trajectory.
+    extended : bool, optional
+        Format with wider columns than the standard column width.
+    resid : bool, optional
+        Include segment names within each atom definition.
+    title : str or list of str, optional
+        A header section written at the beginning of the stream file. If no title
+        is given, a default title will be written.
+    """
     format = "IC"
     units = {"time": "picosecond", "length": "Angstrom"}
 
     fmt = dict(
         # fortran_format = "(I5,1X,4(I3,1X,A4),F9.4,3F8.2,F9.4)"
-        STD="%5d %3s %-4s%3s %-4%3s %-4%3s %-4%9.4f%8.2f%8.2f%8.2f%9.4f",
+        STD=(
+            "%5d %3s %-4s%3s %-4%3s %-4%3s %-4%9.4f%8.2f%8.2f%8.2f%9.4f"
+        ),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
-        STD_EXT="%9d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f",
+        STD_EXT=(
+            "%9d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f"
+        ),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        RESID=("%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s:"
-               " %-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"),
+        RESID=(
+            "%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"
+        ),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        RESID_EXT=("%10d %-8s %-8s %-8s: %-8s %-8s %-8s: "
-                   "%-8s %-8s %-8s: %-8s %-8s %-8s:"
-                   "%12.6f%12.4f%12.4f%12.4f%12.6f"),)
+        RESID_EXT=(
+            "%10d %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
+        ),
+    )
 
-    def __init__(self, filename, extended=True, resid=True, title=None):
+    def __init__(self, filename, n_atoms=None, extended=True, resid=True, title=None):
         self.filename = util.filename(filename, ext="ic")
+        self.n_atoms = n_atoms
         self.intcor = None
         self.extended = extended
         self.resid = resid
         self.key = "RESID" if self.resid else "STD"
         if self.extended:
             self.key += "_EXT"
-        self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
-                      "* User: {}".format(environ["USER"]), "*") if title is None else title
+        if title is None:
+            self.title = [
+                "* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
+                "* User: {}".format(environ["USER"]),
+            ]
+        elif issubclass(type(title), str) or issubclass(type(title), unicode):
+            self.title = (title, )
+        else:
+            self.title = title
 
     def write(self, table):
-        # type: (object) -> object
         """Write an internal coordinates table.
 
-        :param table: table of internal coordinates
+        Parameters
+        ----------
+        table : :class:`~pandas.DataFrame`
+            A CHARMM-compliant internal coordinate table.
         """
         ictable = table.copy(deep=True)
         rescol = ["resI", "resJ", "resK", "resL", ]

@@ -9,20 +9,14 @@ from __future__ import (
     unicode_literals,
 )
 
-from future.utils import (
-    raise_with_traceback,
-    viewitems,
-    with_metaclass,
-)
-from future.builtins import (
-    super,
-)
-
 import itertools
 
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
+from future.utils import (
+    viewitems,
+)
 
 from .selection import *
 
@@ -39,9 +33,21 @@ class _Trajectory(base.ReaderBase):
 
     def __init__(self, universe, mapping, n_atoms=1, convert_units=True, com=True, **kwargs):
         """
-        Arguments:
-            universe - the atomistic Universe you start with
-            mapping - dictionary of selections
+
+        Parameters
+        ----------
+        universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+            A collection of atoms in a universe or AtomGroup.
+        mapping : dict
+            Definitions of the beads.
+        n_atoms : int, optional
+            Number of atoms in the coarse-grain system.
+        convert_units : bool, optional
+            units are converted to the MDAnalysis base format; None selects the value of MDAnalysis.core.flags [‘convert_lengths’].
+        com : bool, optional
+            Calculate center of mass or center of geometry per bead definition.
+        kwargs : dict, optional
+            Additonal arguments for use within the MDAnalysis coordinate reader.
         """
         super().__init__(universe.trajectory.filename, convert_units=convert_units, **kwargs)
         self._u = universe
@@ -67,7 +73,6 @@ class _Trajectory(base.ReaderBase):
         self._fill_ts(self._t.ts)
 
     def _read_next_timestep(self, ts=None):
-        """Return the next timestep"""
         # Get the next TS from the atom trajectory
         at_ts = self._t.next()
 
@@ -76,7 +81,6 @@ class _Trajectory(base.ReaderBase):
         return self.ts
 
     def _read_frame(self, frame):
-        """Return a single frame"""
         at_ts = self._t[frame]
 
         self._fill_ts(at_ts)
@@ -86,7 +90,10 @@ class _Trajectory(base.ReaderBase):
     def _fill_ts(self, other_ts):
         """Rip information from atomistic TS into our ts
 
-        Make positions based on COM of our beads.
+        Parameters
+        ----------
+        other_ts : :class:`~MDAnalysis.coordinates.base.Timestep`
+            Another timestep
         """
         self.ts.frame = other_ts.frame
         self.ts._unitcell = other_ts._unitcell
@@ -142,4 +149,6 @@ class _Trajectory(base.ReaderBase):
         return "<CG Trajectory doing {:d} beads >".format(self.n_atoms)
 
     def close(self):
+        """Close the trajectory file.
+        """
         self._t.close()

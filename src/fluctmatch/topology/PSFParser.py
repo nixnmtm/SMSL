@@ -9,21 +9,317 @@ from __future__ import (
     unicode_literals,
 )
 
+import functools
+import logging
 import time
+from math import ceil
 from os import environ
 
 import numpy as np
 import pandas as pd
+from MDAnalysis.core.topology import Topology
+from MDAnalysis.core.topologyattrs import (
+    Atomids,
+    Atomnames,
+    Atomtypes,
+    Masses,
+    Charges,
+    Resids,
+    Resnums,
+    Resnames,
+    Segids,
+    Bonds,
+    Angles,
+    Dihedrals,
+    Impropers
+)
 from MDAnalysis.lib import util
+from MDAnalysis.lib.util import openany
+from MDAnalysis.topology.base import TopologyReaderBase, change_squash
 from future.builtins import (
     dict,
     open,
+    range,
 )
 from future.utils import (
     native_str,
 )
 
 from . import base
+
+logger = logging.getLogger("MDAnalysis.topology.PSF")
+
+
+# Changed the segid squash_by to change_squash to prevent segment ID sorting.
+class PSFParser(TopologyReaderBase):
+    """Read topology information from a CHARMM/NAMD/XPLOR PSF_ file.
+
+    Creates a Topology with the following Attributes:
+    - ids
+    - names
+    - types
+    - masses
+    - charges
+    - resids
+    - resnames
+    - segids
+    - bonds
+    - angles
+    - dihedrals
+    - impropers
+
+    .. _PSF: http://www.charmm.org/documentation/c35b1/struct.html
+    """
+    format = 'PSF'
+
+    def parse(self):
+        """Parse PSF file into Topology
+
+        Returns
+        -------
+        MDAnalysis *Topology* object
+        """
+        # Open and check psf validity
+        with openany(self.filename, 'r') as psffile:
+            header = next(psffile)
+            if not header.startswith("PSF"):
+                err = ("{0} is not valid PSF file (header = {1})"
+                       "".format(self.filename, header))
+                logger.error(err)
+                raise ValueError(err)
+            header_flags = header[3:].split()
+
+            if "NAMD" in header_flags:
+                self._format = "NAMD"        # NAMD/VMD
+            elif "EXT" in header_flags:
+                self._format = "EXTENDED"    # CHARMM
+            else:
+                self._format = "STANDARD"    # CHARMM
+
+            next(psffile)
+            title = next(psffile).split()
+            if not (title[1] == "!NTITLE"):
+                err = "{0} is not a valid PSF file".format(psffile.name)
+                logger.error(err)
+                raise ValueError(err)
+            # psfremarks = [psffile.next() for i in range(int(title[0]))]
+            for _ in range(int(title[0])):
+                next(psffile)
+            logger.debug("PSF file {0}: format {1}"
+                         "".format(psffile.name, self._format))
+
+            # Atoms first and mandatory
+            top = self._parse_sec(
+                psffile, ('NATOM', 1, 1, self._parseatoms))
+            # Then possibly other sections
+            sections = (
+                #("atoms", ("NATOM", 1, 1, self._parseatoms)),
+                (Bonds, ("NBOND", 2, 4, self._parsesection)),
+                (Angles, ("NTHETA", 3, 3, self._parsesection)),
+                (Dihedrals, ("NPHI", 4, 2, self._parsesection)),
+                (Impropers, ("NIMPHI", 4, 2, self._parsesection)),
+                #("donors", ("NDON", 2, 4, self._parsesection)),
+                #("acceptors", ("NACC", 2, 4, self._parsesection))
+            )
+
+            try:
+                for attr, info in sections:
+                    next(psffile)
+                    top.add_TopologyAttr(
+                        attr(self._parse_sec(psffile, info)))
+            except StopIteration:
+                # Reached the end of the file before we expected
+                pass
+
+        return top
+
+    def _parse_sec(self, psffile, section_info):
+        """Parse a single section of the PSF
+
+        Returns
+        -------
+        A list of Attributes from this section
+        """
+        desc, atoms_per, per_line, parsefunc = section_info
+        header = next(psffile)
+        while header.strip() == "":
+            header = next(psffile)
+        header = header.split()
+        # Get the number
+        num = float(header[0])
+        sect_type = header[1].strip('!:')
+        # Make sure the section type matches the desc
+        if not sect_type == desc:
+            err = ("Expected section {0} but found {1}"
+                   "".format(desc, sect_type))
+            logger.error(err)
+            raise ValueError(err)
+        # Now figure out how many lines to read
+        numlines = int(ceil(num/per_line))
+
+        psffile_next = functools.partial(next, psffile)
+        return parsefunc(psffile_next, atoms_per, numlines)
+
+    def _parseatoms(self, lines, atoms_per, numlines):
+        """Parses atom section in a Charmm PSF file.
+
+        Normal (standard) and extended (EXT) PSF format are
+        supported. CHEQ is supported in the sense that CHEQ data is simply
+        ignored.
+
+
+        CHARMM Format from ``source/psffres.src``:
+
+        CHEQ::
+          II,LSEGID,LRESID,LRES,TYPE(I),IAC(I),CG(I),AMASS(I),IMOVE(I),ECH(I),EHA(I)
+
+          standard format:
+            (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2G14.6,I8,2G14.6)
+            (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2G14.6,I8,2G14.6)  XPLOR
+          expanded format EXT:
+            (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6)
+            (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8,2G14.6) XPLOR
+
+        no CHEQ::
+          II,LSEGID,LRESID,LRES,TYPE(I),IAC(I),CG(I),AMASS(I),IMOVE(I)
+
+         standard format:
+            (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2G14.6,I8)
+            (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2G14.6,I8)  XPLOR
+          expanded format EXT:
+            (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8)
+            (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8) XPLOR
+
+        NAMD PSF
+
+        space separated, see release notes for VMD 1.9.1, psfplugin at
+        http://www.ks.uiuc.edu/Research/vmd/current/devel.html :
+
+        psfplugin: Added more logic to the PSF plugin to determine cases where the
+        CHARMM "EXTended" PSF format cannot accomodate long atom types, and we add
+        a "NAMD" keyword to the PSF file flags line at the top of the file. Upon
+        reading, if we detect the "NAMD" flag there, we know that it is possible
+        to parse the file correctly using a simple space-delimited scanf() format
+        string, and we use that strategy rather than holding to the inflexible
+        column-based fields that are a necessity for compatibility with CHARMM,
+        CNS, X-PLOR, and other formats. NAMD and the psfgen plugin already assume
+        this sort of space-delimited formatting, but that's because they aren't
+        expected to parse the PSF variants associated with the other programs. For
+        the VMD PSF plugin, having the "NAMD" tag in the flags line makes it
+        absolutely clear that we're dealing with a NAMD-specific file so we can
+        take the same approach.
+
+        """
+        # how to partition the line into the individual atom components
+        atom_parsers = {
+            'STANDARD': lambda l:
+            (l[:8], l[9:13].strip() or "SYSTEM", l[14:18],
+             l[19:23].strip(), l[24:28].strip(),
+             l[29:33].strip(), l[34:48], l[48:62]),
+            # l[62:70], l[70:84], l[84:98] ignore IMOVE, ECH and EHA,
+            'EXTENDED': lambda l:
+            (l[:10], l[11:19].strip() or "SYSTEM", l[20:28],
+             l[29:37].strip(), l[38:46].strip(),
+             l[47:51].strip(), l[52:66], l[66:70]),
+            # l[70:78],  l[78:84], l[84:98] ignore IMOVE, ECH and EHA,
+            'NAMD': lambda l: l.split()[:8],
+        }
+        atom_parser = atom_parsers[self._format]
+        # once partitioned, assigned each component the correct type
+        set_type = lambda x: (int(x[0]) - 1, x[1] or "SYSTEM", int(x[2]), x[3],
+                              x[4], x[5], float(x[6]), float(x[7]))
+
+        # Oli: I don't think that this is the correct OUTPUT format:
+        #   psf_atom_format = "   %5d %4s %4d %4s %-4s %-4s %10.6f      %7.4f%s\n"
+        # It should be rather something like:
+        #   psf_ATOM_format = '%(iatom)8d %(segid)4s %(resid)-4d %(resname)4s '+\
+        #                     '%(name)-4s %(type)4s %(charge)-14.6f%(mass)-14.4f%(imove)8d\n'
+
+        # source/psfres.src (CHEQ and now can be used for CHEQ EXTended), see comments above
+        #   II,LSEGID,LRESID,LRES,TYPE(I),IAC(I),CG(I),AMASS(I),IMOVE(I),ECH(I),EHA(I)
+        #  (I8,1X,A4, 1X,A4,  1X,A4,  1X,A4,  1X,I4,  1X,2G14.6,     I8,   2G14.6)
+        #   0:8   9:13   14:18   19:23   24:28   29:33   34:48 48:62 62:70 70:84 84:98
+
+        # Allocate arrays
+        atomids = np.zeros(numlines, dtype=np.int32)
+        segids = np.zeros(numlines, dtype=object)
+        resids = np.zeros(numlines, dtype=np.int32)
+        resnames = np.zeros(numlines, dtype=object)
+        atomnames = np.zeros(numlines, dtype=object)
+        atomtypes = np.zeros(numlines, dtype=object)
+        charges = np.zeros(numlines, dtype=np.float32)
+        masses = np.zeros(numlines, dtype=np.float64)
+
+        for i in range(numlines):
+            try:
+                line = lines()
+            except StopIteration:
+                err = ("{0} is not valid PSF file"
+                       "".format(self.filename))
+                logger.error(err)
+                raise ValueError(err)
+            try:
+                vals = set_type(atom_parser(line))
+            except ValueError:
+                # last ditch attempt: this *might* be a NAMD/VMD
+                # space-separated "PSF" file from VMD version < 1.9.1
+                atom_parser = atom_parsers['NAMD']
+                vals = set_type(atom_parser(line))
+                logger.warn("Guessing that this is actually a"
+                            " NAMD-type PSF file..."
+                            " continuing with fingers crossed!")
+                logger.debug("First NAMD-type line: {0}: {1}"
+                             "".format(i, line.rstrip()))
+
+            atomids[i] = vals[0]
+            segids[i] = vals[1]
+            resids[i] = vals[2]
+            resnames[i] = vals[3]
+            atomnames[i] = vals[4]
+            atomtypes[i] = vals[5]
+            charges[i] = vals[6]
+            masses[i] = vals[7]
+
+        # Atom
+        atomids = Atomids(atomids)
+        atomnames = Atomnames(atomnames)
+        atomtypes = Atomtypes(atomtypes)
+        charges = Charges(charges)
+        masses = Masses(masses)
+
+        # Residue
+        # resids, resnames
+        residx, (new_resids, new_resnames, perres_segids) = change_squash(
+            (resids, resnames, segids),
+            (resids, resnames, segids))
+        # transform from atom:Rid to atom:Rix
+        residueids = Resids(new_resids)
+        residuenums = Resnums(new_resids.copy())
+        residuenames = Resnames(new_resnames)
+
+        # Segment
+        segidx, (perseg_segids,) = change_squash((perres_segids,), (perres_segids,))
+        segids = Segids(perseg_segids)
+
+        top = Topology(len(atomids), len(new_resids), len(segids),
+                       attrs=[atomids, atomnames, atomtypes,
+                              charges, masses,
+                              residueids, residuenums, residuenames,
+                              segids],
+                       atom_resindex=residx,
+                       residue_segindex=segidx)
+
+        return top
+
+    def _parsesection(self, lines, atoms_per, numlines):
+        section = []
+
+        for i in range(numlines):
+            # Subtract 1 from each number to ensure zero-indexing for the atoms
+            fields = np.int64(lines().split()) - 1
+            for j in range(0, len(fields), atoms_per):
+                section.append(tuple(fields[j:j+atoms_per]))
+        return section
 
 
 class PSFWriter(base.TopologyWriterBase):
@@ -42,36 +338,45 @@ class PSFWriter(base.TopologyWriterBase):
 
     .. versionchanged:: 3.0.0
        Uses numpy arrays for bond, angle, dihedral, and improper outputs.
+
+    Parameters
+    ----------
+    filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
+         name of the output file or a stream
+    n_atoms : int, optional
+        The number of atoms in the output trajectory.
+    extended : bool
+         extended format
+    cmap : bool
+         include CMAP section
+    cheq : bool
+         include charge equilibration
+    title : str
+         title lines at beginning of the file
+     charmm36
+        Formatted for CHARMM36 (type column = 6s instead of 4s).
     """
     format = "PSF"
     units = dict(time=None, length=None)
-    _fmt = dict(STD="%8d %-8s %-8d %-8s %-8s %4d %14.6f%14.6f%8d",
-                STD_XPLOR="{%8d %-8s %-8d %-8s %-8s %-4s %14.6f%14.6f%8d",
-                STD_XPLOR_C36="%8d %-8s %-8d %-8s %-8s %-6s %14.6f%14.6f%8d",
-                EXT="%10d %-8s %-8d %-8s %-8s %4d %14.6f%14.6f%8d",
-                EXT_XPLOR="%10d %-8s %-8d %-8s %-8s %-4s %14.6f%14.6f%8d",
-                EXT_XPLOR_C36="%10d %-8s %-8d %-8s %-8s %-6s %14.6f%14.6f%8d")
+    _fmt = dict(
+        STD="%8d %-8s %-8d %-8s %-8s %4d %14.6f%14.6f%8d",
+        STD_XPLOR="{%8d %-8s %-8d %-8s %-8s %-4s %14.6f%14.6f%8d",
+        STD_XPLOR_C36="%8d %-8s %-8d %-8s %-8s %-6s %14.6f%14.6f%8d",
+        EXT="%10d %-8s %-8d %-8s %-8s %4d %14.6f%14.6f%8d",
+        EXT_XPLOR="%10d %-8s %-8d %-8s %-8s %-4s %14.6f%14.6f%8d",
+        EXT_XPLOR_C36="%10d %-8s %-8d %-8s %-8s %-6s %14.6f%14.6f%8d"
+    )
 
-    def __init__(self, filename, extended=True, cmap=True, cheq=True, title=None, **kwargs):
-        """
-        Parameters
-        ----------
-        filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
-             name of the output file or a stream
-        extended : bool
-             extended format
-        cmap : bool
-             include CMAP section
-        cheq : bool
-             include charge equilibration
-        title : str
-             title lines at beginning of the file
-        """
-
+    def __init__(self, filename, n_atoms=None, extended=True, cmap=True, cheq=True, title=None, **kwargs):
         self.filename = util.filename(filename, ext="psf")
+        self.n_atoms = n_atoms
         self.extended = extended
         self.cmap = cmap
         self.cheq = cheq
+        self.universe = None
+        self.xplor = False
+        self._fmtkey = "EXT"
+        self.charmm36 = kwargs.get("charmm36", False)
         self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
                       "* User: {}".format(environ["USER"])) if title is None else title
 
@@ -86,16 +391,20 @@ class PSFWriter(base.TopologyWriterBase):
                          ("acceptors", "NACC: acceptors", 8))
 
     def write(self, universe):
-        # type: (object) -> object
         """Write universe to PSF format.
 
         Parameters
         ----------
-        universe : Universe
-             universe to be written
-
+        universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+            A collection of atoms in a universe or atomgroup with bond definitions.
         """
         self.universe = universe
+        if self.n_atoms is not None and self.n_atoms != universe.atoms.n_atoms:
+            raise IOError(
+                "The number of atoms from object initialization do not match the number of atoms "
+                "from the universe [{:d} != {:d}]".format(self.n_atoms, universe.atoms.n_atoms)
+            )
+
         self.xplor = not np.issubdtype(universe.atoms.types.dtype, np.int)
         header = "PSF"
         if self.extended:
@@ -106,12 +415,12 @@ class PSFWriter(base.TopologyWriterBase):
             header += " CHEQ"
         if self.xplor:
             header += " XPLOR"
+        header += "\n"
 
         self._fmtkey = "EXT" if self.extended else "STD"
         self._fmtkey += "_XPLOR" if self.xplor else ""
-        if not np.issubdtype(universe.atoms.types.dtype, np.int):
+        if self.charmm36:
             self._fmtkey += "_C36" if np.any(np.where([len(_) for _ in universe.atoms.types.astype(np.unicode)])[0] > 4) else ""
-
 
         with open(self.filename, "wb") as psffile:
             psffile.write((header + "\n").encode())
@@ -123,7 +432,6 @@ class PSFWriter(base.TopologyWriterBase):
             for section in self.sections:
                 self._write_sec(psffile, section)
             self._write_other(psffile)
-
 
     def _write_atoms(self, psffile):
         """Write atom section in a Charmm PSF file.
@@ -169,6 +477,9 @@ class PSFWriter(base.TopologyWriterBase):
     def _write_sec(self, psffile, section_info):
         attr, header, n_perline = section_info
         if not hasattr(self.universe, attr):
+            psffile.write((self.sect_hdr.format(0, header) + "\n").encode())
+            return
+        if len(getattr(self.universe, attr).to_indices()) < 2:
             psffile.write((self.sect_hdr.format(0, header) + "\n").encode())
             return
 

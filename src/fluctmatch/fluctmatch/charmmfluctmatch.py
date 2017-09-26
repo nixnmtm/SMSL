@@ -16,7 +16,6 @@ from os import path
 import MDAnalysis as mda
 import numpy as np
 import pandas as pd
-from MDAnalysis.coordinates import memory
 from future.builtins import (
     dict,
     open,
@@ -28,10 +27,8 @@ from future.utils import (
 )
 from scipy import constants
 
-from fluctmatch.intcor import IC
 from fluctmatch.intcor import utils as icutils
 from fluctmatch.models import enm
-from fluctmatch.parameter import PRM
 from fluctmatch.parameter import utils as prmutils
 from . import base as fmbase
 from . import utils as fmutils
@@ -45,7 +42,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
     """Fluctuation matching using CHARMM."""
     charmm39 = False
     dynamic_params = dict()
-    bond_def = ("I", "J")
+    bond_def = ["I", "J"]
     error_hdr = ("step", "r.m.s.d.", "Kb_err", "b0_err")
 
     def __init__(self, *args, **kwargs):
@@ -140,22 +137,22 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             init_fluct_ic=path.join(self.outdir, "init.fluct.ic"),
             avg_ic=path.join(self.outdir, "avg.ic"),
             fluct_ic=path.join(self.outdir, "fluct.ic"),
-            dynamic_prm=path.join(self.outdir, "fluctmatch.dist.prm"),
-            fixed_prm=path.join(self.outdir, "fluctmatch.prm"),
-            psf_file=path.join(self.outdir, "fluctmatch.psf"),
-            xplor_psf_file=path.join(self.outdir, "fluctmatch.xplor.psf"),
-            crd_file=path.join(self.outdir, "fluctmatch.crd"),
-            stream_file=path.join(self.outdir, "fluctmatch.stream"),
-            topology_file=path.join(self.outdir, "fluctmatch.rtf"),
-            nma_crd=path.join(self.outdir, "fluctmatch.vib.crd"),
-            nma_vib=path.join(self.outdir, "fluctmatch.vib"),
-            charmm_input=path.join(self.outdir, "fluctmatch.inp"),
-            charmm_log=path.join(self.outdir, "fluctmatch.log"),
+            dynamic_prm=path.join(self.outdir, "{}.dist.prm".format(self.prefix)),
+            fixed_prm=path.join(self.outdir, ".".join((self.prefix, "prm"))),
+            psf_file=path.join(self.outdir, ".".join((self.prefix, "psf"))),
+            xplor_psf_file=path.join(self.outdir, ".".join((self.prefix, "xplor", "psf"))),
+            crd_file=path.join(self.outdir, ".".join((self.prefix, "crd"))),
+            stream_file=path.join(self.outdir, ".".join((self.prefix, "stream"))),
+            topology_file=path.join(self.outdir, ".".join((self.prefix, "rtf"))),
+            nma_crd=path.join(self.outdir, ".".join((self.prefix, "vib", "crd"))),
+            nma_vib=path.join(self.outdir, ".".join((self.prefix, "vib"))),
+            charmm_input=path.join(self.outdir, ".".join((self.prefix, "inp"))),
+            charmm_log=path.join(self.outdir, ".".join((self.prefix, "log"))),
             error_data=path.join(self.outdir, "error.dat"),
         )
 
         # Boltzmann constant
-        self.BOLTZ = self._temperature * (constants.k * constants.N_A / (constants.calorie * constants.kilo))
+        self.BOLTZ = self.temperature * (constants.k * constants.N_A / (constants.calorie * constants.kilo))
 
         # Bond factor mol^2-Ang./kcal^2
         self.KFACTOR = 0.02
@@ -166,71 +163,78 @@ class CharmmFluctMatch(fmbase.FluctMatch):
     def initialize(self, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
 
-        :param restart: reinitialize tye object
+        Parameters
+        ----------
+        restart : bool, optional
+            Reinitialize the object by reading files instead of doing initial calculations.
         """
         if not restart:
             # Initialize variables and load the universe.
             title = self.kwargs.get("title")
             extended = self.kwargs.get("extended", True)
+            resid = self.kwargs.get("resid", True)
             nonbonded = self.kwargs.get("nonbonded", False)
-            cheq = self.kwargs.get("cheq", True)
-            cmap = self.kwargs.get("cmap", True)
-            charmm39 = self.kwargs.get("charmm39", True)
             charmm36 = self.kwargs.get("charmm36", True)
             universe = enm.Enm(*self.args, **self.kwargs)
 
-            # Write required CHARMM input files.
-            with mda.Writer(self.filenames["topology_file"], title=title, charmm39=charmm39) as rtf:
-                rtf.write(universe)
-            with mda.Writer(self.filenames["stream_file"]) as stream:
-                stream.write(universe)
-            with mda.Writer(self.filenames["psf_file"], title=title, extended=extended, cheq=cheq, cmap=cmap) as psf:
-                psf.write(universe)
-
-            # Calculate the average coordinates, average bond lengths, and fluctuations of bond lengths from the trajectory.
-            positions = fmutils.average_structure(*self.args, **self.kwargs)
-            avg_universe = mda.Universe(
-                self.filenames["psf_file"],
-                [positions, ],
-                format=memory.MemoryReader, order="fac"
-            )
-            with mda.Writer(self.filenames["crd_file"], title=title, dt=1.0) as crd:
-                crd.write(avg_universe.atoms)
-
             # Create and write initial internal coordinate files.
-            avg_bonds = fmutils.average_bonds(*args, **self.kwargs).set_index(self.bond_def)
-            std_bonds = fmutils.bond_fluctuation(*args, **self.kwargs).set_index(self.bond_def)
+            avg_bonds = fmutils.bond_stats(universe, func="mean")
             avg_table = icutils.create_empty_table(universe.atoms)
             hdr = avg_table.columns
             avg_table.set_index(self.bond_def, inplace=True)
-            avg_table["r_IJ"] = avg_bonds["r_IJ"]
+            avg_table.drop(["r_IJ", ], axis=1, inplace=True)
+            avg_table = pd.concat([avg_table, avg_bonds["r_IJ"]], axis=1)
             avg_table = avg_table.reset_index()[hdr]
-            fluct_table = icutils.create_empty_table(universe.atoms)
-            fluct_table["r_IJ"] = std_bonds["r_IJ"]
-            fluct_table = fluct_table.reset_index()[hdr]
-            with mda.Writer(self.filenames["init_avg_ic"], title=title, extended=extended, resid=resid) as table:
+            print("Writing {}...".format(self.filenames["init_avg_ic"]))
+            with mda.Writer(
+                self.filenames["init_avg_ic"],
+                title=title,
+                extended=extended,
+                resid=resid
+            ) as table:
                 table.write(avg_table)
-            with mda.Writer(self.filenames["init_fluct_ic"], title=title, extended=extended, resid=resid) as table:
+
+            std_bonds = fmutils.bond_stats(universe, func="std")
+            fluct_table = icutils.create_empty_table(universe.atoms)
+            fluct_table.set_index(self.bond_def, inplace=True)
+            fluct_table.drop(["r_IJ", ], axis=1, inplace=True)
+            fluct_table = pd.concat([fluct_table, std_bonds["r_IJ"]], axis=1)
+            fluct_table = fluct_table.reset_index()[hdr]
+            print("Writing {}...".format(self.filenames["init_fluct_ic"]))
+            with mda.Writer(
+                self.filenames["init_fluct_ic"],
+                title=title,
+                extended=extended,
+                resid=resid
+            ) as table:
                 table.write(fluct_table)
 
             # Write the parameter files.
             if self.charmm39 and not charmm36:
                 charmm36 = True
 
-            target = pd.concat([std_bonds, avg_bonds], axis=1)
+            target = pd.concat([std_bonds, avg_bonds], axis=1).reset_index()
             self.target.update(prmutils.create_empty_parameters(universe))
             target.columns = self.target["BONDS"].columns
-            self.target["BONDS"] = target
+            self.target["BONDS"] = target.copy(deep=True)
             self.parameters.update(self.target)
             self.parameters["BONDS"]["Kb"] = self.BOLTZ / np.square(self.parameters["BONDS"]["Kb"])
-            with mda.Writer(self.filenames["fixed_prm"], title=title, charmm36=charmm36, nonbonded=nonbonded) as prm:
+            print("Writing {}...".format(self.filenames["fixed_prm"]))
+            with mda.Writer(
+                self.filenames["fixed_prm"],
+                title=title,
+                charmm36=charmm36,
+                nonbonded=nonbonded
+            ) as prm:
                 prm.write(self.parameters)
 
-            # Write an XPLOR version of the PSF
-            universe.atoms.types = universe.atoms.names
-            with mda.Writer(self.filenames["xplor_psf_file"], title=title, extended=extended, cheq=cheq,
-                            cmap=cmap) as psf:
-                psf.write(universe)
+            # Write additional CHARMM files.
+            fmutils.write_charmm_files(
+                universe,
+                outdir=self.outdir,
+                prefix=self.prefix,
+                write_traj=False,
+                **self.kwargs)
         else:
             try:
                 # Read the parameter files.
@@ -242,7 +246,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 # Read the initial internal coordinate files.
                 with IC.IntcorReader(self.filenames["init_avg_ic"]) as init_avg:
                     avg_table = init_avg.read().set_index(self.bond_def)["r_IJ"]
-                with IC.IntcorReader(self.filenames["init_fluct_ic"]) as init_fluct
+                with IC.IntcorReader(self.filenames["init_fluct_ic"]) as init_fluct:
                     fluct_table = init_fluct.read().set_index(self.bond_def)["r_IJ"]
                 table = pd.concat([fluct_table, avg_table], axis=1)
 
@@ -256,17 +260,21 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 raise_with_traceback((IOError("Some files are missing. Unable to restart.")))
 
     def run(self, nma_exec=None, tol=1.e-4, n_cycles=250):
-        """Perform a self-consistent fluctuation matching
+        """Perform a self-consistent fluctuation matching.
 
-        :param nma_exec: executable file for normal mode analysis
-        :param tol: error tolerance
-        :param n_cycles: number of fluctuation matching cycles
+        Parameters
+        ----------
+        nma_exec : str
+            executable file for normal mode analysis
+        tol : float
+            error tolerance
+        n_cycles : int
+            number of fluctuation matching cycles
         """
         try:
             charmm_exec = os.environ["CHARMMEXEC"] if nma_exec is None else nma_exec
         except KeyError:
             raise_with_traceback(OSError("Please set CHARMMEXEC with the location of your CHARMM executable file."))
-
 
         # Read the parameters
         if not self.parameters:
@@ -275,9 +283,12 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             except IOError:
                 raise_with_traceback((IOError("Some files are missing. Unable to restart.")))
 
+        with mda.Universe(self.filenames["xplor_psf_file"], self.filenames["crd_file"]).trajectory as trj:
+            n_atoms = trj.n_atoms
+
         # Write CHARMM input file.
         if not path.exists(self.filenames["charmm_inp"]):
-            with open(self.filenames["charmm_inp"], "wt") as charmm_file:
+            with open(self.filenames["charmm_inp"], "wt") as charmm_file:   # type: Optional[IO[str]]
                 charmm_inp = (
                     charmm36_nma.nma.format(temperature=self.temperature, **self.filenames)
                     if self.charmm39
@@ -320,7 +331,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             vib_error.columns = self.error_hdr[2:]
             error[header[2:]] - vib_error.copy()
 
-
             # Calculate the new force constant.
             optimized = 1. / np.square(self.target["BONDS"]["Kb"])
             optimized -= 1. / np.square(vib_ic["Kb"])
@@ -335,12 +345,18 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             self.dynamic_params["BONDS"] = vib_ic.copy(deep=True)
             self.parameters["BONDS"].reset_index(inplace=True)
             self.dynamic_params["BONDS"].reset_index(inplace=True)
-            with mda.Writer(self.filenames["fixed_prm"]) as prm:
+            with mda.Writer(
+                self.filenames["fixed_prm"],
+                n_atoms=n_atoms,
+            ) as prm:
                 prm.write(self.parameters)
-            with mda.Writer(self.filenames["dynamic_prm"]) as prm:
+            with mda.Writer(
+                self.filenames["dynamic_prm"],
+                n_atoms=n_atoms,
+            ) as prm:
                 prm.write(self.dynamic_params)
 
             # Update the error values.
-            with open(self.filenames["error_data"], "a") as error_file
+            with open(self.filenames["error_data"], "a") as error_file:
                 np.savetxt(error_file, self.error, fmt=native_str("%10d%10.6f%10.6f%10.6f"))
             self.error["step"] += 1

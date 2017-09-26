@@ -50,10 +50,11 @@ from future.builtins import (
 
 
 class CRDWriter(CRD.CRDWriter):
-    """CRD writer that implements the CHARMM CRD coordinate format.
+    """CRD writer that implements the CHARMM CRD EXT coordinate format.
 
-    It automatically writes the CHARMM EXT extended format if there
-    are more than 99,999 atoms.
+    This class supercedes the original class provided by MDAnalysis by
+    writing only the EXT format regardless of the number of atoms in the
+    universe.
 
     Requires the following attributes:
     - resids
@@ -85,6 +86,12 @@ class CRDWriter(CRD.CRDWriter):
     }
 
     def __init__(self, filename, **kwargs):
+        """
+        Parameters
+        ----------
+        filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
+             name of the output file or a stream
+        """
         self.filename = util.filename(filename, ext="crd")
         super().__init__(filename, **kwargs)
         self.crd = None

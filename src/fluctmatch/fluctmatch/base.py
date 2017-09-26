@@ -96,6 +96,7 @@ class FluctMatch(with_metaclass(abc.ABCMeta, object)):
             Maximum distance to consider for bond lengths.
         """
         self.outdir = kwargs.get("outdir", os.curdir)
+        self.prefix = kwargs.get("prefix", "fluctmatch")
         self.temperature = kwargs.get("temperature", 300.0)
         self.args = args
         self.kwargs = kwargs
@@ -104,26 +105,24 @@ class FluctMatch(with_metaclass(abc.ABCMeta, object)):
     def initialize(self, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
 
-        :param restart: reinitialize tye object
+        Parameters
+        ----------
+        restart : bool, optional
+            Reinitialize the object by reading files instead of doing initial calculations.
         """
         pass
 
     @abc.abstractmethod
     def run(self, nma_exec=None, tol=1.e-4, n_cycles=250):
-        """Perform a self-consistent fluctuation matching
+        """Perform a self-consistent fluctuation matching.
 
-        :param nma_exec: executable file for normal mode analysis
-        :param tol: error tolerance
-        :param n_cycles: number of fluctuation matching cycles
-        """
-        pass
-
-    @abc.abstractmethod
-    def restart(self, nma_exec=None, tol=1.e-4, n_cycles=250):
-        """Restart a simulation.
-
-        :param nma_exec: executable file for normal mode analysis
-        :param tol: error tolerance
-        :param n_cycles: number of fluctuation matching cycles
+        Parameters
+        ----------
+        nma_exec : str
+            executable file for normal mode analysis
+        tol : float
+            error tolerance
+        n_cycles : int
+            number of fluctuation matching cycles
         """
         pass

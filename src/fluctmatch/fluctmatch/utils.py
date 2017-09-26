@@ -9,196 +9,171 @@ from __future__ import (
     unicode_literals,
 )
 
+import os
+from os import path
+
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
 import numpy as np
 import pandas as pd
+from MDAnalysis.coordinates import memory
+from future.utils import native_str
 
 
-def average_structure(*args, **kwargs):
-    """Calculate the average structure from a trajectory.
+def average_structure(universe):
+    """Calculate the average structure of a trajectory.
 
     Parameters
     ----------
-    topology : filename or Topology object
-        A CHARMM/XPLOR PSF topology file, PDB file or Gromacs GRO file; used to
-        define the list of atoms. If the file includes bond information,
-        partial charges, atom masses, ... then these data will be available to
-        MDAnalysis. A "structure" file (PSF, PDB or GRO, in the sense of a
-        topology) is always required. Alternatively, an existing
-        :class:`MDAnalysis.core.topology.Topology` instance may also be given.
-    extended
-        Renames the residues and atoms according to the extended CHARMM PSF format.
-        Standard CHARMM PSF limits the residue and atom names to four characters,
-        but the extended CHARMM PSF permits eight characters. The residues and
-        atoms are renamed according to the number of segments (1: A, 2: B, etc.)
-        and then the residue number or atom index number.
-    topology_format
-        Provide the file format of the topology file; ``None`` guesses it from
-        the file extension [``None``] Can also pass a subclass of
-        :class:`MDAnalysis.topology.base.TopologyReaderBase` to define a custom
-        reader to be used on the topology file.
-    format
-        Provide the file format of the coordinate or trajectory file; ``None``
-        guesses it from the file extension. Note that this keyword has no
-        effect if a list of file names is supplied because the "chained" reader
-        has to guess the file format for each individual list member.
-        [``None``] Can also pass a subclass of
-        :class:`MDAnalysis.coordinates.base.ProtoReader` to define a custom
-        reader to be used on the trajectory file.
-    guess_bonds : bool, optional
-        Once Universe has been loaded, attempt to guess the connectivity
-        between atoms.  This will populate the .bonds .angles and .dihedrals
-        attributes of the Universe.
-    vdwradii : dict, optional
-        For use with *guess_bonds*. Supply a dict giving a vdwradii for each
-        atom type which are used in guessing bonds.
-    is_anchor : bool, optional
-        When unpickling instances of
-        :class:`MDAnalysis.core.groups.AtomGroup` existing Universes are
-        searched for one where to anchor those atoms. Set to ``False`` to
-        prevent this Universe from being considered. [``True``]
-    anchor_name : str, optional
-        Setting to other than ``None`` will cause
-        :class:`MDAnalysis.core.groups.AtomGroup` instances pickled from the
-        Universe to only unpickle if a compatible Universe with matching
-        *anchor_name* is found. Even if *anchor_name* is set *is_anchor* will
-        still be honored when unpickling.
-    in_memory
-        After reading in the trajectory, transfer it to an in-memory
-        representations, which allow for manipulation of coordinates.
-    in_memory_step
-        Only read every nth frame into in-memory representation.
-    :return: coordinates
+    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        A collection of atoms in a universe or AtomGroup.
+
+    Returns
+    -------
+    :class:`~numpy.ndarray`
+        Average coordinates of the trajectory.
     """
-    universe = mda.Universe(*args, **kwargs)
     system = analysis.AnalysisFromFunction(lambda atoms: atoms.positions, universe.trajectory, universe.atoms).run()
     positions = np.mean(system.results, axis=0)
     return positions
 
 
-def average_bonds(*args, **kwargs):
+def bond_stats(universe, func="mean"):
     """Calculate the average bond lengths from a trajectory.
 
     Parameters
     ----------
-    topology : filename or Topology object
-        A CHARMM/XPLOR PSF topology file, PDB file or Gromacs GRO file; used to
-        define the list of atoms. If the file includes bond information,
-        partial charges, atom masses, ... then these data will be available to
-        MDAnalysis. A "structure" file (PSF, PDB or GRO, in the sense of a
-        topology) is always required. Alternatively, an existing
-        :class:`MDAnalysis.core.topology.Topology` instance may also be given.
-    extended
-        Renames the residues and atoms according to the extended CHARMM PSF format.
-        Standard CHARMM PSF limits the residue and atom names to four characters,
-        but the extended CHARMM PSF permits eight characters. The residues and
-        atoms are renamed according to the number of segments (1: A, 2: B, etc.)
-        and then the residue number or atom index number.
-    topology_format
-        Provide the file format of the topology file; ``None`` guesses it from
-        the file extension [``None``] Can also pass a subclass of
-        :class:`MDAnalysis.topology.base.TopologyReaderBase` to define a custom
-        reader to be used on the topology file.
-    format
-        Provide the file format of the coordinate or trajectory file; ``None``
-        guesses it from the file extension. Note that this keyword has no
-        effect if a list of file names is supplied because the "chained" reader
-        has to guess the file format for each individual list member.
-        [``None``] Can also pass a subclass of
-        :class:`MDAnalysis.coordinates.base.ProtoReader` to define a custom
-        reader to be used on the trajectory file.
-    guess_bonds : bool, optional
-        Once Universe has been loaded, attempt to guess the connectivity
-        between atoms.  This will populate the .bonds .angles and .dihedrals
-        attributes of the Universe.
-    vdwradii : dict, optional
-        For use with *guess_bonds*. Supply a dict giving a vdwradii for each
-        atom type which are used in guessing bonds.
-    is_anchor : bool, optional
-        When unpickling instances of
-        :class:`MDAnalysis.core.groups.AtomGroup` existing Universes are
-        searched for one where to anchor those atoms. Set to ``False`` to
-        prevent this Universe from being considered. [``True``]
-    anchor_name : str, optional
-        Setting to other than ``None`` will cause
-        :class:`MDAnalysis.core.groups.AtomGroup` instances pickled from the
-        Universe to only unpickle if a compatible Universe with matching
-        *anchor_name* is found. Even if *anchor_name* is set *is_anchor* will
-        still be honored when unpickling.
-    in_memory
-        After reading in the trajectory, transfer it to an in-memory
-        representations, which allow for manipulation of coordinates.
-    in_memory_step
-        Only read every nth frame into in-memory representation.
-    :return: bond lengths
-    """
-    universe = mda.Universe(*args, **kwargs)
-    system = analysis.AnalysisFromFunction(lambda bonds: bonds.bonds(), universe.trajectory, universe.bonds).run()
-    bonds = np.mean(system.results, axis=0)
-    bonds = pd.concat([universe.bonds.atom1.names, universe.bonds.atom2.names, bonds], axis=1)
-    bonds.columns = ["I", "J", "r_IJ"]
-    return bonds
+    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        A collection of atoms in a universe or AtomGroup with bond information.
+    func : str, optional
+        Determine either the mean or the standard deviation of the bond lengths.
 
-def bond_fluctuation(*args, **kwargs):
-    """Calculate the average bond lengths from a trajectory.
+    Returns
+    -------
+    :class:`~pandas.DataFrame`
+        Average bond lengths of the trajectory.
+    """
+    system = analysis.AnalysisFromFunction(lambda bonds: bonds.bonds(), universe.trajectory, universe.bonds).run()
+    if func == "mean":
+        callback = np.mean
+    elif func == "std":
+        callback = np.std
+    else:
+        raise KeyError("The 'func' keyword must either be 'mean' or 'std'."
+                       "")
+    bonds = pd.concat([
+        pd.Series(universe.bonds.atom1.names),
+        pd.Series(universe.bonds.atom2.names),
+        pd.Series(callback(system.results, axis=0)),
+    ], axis=1)
+    bonds.columns = ["I", "J", "r_IJ"]
+    return bonds.set_index(["I", "J"])
+
+
+def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True, **kwargs):
+    """Write CHARMM coordinate, topology PSF, stream, and topology RTF files.
 
     Parameters
     ----------
-    topology : filename or Topology object
-        A CHARMM/XPLOR PSF topology file, PDB file or Gromacs GRO file; used to
-        define the list of atoms. If the file includes bond information,
-        partial charges, atom masses, ... then these data will be available to
-        MDAnalysis. A "structure" file (PSF, PDB or GRO, in the sense of a
-        topology) is always required. Alternatively, an existing
-        :class:`MDAnalysis.core.topology.Topology` instance may also be given.
+    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        A collection of atoms in a universe or AtomGroup with bond definitions.
+    outdir : str
+        Location to write the files.
+    prefix : str
+        Prefix of filenames
+    write_traj : bool
+        Write the trajectory to disk.
+    charmm39
+        Use CHARMM39 RTF file format.
     extended
-        Renames the residues and atoms according to the extended CHARMM PSF format.
-        Standard CHARMM PSF limits the residue and atom names to four characters,
-        but the extended CHARMM PSF permits eight characters. The residues and
-        atoms are renamed according to the number of segments (1: A, 2: B, etc.)
-        and then the residue number or atom index number.
-    topology_format
-        Provide the file format of the topology file; ``None`` guesses it from
-        the file extension [``None``] Can also pass a subclass of
-        :class:`MDAnalysis.topology.base.TopologyReaderBase` to define a custom
-        reader to be used on the topology file.
-    format
-        Provide the file format of the coordinate or trajectory file; ``None``
-        guesses it from the file extension. Note that this keyword has no
-        effect if a list of file names is supplied because the "chained" reader
-        has to guess the file format for each individual list member.
-        [``None``] Can also pass a subclass of
-        :class:`MDAnalysis.coordinates.base.ProtoReader` to define a custom
-        reader to be used on the trajectory file.
-    guess_bonds : bool, optional
-        Once Universe has been loaded, attempt to guess the connectivity
-        between atoms.  This will populate the .bonds .angles and .dihedrals
-        attributes of the Universe.
-    vdwradii : dict, optional
-        For use with *guess_bonds*. Supply a dict giving a vdwradii for each
-        atom type which are used in guessing bonds.
-    is_anchor : bool, optional
-        When unpickling instances of
-        :class:`MDAnalysis.core.groups.AtomGroup` existing Universes are
-        searched for one where to anchor those atoms. Set to ``False`` to
-        prevent this Universe from being considered. [``True``]
-    anchor_name : str, optional
-        Setting to other than ``None`` will cause
-        :class:`MDAnalysis.core.groups.AtomGroup` instances pickled from the
-        Universe to only unpickle if a compatible Universe with matching
-        *anchor_name* is found. Even if *anchor_name* is set *is_anchor* will
-        still be honored when unpickling.
-    in_memory
-        After reading in the trajectory, transfer it to an in-memory
-        representations, which allow for manipulation of coordinates.
-    in_memory_step
-        Only read every nth frame into in-memory representation.
-    :return: bond lengths
+        Use the extended format.
+    cmap
+        Include CMAP section.
+    cheq
+        Include charge equilibration.
+    title
+        Title lines at the beginning of the file.
     """
-    universe = mda.Universe(*args, **kwargs)
-    system = analysis.AnalysisFromFunction(lambda bonds: bonds.bonds(), universe.trajectory, universe.bonds).run()
-    bonds = np.std(system.results, axis=0)
-    bonds = pd.concat([universe.bonds.atom1.names, universe.bonds.atom2.names, bonds], axis=1)
-    bonds.columns = ["I", "J", "r_IJ"]
-    return bonds
+    from MDAnalysis.core import (topologyattrs,)
+
+    filename = path.join(outdir, prefix)
+    filenames = dict(
+        psf_file=".".join((filename, "psf")),
+        xplor_psf_file=".".join((filename, "xplor", "psf")),
+        crd_file=".".join((filename, "crd")),
+        stream_file=".".join((filename, "stream")),
+        topology_file=".".join((filename, "rtf")),
+        traj_file=".".join((filename, "xtc")),
+    )
+
+    # Initialize variables and load the universe.
+    title = kwargs.get("title")
+    extended = kwargs.get("extended", True)
+    cheq = kwargs.get("cheq", True)
+    cmap = kwargs.get("cmap", True)
+    charmm39 = kwargs.get("charmm39", True)
+
+    # Write required CHARMM input files.
+    print("Writing {}...".format(filenames["topology_file"]))
+    with mda.Writer(
+        native_str(filenames["topology_file"]),
+        title=title,
+        charmm39=charmm39
+    ) as rtf:
+        rtf.write(universe)
+    print("Writing {}...".format(filenames["stream_file"]))
+    with mda.Writer(
+        native_str(filenames["stream_file"]),
+    ) as stream:
+        stream.write(universe)
+    print("Writing {}...".format(filenames["psf_file"]))
+    with mda.Writer(
+        native_str(filenames["psf_file"]),
+        title=title,
+        extended=extended,
+        cheq=cheq,
+        cmap=cmap
+    ) as psf:
+        psf.write(universe)
+
+    # Calculate the average coordinates, average bond lengths, and
+    # fluctuations of bond lengths from the trajectory.
+    print("Determining the average structure of the trajectory. ")
+    print("Note: This could take a while depending upon the side of your trajectory.")
+    positions = average_structure(universe)
+    avg_universe = mda.Universe(
+        filenames["psf_file"],
+        [positions, ],
+        format=memory.MemoryReader,
+        order="fac"
+    )
+    print("Writing {}...".format(filenames["crd_file"]))
+    with mda.Writer(
+        native_str(filenames["crd_file"]),
+        n_atoms=universe.atoms.n_atoms,
+        title=title,
+        dt=1.0
+    ) as crd:
+        crd.write(avg_universe.atoms)
+
+    # Write the new trajectory in Gromacs XTC format.
+    if write_traj:
+        print("Writing the trajectory {}.".format(filenames["traj_file"]))
+        print("This may take a while depending upon the size and length of the trajectory.")
+        with mda.Writer(native_str(filenames["traj_file"]), n_atoms=universe.atoms.n_atoms, dt=1.0) as trj:
+            for ts in universe.trajectory:
+                trj.write(ts)
+
+    # Write an XPLOR version of the PSF
+    atomtypes = topologyattrs.Atomtypes(universe.atoms.names)
+    universe._topology.add_TopologyAttr(topologyattr=atomtypes)
+    universe._generate_from_topology()
+    print("Writing {}...".format(filenames["xplor_psf_file"]))
+    with mda.Writer(
+        native_str(filenames["xplor_psf_file"]),
+        title=title,
+        extended=extended,
+        cheq=cheq,
+        cmap=cmap
+    ) as psf:
+        psf.write(universe)

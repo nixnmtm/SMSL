@@ -156,7 +156,7 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
         self._topology = self._apply_map(mapping)
         self._generate_from_topology()
         self._add_bonds()
-        if kwargs.get("guess_bonds", True):
+        if kwargs.get("guess_angles", True):
             self._add_angles()
             self._add_dihedrals()
             self._add_impropers()
@@ -168,7 +168,17 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
             raise_with_traceback(RuntimeError("Unable to open {}".format(self.atu.trajectory.filename)))
 
     def _apply_map(self, mapping):
-        """Apply the mapping scheme to the beads"""
+        """Apply the mapping scheme to the beads.
+
+        Parameters
+        ----------
+        mapping : dict
+            Mapping definitions per bead/
+
+        Returns
+        -------
+        :class:`~MDAnalysis.core.topology.Topology` defining the new universe.
+        """
         # Allocate arrays
         _beads = []
         atomnames = []
@@ -188,7 +198,7 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
                 atomids.append(i)
                 resids.append(bead.resids[0])
                 resnames.append(bead.resnames[0])
-                segids.append(bead.segids[0])
+                segids.append(bead.segids[0].split("_")[-1])
                 try:
                     charges.append(bead.total_charge())
                 except AttributeError:
@@ -263,14 +273,26 @@ class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
 
     @property
     def cguniverse(self):
+        """Convert a :class:`~MDAnalysis.AtomGroup` to a :class:`~MDAnalysis.Universe`.
+
+        Returns
+        -------
+        :class:`~MDAnalysis.Universe`
+        """
         return Merge(self)
 
 
 def Merge(*args):
-    """Similar to MDAnalysis.universe.Merge but also accounts for trajectories.
+    """Combine multiple coarse-grain systems into one.
 
-    :rtype: CGUniverse
-    :Note: Merging can take a while if large trajectories are read.
+    Parameters
+    ----------
+    args : list or tuple of either :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+
+    Returns
+    -------
+    :class:`~MDAnalysis.Universe`
+        A merged universe.
     """
     from MDAnalysis.coordinates.memory import MemoryReader
     from MDAnalysis.analysis.base import AnalysisFromFunction
@@ -318,7 +340,23 @@ def Merge(*args):
 
 
 def rename_universe(universe):
-    """Rename the atoms and residues."""
+    """Rename the atoms and residues within a universe.
+
+    Standardizes naming of the universe by renaming atoms and residues based upon the
+    number of segments. Atoms are labeled as 'A001', 'A002', 'A003', ..., 'A999' for
+    the first segment, and 'B001', 'B002', 'B003', ..., 'B999' for the second segment.
+    Residues are named in a similar fashion according to their segment.
+
+    Parameters
+    ----------
+    universe : :class:`~MDAnalysis.Universe`
+        A collection of atoms in a universe.
+
+    Returns
+    -------
+    :class:`~MDAnalysis.Universe`
+        The universe with renamed residues and atoms.
+    """
     atomnames = np.array(["{}{:0>3d}".format(lett, i)
                           for lett, segment in zip(string.ascii_uppercase, universe.segments)
                           for i, _ in enumerate(segment.atoms, 1)])

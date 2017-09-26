@@ -19,21 +19,35 @@ _HEADER = ["segidI", "resI", "I", "segidJ", "resJ", "J",
            "segidK", "resK", "K", "segidL", "resL", "L",
            "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"]
 
-def create_empty_table(atomgroup):
+def create_empty_table(universe):
     """Create an empty table of internal coordinates from an atomgroup
 
-    :param atomgroup: An Atomgroup
-    :return: pandas.Dataframe
+    Parameters
+    ----------
+    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        A collection of atoms in a universe or atomgroup with bond definitions.
+
+    Returns
+    -------
+    A :class:`~pandas.DataFrame` compliant with a CHARMM-formatted internal
+    coordinates (IC) table. The table matches the 'resid' version of an IC table.
     """
     table = pd.DataFrame()
+    atomgroup = universe.atoms
     try:
         dihedrals = atomgroup.dihedrals
+        if len(dihedrals) == 0:
+            raise AttributeError
     except AttributeError:
         try:
             angles = atomgroup.angles
+            if len(angles) == 0:
+                raise AttributeError
         except AttributeError:
             try:
                 bonds = atomgroup.bonds
+                if len(bonds) == 0:
+                    raise AttributeError
             except AttributeError:
                 raise_with_traceback(AttributeError("Bonds, angles, and torsions undefined"))
             else:

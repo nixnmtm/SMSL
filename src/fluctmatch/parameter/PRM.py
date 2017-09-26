@@ -29,6 +29,13 @@ from ..topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 
 class ParamReader(TopologyReaderBase):
+    """Read a CHARMM-formated parameter file.
+
+    Parameters
+    ----------
+    filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
+         name of the output file or a stream
+    """
     format = "PRM"
     units = dict(time=None, length="Angstrom")
 
@@ -48,18 +55,14 @@ class ParamReader(TopologyReaderBase):
     )
 
     def __init__(self, filename):
-        """
-        Parameters
-        ----------
-        filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
-             name of the output file or a stream
-        """
         self.filename = util.filename(filename, ext="prm")
 
     def read(self):
         """Parse the parameter file.
 
-        :return: parameters
+        Returns
+        -------
+        Dictionary with CHARMM parameters per key.
         """
         headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
         with open(self.filename, "rb") as prmfile:
@@ -92,6 +95,21 @@ class ParamReader(TopologyReaderBase):
 
 
 class ParamWriter(TopologyWriterBase):
+    """Write a parameter dictionary to a CHARMM-formatted parameter file.
+
+    Parameters
+    ----------
+    filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
+         name of the output file or a stream
+    n_atoms : int, optional
+        The number of atoms in the output trajectory.
+    title : str
+         title lines at beginning of the file
+    charmm36 : bool
+         Use Charmm36 force field representation
+    nonbonded : bool
+         Add the nonbonded section
+    """
     format = "PRM"
     units = dict(time=None, length="Angstrom")
 
@@ -109,33 +127,24 @@ class ParamWriter(TopologyWriterBase):
                 NONBONDED="%-4s %5.1f %13.4f %10.4f",
                 NONBONDED_C36="%-6s %5.1f %13.4f %10.4f",)
 
-    def __init__(self, filename, title=None, charmm36=True, nonbonded=True):
-        """
-        Parameters
-        ----------
-        filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
-             name of the output file or a stream
-        title : str
-             title lines at beginning of the file
-        charmm36 : bool
-             Use Charmm36 force field representation
-        nonbonded : bool
-             Add the nonbonded section
-        """
-
+    def __init__(self, filename, n_atoms=None, title=None, charmm36=True, nonbonded=True):
         self.filename = util.filename(filename, ext="prm")
+        self.n_atoms = None
         self.charmm36 = charmm36
         self.nonbonded = nonbonded
         self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
                       "* User: {}".format(environ["USER"])) if title is None else title
 
     def write(self, parameters, atomgroup=None):
-        # type: (object, object) -> object
-        """Write a CHARMM parameter file.
+        """Write a CHARMM-formatted parameter file.
 
-        :param parameters: CHARMM parameters
-        :param atomgroup: optional Atomgroup for CHARMM36 atom list
-        :return:
+        Parameters
+        ----------
+        parameters : dict
+            Keys are the section names and the values are of class :class:`~pandas.DataFrame`,
+            which contain the corresponding parameter data.
+        atomgroup : :class:`~MDAnalysis.AtomGroup`, optional
+            A collection of atoms in an AtomGroup to define the ATOMS section, if desired.
         """
         with open(self.filename, "wb") as prmfile:
             for title in self.title:

@@ -18,10 +18,19 @@ from future.builtins import (
 
 
 def create_empty_parameters(universe):
-    """Create an empty parameter set from a universe.
+    """
 
-    :param universe: MDAnalysis.Universe
-    :return: parameter dictionary
+    Parameters
+    ----------
+    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        A collection of atoms in a universe or atomgroup with bond definitions.
+
+    Returns
+    -------
+    An dictionary with keys defining the CHARMM parameter sections, and each
+    associated value contianing a :class:`~pandas.DataFrame` with a table
+    containing the necessary information. Tables for bonds, angles, dihedrals,
+    and impropers will have values of 0 that can be filled by the user.
     """
     parameters = dict(
         ATOMS=pd.DataFrame(),
@@ -38,7 +47,6 @@ def create_empty_parameters(universe):
     )
 
     # Atoms
-    print(universe.atoms.names)
     types = (
         universe.atoms.types
         if np.issubdtype(universe.atoms.types.dtype, np.int)
@@ -57,7 +65,7 @@ def create_empty_parameters(universe):
         ]
         parameters["BONDS"] = pd.concat([pd.DataFrame(_) for _ in bonds], axis=1)
         parameters["BONDS"].columns = prmcolumns["BONDS"]
-    except (mda.NoDataError, AttributeError):
+    except (mda.NoDataError, AttributeError, IndexError):
         pass
 
     # Angles
@@ -70,7 +78,7 @@ def create_empty_parameters(universe):
         ]
         parameters["ANGLES"] = pd.concat([pd.DataFrame(_) for _ in angles], axis=1)
         parameters["ANGLES"].columns = prmcolumns["ANGLES"]
-    except (mda.NoDataError, AttributeError):
+    except (mda.NoDataError, AttributeError, IndexError):
         pass
 
     # Dihedrals
@@ -86,7 +94,7 @@ def create_empty_parameters(universe):
         ]
         parameters["DIHEDRALS"] = pd.concat([pd.DataFrame(_) for _ in dihedrals], axis=1)
         parameters["DIHEDRALS"].columns = prmcolumns["DIHEDRALS"]
-    except (mda.NoDataError, AttributeError):
+    except (mda.NoDataError, AttributeError, IndexError):
         pass
 
     # Impropers
@@ -102,7 +110,7 @@ def create_empty_parameters(universe):
         ]
         parameters["IMPROPER"] = pd.concat([pd.DataFrame(_) for _ in impropers], axis=1)
         parameters["IMPROPER"].columns = prmcolumns["DIHEDRALS"]
-    except (mda.NoDataError, AttributeError):
+    except (mda.NoDataError, AttributeError, IndexError):
         pass
 
     return parameters

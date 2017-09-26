@@ -24,29 +24,58 @@ from . import base
 
 
 class RTFWriter(base.TopologyWriterBase):
+    """Write a CHARMM-formatted topology file.
+
+    Parameters
+    ----------
+    filename : str
+        Filename where to write the information.
+    n_atoms : int, optional
+        The number of atoms in the output trajectory.
+    title : str or list of str, optional
+        A header section written at the beginning of the stream file. If no title
+        is given, a default title will be written.
+    charmm39 : bool, optional
+        Format the file for use with c39+. In c39+, the ATOM section has the atom
+        type set to -1 indicating that the atom type will be defined in the parameter
+        file.
+    """
     format = "RTF"
     units = dict(time=None, length=None)
-    fmt = dict(HEADER="{:<4d}{:>d}\n",
-               MASS="MASS %5d %-4s %9.5f",
-               DECL="DECL +%s\nDECL -%s",
-               RES="RESI {:<4s} {:>12.2f}\nGROUP\n",
-               ATOM="ATOM %-4s %-4s %7.2f",
-               ATOM_C36="ATOM %-4s %-6s %7.2f",
-               IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",)
-    bonds = (("BOND", ("bonds", 8)), ("IMPH", ("impropers", 8)),)
+    fmt = dict(
+        HEADER="{:<4d}{:>d}\n\n",
+        MASS="MASS %5d %-4s %9.5f",
+        DECL="DECL +%s\nDECL -%s",
+        RES="RESI {:<4s} {:>12.2f}\nGROUP\n",
+        ATOM="ATOM %-4s %-4s %7.2f",
+        ATOM_C36="ATOM %-4s %-6s %7.2f",
+        IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",)
+    bonds = (
+        ("BOND", ("bonds", 8)),
+        ("IMPH", ("impropers", 8)),
+    )
 
-    def __init__(self, filename, title=None, charmm39=False, **kwargs):
+    def __init__(self, filename, n_atoms=None, title=None, charmm39=False):
         self.filename = util.filename(filename, ext="rtf")
-        self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
-                      "* User: {}".format(environ["USER"])) if title is None else title
+        self.n_atoms = n_atoms
         self.charmm39 = charmm39
+        self.atoms = None
+        if title is None:
+            self.title = [
+                "* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
+                "* User: {}".format(environ["USER"]),
+            ]
+        elif issubclass(type(title), str) or issubclass(type(title), unicode):
+            self.title = (title, )
+        else:
+            self.title = title
 
     def _write_mass(self):
         _, idx = np.unique(self.atoms.names, return_index=True)
         try:
             atomtypes = self.atoms.types.astype(np.int)
         except ValueError:
-            atomtypes = np.arange(self.atoms.n_atoms, dtype=np.int)+1
+            atomtypes = np.arange(self.n_atoms, dtype=np.int)+1
         columns = [atomtypes, self.atoms.names, self.atoms.masses]
 
         columns = np.concatenate([pd.DataFrame(_) for _ in columns], axis=1)
@@ -109,8 +138,20 @@ class RTFWriter(base.TopologyWriterBase):
         self.rtffile.write("\n".encode())
 
     def write(self, universe):
-        # type: (object) -> object
+        """Write a CHARMM-formatted RTF topology file.
+
+        Parameters
+        ----------
+        universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+            A collection of atoms in a universe or atomgroup with bond definitions.
+        """
         self.atoms = universe.atoms
+        if self.n_atoms is not None and self.n_atoms != self.atoms.n_atoms:
+            raise IOError(
+                "The number of atoms from object initialization do not match the number of atoms "
+                "from the universe [{:d} != {:d}]".format(self.n_atoms, self.atoms.n_atoms)
+            )
+
         with open(self.filename, "wb") as self.rtffile:
             # Write the title and header information.
             for _ in self.title:

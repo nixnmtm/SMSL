@@ -15,9 +15,16 @@ from future.builtins import (
 )
 
 from . import universe
+from ..fluctmatch import utils as fmutils
 
 
 class Enm(universe._Universe):
+    """Convert a basic coarse-grain universe into an elastic-network model.
+
+    Determines the interactions between beads via distance cutoffs `rmin` and `rmax`. The
+    atoms and residues are also renamed to prevent name collision when working with
+    fluctuation matching.
+    """
     _rmin = 0.
     _rmax = 10.
 
@@ -39,36 +46,67 @@ class Enm(universe._Universe):
         self.__dict__.update(self.atu.__dict__)
 
         universe.rename_universe(self)
+        self._topology.add_TopologyAttr(topologyattrs.Atomtypes(np.arange(self.atoms.n_atoms) + 1))
+        self._topology.add_TopologyAttr(topologyattrs.Angles([]))
+        self._topology.add_TopologyAttr(topologyattrs.Dihedrals([]))
+        self._topology.add_TopologyAttr(topologyattrs.Impropers([]))
         self._generate_from_topology()
 
         self._add_bonds()
-        if kwargs.get("guess_bonds", False):
+        if kwargs.get("guess_angles", False):
             self._add_angles()
             self._add_dihedrals()
             self._add_impropers()
 
     def _add_bonds(self):
-        dm = np.asarray([distance_array(self.atoms.positions, self.atoms.positions, backend="OpenMP") for _ in self.trajectory])
+        positions = fmutils.average_structure(self.atu)
+        dm = distance_array(positions, positions, backend="OpenMP")
         if self._rmin > 0.:
-            _, a0, a1 = np.where((dm >= self._rmin) & (dm <= self._rmax))
+            a0, a1 = np.where((dm >= self._rmin) & (dm <= self._rmax))
         else:
-            _, a0, a1 = np.where((dm > self._rmin) & (dm <= self._rmax))
+            a0, a1 = np.where((dm > self._rmin) & (dm <= self._rmax))
         bonds = topologyattrs.Bonds(set([(x, y) for x, y in zip(a0, a1) if y > x]))
         self._topology.add_TopologyAttr(bonds)
         self._generate_from_topology()
 
     @property
     def rmin(self):
+        """The minimum distance required to define a bond interaction.
+
+        Returns
+        -------
+        float
+        """
         return self._rmin
 
     @rmin.setter
     def rmin(self, distance):
+        """Set the minimum distance required for a bond definition.
+
+        Parameters
+        ----------
+        distance : float
+            Minimum distance between beads
+        """
         self._rmin = distance
 
     @property
     def rmax(self):
+        """The maximum distance required to define a bond interaction.
+
+        Returns
+        -------
+        float
+        """
         return self._rmax
 
     @rmax.setter
     def rmax(self, distance):
+        """Set the maximum distance required for a bond definition.
+
+        Parameters
+        ----------
+        distance : float
+            Maximum distance between beads
+        """
         self._rmax = distance
