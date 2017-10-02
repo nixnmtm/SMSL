@@ -83,8 +83,8 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
         Prefix of filenames
     write_traj : bool
         Write the trajectory to disk.
-    charmm39
-        Use CHARMM39 RTF file format.
+    charmm_version
+        Version of CHARMM for formatting (default: 41)
     extended
         Use the extended format.
     cmap
@@ -106,34 +106,16 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
         traj_file=".".join((filename, "xtc")),
     )
 
-    # Initialize variables and load the universe.
-    title = kwargs.get("title")
-    extended = kwargs.get("extended", True)
-    cheq = kwargs.get("cheq", True)
-    cmap = kwargs.get("cmap", True)
-    charmm39 = kwargs.get("charmm39", True)
-
     # Write required CHARMM input files.
     print("Writing {}...".format(filenames["topology_file"]))
-    with mda.Writer(
-        native_str(filenames["topology_file"]),
-        title=title,
-        charmm39=charmm39
-    ) as rtf:
+    with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
         rtf.write(universe)
     print("Writing {}...".format(filenames["stream_file"]))
-    with mda.Writer(
-        native_str(filenames["stream_file"]),
-    ) as stream:
+    with mda.Writer(native_str(filenames["stream_file"]), **kwargs) as stream:
         stream.write(universe)
     print("Writing {}...".format(filenames["psf_file"]))
     with mda.Writer(
-        native_str(filenames["psf_file"]),
-        title=title,
-        extended=extended,
-        cheq=cheq,
-        cmap=cmap
-    ) as psf:
+        native_str(filenames["psf_file"]), **kwargs) as psf:
         psf.write(universe)
 
     # Calculate the average coordinates, average bond lengths, and
@@ -148,19 +130,14 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
         order="fac"
     )
     print("Writing {}...".format(filenames["crd_file"]))
-    with mda.Writer(
-        native_str(filenames["crd_file"]),
-        n_atoms=universe.atoms.n_atoms,
-        title=title,
-        dt=1.0
-    ) as crd:
+    with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
         crd.write(avg_universe.atoms)
 
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
         print("Writing the trajectory {}.".format(filenames["traj_file"]))
         print("This may take a while depending upon the size and length of the trajectory.")
-        with mda.Writer(native_str(filenames["traj_file"]), n_atoms=universe.atoms.n_atoms, dt=1.0) as trj:
+        with mda.Writer(native_str(filenames["traj_file"]), n_atoms=universe.atoms.n_atoms, dt=1.0, **kwargs) as trj:
             for ts in universe.trajectory:
                 trj.write(ts)
 
@@ -169,11 +146,5 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
     universe._topology.add_TopologyAttr(topologyattr=atomtypes)
     universe._generate_from_topology()
     print("Writing {}...".format(filenames["xplor_psf_file"]))
-    with mda.Writer(
-        native_str(filenames["xplor_psf_file"]),
-        title=title,
-        extended=extended,
-        cheq=cheq,
-        cmap=cmap
-    ) as psf:
+    with mda.Writer(native_str(filenames["xplor_psf_file"]), **kwargs) as psf:
         psf.write(universe)
