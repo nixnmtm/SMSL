@@ -9,8 +9,8 @@ from __future__ import (
     unicode_literals,
 )
 
+import textwrap
 import time
-from collections import OrderedDict
 from os import environ
 
 import numpy as np
@@ -39,7 +39,7 @@ class ParamReader(TopologyReaderBase):
     format = "PRM"
     units = dict(time=None, length="Angstrom")
 
-    parameters = OrderedDict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
+    parameters = dict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
     _prmindex = dict(
         ATOMS=np.arange(1, 4),
         BONDS=np.arange(4),
@@ -82,6 +82,8 @@ class ParamReader(TopologyReaderBase):
                 field = line.split()
                 if section == "ATOMS":
                     field = field[1:]
+                if section == "BONDS":
+                    field = field[:4]
                 if section == "ANGLES":
                     field = field[:5]
                 if section == "DIHEDRALS" or section == "IMPROPER":
@@ -101,39 +103,42 @@ class ParamWriter(TopologyWriterBase):
     ----------
     filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
          name of the output file or a stream
-    n_atoms : int, optional
-        The number of atoms in the output trajectory.
     title : str
-         title lines at beginning of the file
-    charmm36 : bool
-         Use Charmm36 force field representation
-    nonbonded : bool
-         Add the nonbonded section
+        Title lines at beginning of the file.
+    charmm_version
+        Version of CHARMM for formatting (default: 41)
+    nonbonded
+        Add the nonbonded section. (default: False)
     """
     format = "PRM"
     units = dict(time=None, length="Angstrom")
 
     _headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
-    _fmt = dict(ATOMS="",
-                ATOMS_C36="MASS %5d %-6s %9.5f",
-                BONDS="%-4s %-4s %10.4f%10.4f",
-                BONDS_C36="%-6s %-6s %10.4f%10.4f",
-                ANGLES="%-4s %-4s %-4s %8.2f%10.2f",
-                ANGLES_C36="%-6s %-6s %-6s %8.2f%10.2f",
-                DIHEDRALS="%-4s %-4s %-4s %-4s %12.4f%3d%9.2f",
-                DIHEDRALS_C36="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",
-                IMPROPER="%-4s %-4s %-4s %-4s %12.4f%3d%9.2f",
-                IMPROPER_C36="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",
-                NONBONDED="%-4s %5.1f %13.4f %10.4f",
-                NONBONDED_C36="%-6s %5.1f %13.4f %10.4f",)
+    _fmt = dict(
+        ATOMS="MASS %5d %-6s %9.5f",
+        BONDS="%-6s %-6s %10.4f%10.4f",
+        ANGLES="%-6s %-6s %-6s %8.2f%10.2f",
+        DIHEDRALS="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",
+        IMPROPER="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",
+        NONBONDED="%-6s %5.1f %13.4f %10.4f",
+    )
 
-    def __init__(self, filename, n_atoms=None, title=None, charmm36=True, nonbonded=True):
+    def __init__(self, filename, **kwargs):
         self.filename = util.filename(filename, ext="prm")
-        self.n_atoms = None
-        self.charmm36 = charmm36
-        self.nonbonded = nonbonded
-        self.title = ("* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
-                      "* User: {}".format(environ["USER"])) if title is None else title
+        self._version = kwargs.get("charmm_version", 41)
+        self._nonbonded = kwargs.get("nonbonded", False)
+
+        date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
+        user = environ["USER"]
+        self._title = kwargs.get(
+            "title",
+            (
+                "* Created by fluctmatch on {date}".format(date=date),
+                "* User: {user}".format(user=user),
+            )
+        )
+        if issubclass(type(self._title), str) or issubclass(type(self._title), np.unicode):
+            self._title = (self._title,)
 
     def write(self, parameters, atomgroup=None):
         """Write a CHARMM-formatted parameter file.
@@ -147,39 +152,48 @@ class ParamWriter(TopologyWriterBase):
             A collection of atoms in an AtomGroup to define the ATOMS section, if desired.
         """
         with open(self.filename, "wb") as prmfile:
-            for title in self.title:
+            for title in self._title:
                 prmfile.write((title + "\n").encode())
             prmfile.write("\n".encode())
 
-            if self.charmm36 and parameters["ATOMS"].empty:
+            if self._version >= 36 and parameters["ATOMS"].empty:
                 if atomgroup:
                     if np.issubdtype(atomgroup.types.dtype, np.int):
-                        atoms = [atomgroup.types, atomgroup.names, atomgroup.masses]
+                        atom_types = atomgroup.types
                     else:
-                        atoms = [np.arange(atomgroup.n_atoms)+1, atomgroup.types, atomgroup.masses]
+                        atom_types = np.arange(atomgroup.n_atoms)+1
+                    atoms = [atom_types, atomgroup.types, atomgroup.masses]
                     parameters["ATOMS"] = pd.concat([pd.Series(_) for _ in atoms], axis=1)
                     parameters["ATOMS"].columns = ["type", "atom", "mass"]
                 else:
                     raise RuntimeError("Either define ATOMS parameter or provide a MDAnalsys.AtomGroup")
 
-            for key, value in parameters.items():
-                if value.empty or (not self.charmm36 and key == "ATOMS"):
+            if self._version >= 39 and not parameters["ATOMS"].empty:
+                parameters["ATOMS"]["type"] = -1
+
+            for key in self._headers:
+                value = parameters[key]
+                if value.empty or (self._version < 36 and key == "ATOMS"):
                     continue
-                fmt_key = key + "_C36" if self.charmm36 else key
                 prmfile.write((key + "\n").encode())
-                np.savetxt(prmfile, value, fmt=native_str(self._fmt[fmt_key]))
+                np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]), delimiter=native_str(""))
                 prmfile.write("\n".encode())
 
-            if self.nonbonded:
-                key = "NONBONDED_C36" if self.charmm36 else "NONBONDED"
-                n_atoms = parameters["ATOMS"].shape[0] if not parameters["ATOMS"].empty else atomgroup.n_atoms
-                nblist = np.zeros((n_atoms, 3))
-                if not parameters["ATOMS"].empty:
-                    nblist = pd.concat([parameters["ATOMS"]["atom"], pd.DataFrame(nblist)], axis=1)
-                else:
-                    atomtypes = atomgroup.names if np.issubdtype(atomgroup.types.dtype, np.int) else atomgroup.types
-                    nblist = pd.concat([pd.DataFrame(atomtypes), pd.DataFrame(nblist)], axis=1)
-                prmfile.write("NONBONDED nbxmod  5 atom cdiel shift vatom vdistance vswitch -\n".encode())
-                prmfile.write("cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5\n\n".encode())
-                np.savetxt(prmfile, nblist, fmt=native_str(self._fmt[key]))
+            if self._nonbonded:
+                nb_header = (
+                    """
+                    NONBONDED nbxmod  5 atom cdiel shift vatom vdistance vswitch -
+                    cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
+
+                    """
+                )
+                atom_list = np.concatenate(
+                    (parameters["BONDS"]["I"].values, parameters["BONDS"]["J"].values),
+                    axis=0,
+                )
+                atom_list = pd.DataFrame(np.unique(atom_list))
+                nb_list = pd.DataFrame(np.zeros((atom_list.size, 3)))
+                nb_list = pd.concat([atom_list, nb_list], axis=1)
+                prmfile.write(textwrap.dedent(nb_header).encode())
+                np.savetxt(prmfile, nb_list, fmt=native_str(self._fmt["NONBONDED"]), delimiter=native_str(""))
             prmfile.write("\nEND\n".encode())
