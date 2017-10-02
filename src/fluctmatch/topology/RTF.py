@@ -32,59 +32,60 @@ class RTFWriter(base.TopologyWriterBase):
         Filename where to write the information.
     n_atoms : int, optional
         The number of atoms in the output trajectory.
-    title : str or list of str, optional
+    title
         A header section written at the beginning of the stream file. If no title
         is given, a default title will be written.
-    charmm39 : bool, optional
-        Format the file for use with c39+. In c39+, the ATOM section has the atom
-        type set to -1 indicating that the atom type will be defined in the parameter
-        file.
+    charmm_version
+        Version of CHARMM for formatting (default: 41)
     """
     format = "RTF"
     units = dict(time=None, length=None)
     fmt = dict(
-        HEADER="{:<4d}{:>d}\n\n",
-        MASS="MASS %5d %-4s %9.5f",
+        HEADER="{:>5d}{:>5d}\n\n",
+        MASS="MASS %5d %-6s%12.5f",
         DECL="DECL +%s\nDECL -%s",
-        RES="RESI {:<4s} {:>12.2f}\nGROUP\n",
-        ATOM="ATOM %-4s %-4s %7.2f",
-        ATOM_C36="ATOM %-4s %-6s %7.2f",
+        RES="RESI {:<4s} {:>12.4f}\nGROUP\n",
+        ATOM="ATOM %-6s %-6s %7.4f",
         IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",)
     bonds = (
         ("BOND", ("bonds", 8)),
         ("IMPH", ("impropers", 8)),
     )
 
-    def __init__(self, filename, n_atoms=None, title=None, charmm39=False):
+    def __init__(self, filename, **kwargs):
         self.filename = util.filename(filename, ext="rtf")
-        self.n_atoms = n_atoms
-        self.charmm39 = charmm39
-        self.atoms = None
-        if title is None:
-            self.title = [
-                "* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
-                "* User: {}".format(environ["USER"]),
-            ]
-        elif issubclass(type(title), str) or issubclass(type(title), unicode):
-            self.title = (title, )
-        else:
-            self.title = title
+        self._version = kwargs.get("charmm_version", 41)
+        self._atoms = None
+
+        date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
+        user = environ["USER"]
+        self._title = kwargs.get(
+            "title",
+            (
+                "* Created by fluctmatch on {date}".format(date=date),
+                "* User: {user}".format(user=user),
+            )
+        )
+        if issubclass(type(self._title), str) or issubclass(type(self._title), np.unicode):
+            self._title = (self._title,)
 
     def _write_mass(self):
-        _, idx = np.unique(self.atoms.names, return_index=True)
+        _, idx = np.unique(self._atoms.names, return_index=True)
         try:
-            atomtypes = self.atoms.types.astype(np.int)
+            atomtypes = self._atoms.types.astype(np.int)
         except ValueError:
-            atomtypes = np.arange(self.n_atoms, dtype=np.int)+1
-        columns = [atomtypes, self.atoms.names, self.atoms.masses]
+            atomtypes = np.arange(self._atoms.n_atoms, dtype=np.int) + 1
+        columns = (atomtypes, self._atoms.names, self._atoms.masses)
+        columns = pd.concat([pd.DataFrame(_[idx]) for _ in columns], axis=1)
+        columns.columns = ["itype", "stype", "mass"]
 
-        columns = np.concatenate([pd.DataFrame(_) for _ in columns], axis=1)
-        if self.charmm39:
-            columns[:, 0] = -1
-        np.savetxt(self.rtffile, columns[idx], fmt=native_str(self.fmt["MASS"]), delimiter=native_str(""))
+        if self._version >= 39:
+            columns["itype"] = -1
+        np.savetxt(self.rtffile, columns, fmt=native_str(self.fmt["MASS"]), delimiter=native_str(""))
 
     def _write_decl(self):
-        decl = np.concatenate((self.atoms.names[:, np.newaxis], self.atoms.names[:, np.newaxis]), axis=1)
+        names = np.unique(self._atoms.names)[:, np.newaxis]
+        decl = np.concatenate((names, names), axis=1)
         np.savetxt(self.rtffile, decl, fmt=native_str(self.fmt["DECL"]))
         self.rtffile.write("\n".encode())
 
@@ -93,32 +94,39 @@ class RTFWriter(base.TopologyWriterBase):
 
         # Write the atom lines with site name, type, and charge.
         key = "ATOM"
-        if not np.issubdtype(residue.atoms.types.dtype, np.int):
-            key += "_C36" if np.any(np.where([len(_) for _ in residue.atoms.types.astype(np.unicode)])[0] > 4) else ""
         atoms = residue.atoms
-        lines = ((atoms.names, atoms.types, atoms.charges) if np.issubdtype(atoms.types.dtype, np.int)
-                 else (atoms.names, atoms.names, atoms.charges))
-        lines = np.concatenate([pd.DataFrame(_) for _ in lines], axis=1)
+        lines = (
+            (atoms.names, atoms.types, atoms.charges)
+            if not np.issubdtype(atoms.types.dtype, np.int)
+            else (atoms.names, atoms.names, atoms.charges)
+        )
+        lines = pd.concat([pd.Series(_) for _ in lines], axis=1)
         np.savetxt(self.rtffile, lines, fmt=native_str(self.fmt[key]))
 
         # Write the bond, angle, dihedral, and improper dihedral lines.
         for key, value in self.bonds:
             attr, n_perline = value
-            fmt = key + n_perline * " %5s"
+            fmt = key + n_perline * "%6s"
             try:
                 bonds = getattr(atoms, attr)
                 if len(bonds) == 0:
                     continue
 
                 # Create list of atom names and include "+" for atoms not within the residue.
-                names = np.concatenate([_.atoms.names[np.newaxis, :] for _ in bonds], axis=0)
-                idx = np.any([np.isin(_.atoms, atoms, invert=True) for _ in bonds], axis=1)
+                names = np.concatenate([
+                    _.atoms.names[np.newaxis, :]
+                    for _ in bonds
+                ], axis=0).astype(np.object)
+                idx = np.any([
+                    np.isin(_.atoms, atoms, invert=True)
+                    for _ in bonds
+                ], axis=1)
                 pos_names = np.where(np.isin(bonds[idx], atoms, invert=True), "+", "").astype(np.object)
                 names[idx] = pos_names + names[idx]
                 names = names.astype(np.unicode)
 
-                # Eliminate redundances.
-                # Code courtesy of Daneil F on
+                # Eliminate redundancies.
+                # Code courtesy of Daniel F on
                 # https://stackoverflow.com/questions/45005477/eliminating-redundant-numpy-rows/45006131?noredirect=1#comment76988894_45006131
                 b = np.ascontiguousarray(np.sort(names, -1)).view(np.dtype((np.void, names.dtype.itemsize * names.shape[1])))
                 _, idx = np.unique(b, return_index=True)
@@ -145,16 +153,10 @@ class RTFWriter(base.TopologyWriterBase):
         universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
             A collection of atoms in a universe or atomgroup with bond definitions.
         """
-        self.atoms = universe.atoms
-        if self.n_atoms is not None and self.n_atoms != self.atoms.n_atoms:
-            raise IOError(
-                "The number of atoms from object initialization do not match the number of atoms "
-                "from the universe [{:d} != {:d}]".format(self.n_atoms, self.atoms.n_atoms)
-            )
-
+        self._atoms = universe.atoms
         with open(self.filename, "wb") as self.rtffile:
             # Write the title and header information.
-            for _ in self.title:
+            for _ in self._title:
                 self.rtffile.write((_ + "\n").encode())
             self.rtffile.write(self.fmt["HEADER"].format(36, 1).encode())
 
@@ -166,7 +168,7 @@ class RTFWriter(base.TopologyWriterBase):
             self.rtffile.write("AUTOGENERATE ANGLES DIHEDRAL\n\n".encode())
 
             # Write out the residue information
-            _, idx = np.unique(self.atoms.residues.resnames, return_index=True)
-            for residue in self.atoms.residues[idx]:
+            _, idx = np.unique(self._atoms.residues.resnames, return_index=True)
+            for residue in self._atoms.residues[idx]:
                 self._write_residues(residue)
             self.rtffile.write("END\n".encode())
