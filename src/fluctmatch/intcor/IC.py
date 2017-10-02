@@ -38,19 +38,19 @@ class IntcorReader(TopologyReaderBase):
 
     fmt = dict(
         # fortran_format = "(I5,1X,4(I3,1X,A4),F9.4,3F8.2,F9.4)"
-        STD = (
+        STANDARD = (
             "I5,1X,I3,1X,A4,I3,1X,A4,I3,1X,A4,I3,1X,A4,F9.4,3F8.2,F9.4"
         ),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
-        STD_EXT = (
+        EXTENDED = (
             "I9,1X,I5,1X,A8,I5,1X,A8,I5,1X,A8,I5,1X,A8,F9.4,3F8.2,F9.4"
         ),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        RESID = (
+        STANDARD_RESID = (
             "I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"
         ),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        RESID_EXT = (
+        EXTENDED_RESID = (
             "I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,F12.6,3F12.4,F12.6"
         ),
     )
@@ -78,9 +78,8 @@ class IntcorReader(TopologyReaderBase):
                 if line.startswith("*") or not line:
                     continue       # ignore TITLE and empty lines
                 line = np.fromiter(line.strip().split(), dtype=np.int)
-                key = "RESID" if line[1] == 2 else "STD"
-                if line[0] == 30:
-                    key += "_EXT"
+                key = "EXTENDED" if line[0] == 30 else "STANDARD"
+                key += "_RESID" if line[1] == 2 else ""
                 break
 
             TableParser = util.FORTRANReader(self.fmt[key])
@@ -149,24 +148,26 @@ class IntcorWriter(TopologyWriterBase):
         ),
     )
 
-    def __init__(self, filename, n_atoms=None, extended=True, resid=True, title=None):
+    def __init__(self, filename, **kwargs):
         self.filename = util.filename(filename, ext="ic")
-        self.n_atoms = n_atoms
-        self.intcor = None
-        self.extended = extended
-        self.resid = resid
-        self.key = "RESID" if self.resid else "STD"
-        if self.extended:
+        self._intcor = None
+        self._extended = kwargs.get("extended", True)
+        self._resid = kwargs.get("resid", True)
+        self.key = "RESID" if self._resid else "STD"
+        if self._extended:
             self.key += "_EXT"
-        if title is None:
-            self.title = [
-                "* Created by fluctmatch on {}".format(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())),
-                "* User: {}".format(environ["USER"]),
-            ]
-        elif issubclass(type(title), str) or issubclass(type(title), unicode):
-            self.title = (title, )
-        else:
-            self.title = title
+
+        date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
+        user = environ["USER"]
+        self._title = kwargs.get(
+            "title",
+            (
+                "* Created by fluctmatch on {date}".format(date=date),
+                "* User: {user}".format(user=user),
+            )
+        )
+        if issubclass(type(self._title), str) or issubclass(type(self._title), np.unicode):
+            self._title = (self._title,)
 
     def write(self, table):
         """Write an internal coordinates table.
@@ -181,14 +182,14 @@ class IntcorWriter(TopologyWriterBase):
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
         with open(self.filename, "wb") as icfile:
-            for _ in self.title:
+            for _ in self._title:
                 icfile.write((_ + "\n").encode())
             line = np.zeros(20, dtype=np.int)
-            line[0] = 30 if self.extended else 20
-            line[1] = 2 if self.resid else 1
+            line[0] = 30 if self._extended else 20
+            line[1] = 2 if self._resid else 1
             np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%4d"), delimiter=native_str(""))
             line = np.zeros(2, dtype=np.int)
             line[0] = ictable.shape[0]
-            line[1] = 2 if self.resid else 1
+            line[1] = 2 if self._resid else 1
             np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%4d"), delimiter=native_str(""))
-            np.savetxt(icfile, ictable.reset_index(), fmt=native_str(self.fmt[self.key]))
+            np.savetxt(icfile, ictable.reset_index(), fmt=native_str(self.fmt[self.key]), delimiter=native_str(""))
