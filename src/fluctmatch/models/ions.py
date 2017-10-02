@@ -6,20 +6,21 @@ from __future__ import (
     unicode_literals,
 )
 
+from collections import OrderedDict
+
 from future.builtins import (
     super,
     zip,
 )
 
-from collections import OrderedDict
-
-from . import universe
+from .base import ModelBase
 from .selection import *
 
 
-class SolventIons(universe._Universe):
+class SolventIons(ModelBase):
     """Include ions within the solvent.
     """
+    model = "SOLVENTIONS"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -43,9 +44,10 @@ class SolventIons(universe._Universe):
         pass
 
 
-class BioIons(universe._Universe):
+class BioIons(ModelBase):
     """Select ions normally found within biological systems.
     """
+    model = "BIOIONS"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -69,9 +71,10 @@ class BioIons(universe._Universe):
         pass
 
 
-class NobleAtoms(universe._Universe):
+class NobleAtoms(ModelBase):
     """Select atoms column VIII of the periodic table.
     """
+    model = "NOBLE"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):

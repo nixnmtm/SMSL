@@ -6,21 +6,21 @@ from __future__ import (
     unicode_literals,
 )
 
+from collections import OrderedDict
+
+from MDAnalysis.core import topologyattrs
 from future.builtins import (
     super,
     zip,
 )
 
-from collections import OrderedDict
-
-from MDAnalysis.core import topologyattrs
-from . import universe
-from .selection import *
+from .base import ModelBase
 
 
-class Water(universe._Universe):
+class Water(ModelBase):
     """Create a universe consisting of the water oxygen.
     """
+    model = "WATER"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -36,8 +36,9 @@ class Water(universe._Universe):
         pass
 
 
-class Tip3p(universe._Universe):
+class Tip3p(ModelBase):
     """Create a universe containing all three water atoms."""
+    model = "TIP3P"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -76,9 +77,10 @@ class Tip3p(universe._Universe):
         self._generate_from_topology()
 
 
-class Dma(universe._Universe):
+class Dma(ModelBase):
     """Create a universe for N-dimethylacetamide.
     """
+    model = "DMA"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):

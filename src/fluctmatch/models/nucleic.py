@@ -6,20 +6,22 @@ from __future__ import (
     unicode_literals,
 )
 
+from collections import OrderedDict
+
+from MDAnalysis.core import topologyattrs
 from future.builtins import (
     super,
     zip,
 )
-from collections import OrderedDict
 
-from MDAnalysis.core import topologyattrs
-from . import universe
+from .base import ModelBase
 from .selection import *
 
 
-class Nucleic3(universe._Universe):
+class Nucleic3(ModelBase):
     """Create a universe consisting of the phosphate, sugar, and base of the nucleic acid.
     """
+    model = "NUCLEIC3"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -55,9 +57,10 @@ class Nucleic3(universe._Universe):
         self._generate_from_topology()
 
 
-class Nucleic4(universe._Universe):
+class Nucleic4(ModelBase):
     """Create a universe consisting of the phosphate, C4', C3', and base of the nucleic acid.
     """
+    model = "NUCLEIC4"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):

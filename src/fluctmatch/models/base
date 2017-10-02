@@ -32,12 +32,13 @@ from future.utils import (
 )
 
 from . import (
+    base,
     topattrs,
     trajectory,
 )
 
 
-class _Universe(with_metaclass(abc.ABCMeta, mda.Universe)):
+class _Universe(with_metaclass(base._ModelMeta, mda.Universe)):
     """Base class for creating coarse-grain models.
 
     Parameters

@@ -9,21 +9,22 @@ from __future__ import (
     unicode_literals,
 )
 
+from collections import OrderedDict
+
+from MDAnalysis.core import topologyattrs
 from future.builtins import (
     super,
     zip,
 )
 
-from collections import OrderedDict
-from MDAnalysis.core import topologyattrs
-
-from . import universe
+from .base import ModelBase
 from .selection import *
 
 
-class Calpha(universe._Universe):
+class Calpha(ModelBase):
     """Create a universe defined by the protein C-alpha.
     """
+    model = "CALPHA"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -51,9 +52,10 @@ class Calpha(universe._Universe):
         self._generate_from_topology()
 
 
-class Caside(universe._Universe):
+class Caside(ModelBase):
     """Create a universe consisting of the C-alpha and sidechains of a protein.
     """
+    model = "CASIDE"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -91,9 +93,10 @@ class Caside(universe._Universe):
         self._generate_from_topology()
 
 
-class Ncsc(universe._Universe):
+class Ncsc(ModelBase):
     """Create a universe consisting of the amine, carboxyl, and sidechain regions of a protein.
     """
+    model = "NCSC"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):

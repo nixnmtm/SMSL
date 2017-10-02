@@ -14,17 +14,18 @@ from future.builtins import (
     zip,
 )
 
-from . import universe
+from .base import ModelBase
 from ..fluctmatch import utils as fmutils
 
 
-class Enm(universe._Universe):
+class Enm(ModelBase):
     """Convert a basic coarse-grain universe into an elastic-network model.
 
     Determines the interactions between beads via distance cutoffs `rmin` and `rmax`. The
     atoms and residues are also renamed to prevent name collision when working with
     fluctuation matching.
     """
+    model = "ENM"
     _rmin = 0.
     _rmax = 10.
 
@@ -46,6 +47,9 @@ class Enm(universe._Universe):
         self.__dict__.update(self.atu.__dict__)
 
         universe.rename_universe(self)
+        charges = kwargs.get("charges", False)
+        if not charges:
+            self.atoms.charges = 0.
         self._topology.add_TopologyAttr(topologyattrs.Atomtypes(np.arange(self.atoms.n_atoms) + 1))
         self._topology.add_TopologyAttr(topologyattrs.Angles([]))
         self._topology.add_TopologyAttr(topologyattrs.Dihedrals([]))
