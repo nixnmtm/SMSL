@@ -16,7 +16,10 @@ from fluctmatch.models import (
     protein,
     solvent,
     ions,
-    universe,
+)
+from fluctmatch.models.base import (
+    Merge,
+    rename_universe,
 )
 from fluctmatch.models.selection import *
 from tests.datafiles import (
@@ -27,7 +30,7 @@ from tests.datafiles import (
 
 
 def test_universe():
-    testing.assert_raises(TypeError, universe._Universe, PDB_prot)
+    testing.assert_raises(TypeError, base._Universe, PDB_prot)
 
 
 def test_merge_creation():
@@ -35,7 +38,7 @@ def test_merge_creation():
     water = solvent.Water(TIP3P)
     solvions = ions.SolventIons(IONS)
 
-    cg_universe = universe.Merge(prot, water, solvions)
+    cg_universe = Merge(prot, water, solvions)
     cg_natoms = prot.atoms.n_atoms + water.atoms.n_atoms + solvions.atoms.n_atoms
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
@@ -50,7 +53,7 @@ def test_merge_positions():
     water = solvent.Water(TIP3P)
     solvions = ions.SolventIons(IONS)
 
-    cg_universe = universe.Merge(prot, water, solvions)
+    cg_universe = Merge(prot, water, solvions)
     positions = np.concatenate(
         (prot.atoms.positions, water.atoms.positions, solvions.atoms.positions),
         axis=0
@@ -64,7 +67,7 @@ def test_merge_positions():
 
 def test_rename_universe():
     cg_universe = protein.Ncsc(PDB_prot)
-    universe.rename_universe(cg_universe)
+    rename_universe(cg_universe)
     testing.assert_string_equal(
         native_str(cg_universe.atoms[0].name),
         native_str("A001"),
