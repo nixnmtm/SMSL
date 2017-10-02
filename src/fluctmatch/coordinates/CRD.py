@@ -97,7 +97,6 @@ class CRDWriter(CRD.CRDWriter):
         self.crd = None
 
     def write(self, selection, frame=None):
-        # type: (object, object) -> object
         """Write selection at current trajectory frame to file.
 
         write(selection,frame=FRAME)
@@ -143,7 +142,7 @@ class CRDWriter(CRD.CRDWriter):
                 missing_topology.append(attr)
         # ChainIDs - Try ChainIDs first, fall back to Segids
         try:
-            attrs["chainIDs"] = atoms.chainIDs
+            attrs["segids"] = atoms.segids
         except (NoDataError, AttributeError):
             # try looking for segids instead
             try:
@@ -172,7 +171,7 @@ class CRDWriter(CRD.CRDWriter):
             resids = attrs["resids"]
             for i, pos, resname, name, chainID, resid, tempfactor in zip(
                 range(n_atoms), coor, attrs["resnames"], attrs["names"],
-                attrs["chainIDs"], attrs["resids"], attrs["tempfactors"]):
+                attrs["segids"], attrs["resids"], attrs["tempfactors"]):
                 if not i == 0 and resids[i] != resids[i - 1]:
                     current_resid += 1
 
