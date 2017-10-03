@@ -9,6 +9,7 @@ from __future__ import (
     unicode_literals,
 )
 
+import numpy as np
 import MDAnalysis as mda
 import numpy.testing as testing
 from future.utils import native_str
@@ -26,7 +27,7 @@ def test_average_structure():
         universe.atoms.positions
         for _ in universe.trajectory
     ], axis=0)
-    positions = fmutils.average_structure(TPR, XTC)
+    positions = fmutils.average_structure(universe)
     testing.assert_allclose(
         positions,
         avg_positions,
@@ -40,10 +41,10 @@ def test_average_bonds():
         universe.bonds.bonds()
         for _ in universe.trajectory
     ], axis=0)
-    bonds = fmutils.average_bonds(TPR, XTC)
+    bonds = fmutils.bond_stats(universe, func="mean")
     testing.assert_allclose(
         bonds["r_IJ"],
-        bond_fluct,
+        avg_bonds,
         err_msg=native_str("Average bond distances don't match."),
     )
 
@@ -54,7 +55,7 @@ def test_bond_fluctuation():
         universe.bonds.bonds()
         for _ in universe.trajectory
     ], axis=0)
-    bonds = fmutils.bond_fluctuation(TPR, XTC)
+    bonds = fmutils.bond_stats(universe, func="std")
     testing.assert_allclose(
         bonds["r_IJ"],
         bond_fluct,

@@ -22,6 +22,7 @@ from os import path
 import MDAnalysis as mda
 import numpy as np
 import pandas as pd
+from MDAnalysis.lib import util
 from MDAnalysis.coordinates.core import reader
 from future.builtins import (
     dict,
@@ -274,20 +275,17 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             except IOError:
                 raise_with_traceback((IOError("Some files are missing. Unable to restart.")))
 
-        with mda.Universe(self.filenames["xplor_psf_file"], self.filenames["crd_file"]).trajectory as trj:
-            n_atoms = trj.n_atoms
-
         # Write CHARMM input file.
         if not path.exists(self.filenames["charmm_input"]):
-            with open(self.filenames["charmm_input"], "wb") as charmm_file:   # type: Optional[IO[str]]
+            with util.openany(self.filenames["charmm_input"], "w") as charmm_file:   # type: Optional[IO[str]]
                 dimens = "dimension chsize 500000" if self.kwargs.get("charmm_version", 41) >= 36 else ""
                 charmm_inp = (
                     charmm36_nma.nma.format(temperature=self.temperature, **self.filenames)
                     if self.kwargs.get("charmm_version", 41) >= 39
                     else charmm_nma.nma.format(temperature=self.temperature, dimens=dimens, **self.filenames)
                 )
-                charmm_inp = textwrap.dedent(textwrap.dedent(charmm_inp)[1:])
-                charmm_file.write(charmm_inp.encode())
+                charmm_inp = textwrap.dedent(charmm_inp[1:])
+                print(charmm_inp, file=charmm_file)
 
         # Set the indices for the parameter tables.
         self.target["BONDS"].set_index(self.bond_def, inplace=True)
@@ -296,20 +294,20 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Check for restart.
         try:
             if os.stat(self.filenames["error_data"]).st_size > 0:
-                with open(self.filenames["error_data"], "r") as data:
+                with util.openany(self.filenames["error_data"], "r") as data:
                     error_info = pd.read_csv(data, header=0, skipinitialspace=True, delim_whitespace=True)
                     if not error_info.empty:
                         self.error["step"] = error_info["step"].values[-1]
             else:
                 raise FileNotFoundError
         except (FileNotFoundError, OSError):
-            with open(self.filenames["error_data"], "wb") as data:
+            with util.openany(self.filenames["error_data"], "w") as data:
                 np.savetxt(data, [self.error_hdr,], fmt=native_str("%10s"), delimiter=native_str(""))
         self.error["step"] += 1
 
         # Run simulation
         while (self.error["step"] <= n_cycles).bool():
-            with open(self.filenames["charmm_log"], "w") as charmm_log:
+            with util.openany(self.filenames["charmm_log"], "w") as charmm_log:
                 subprocess.check_call(
                     [charmm_exec, "-i", self.filenames["charmm_input"]],
                     stdout=charmm_log)
@@ -354,12 +352,11 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 prm.write(self.dynamic_params)
 
             # Update the error values.
-            with open(self.filenames["error_data"], "ab") as error_file:
+            with util.openany(self.filenames["error_data"], "a") as error_file:
                 np.savetxt(
                     error_file,
                     self.error,
                     fmt=native_str("%10d%10.6f%10.6f%10.6f"),
-                    delimiter=native_str("")
                 )
 
             if (self.error["r.m.s.d."] < tol).bool():

@@ -9,3 +9,11 @@ from __future__ import (
     unicode_literals,
 )
 
+from fluctmatch.coordinates import COR
+from fluctmatch.intcor import IC
+from fluctmatch.parameter import PRM
+from fluctmatch.topology import (
+    PSFParser,
+    RTF,
+    STR,
+)

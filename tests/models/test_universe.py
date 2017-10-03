@@ -18,6 +18,7 @@ from fluctmatch.models import (
     ions,
 )
 from fluctmatch.models.base import (
+    ModelBase,
     Merge,
     rename_universe,
 )
@@ -30,7 +31,7 @@ from tests.datafiles import (
 
 
 def test_universe():
-    testing.assert_raises(TypeError, base._Universe, PDB_prot)
+    testing.assert_raises(TypeError, ModelBase, PDB_prot)
 
 
 def test_merge_creation():
@@ -76,3 +77,8 @@ def test_rename_universe():
         native_str(cg_universe.residues[0].resname),
         native_str("A001"),
     )
+
+
+def test_registry():
+    from fluctmatch import _MODELS
+    assert len(_MODELS) > 0

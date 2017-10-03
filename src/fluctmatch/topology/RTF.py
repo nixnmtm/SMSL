@@ -14,7 +14,6 @@ import pandas as pd
 from MDAnalysis.lib import util
 from future.builtins import (
     dict,
-    open,
 )
 from future.utils import (
     native_str,
@@ -41,10 +40,10 @@ class RTFWriter(topbase.TopologyWriterBase):
     format = "RTF"
     units = dict(time=None, length=None)
     fmt = dict(
-        HEADER="{:>5d}{:>5d}\n\n",
+        HEADER="{:>5d}{:>5d}\n",
         MASS="MASS %5d %-6s%12.5f",
         DECL="DECL +%s\nDECL -%s",
-        RES="RESI {:<4s} {:>12.4f}\nGROUP\n",
+        RES="RESI {:<4s} {:>12.4f}\nGROUP",
         ATOM="ATOM %-6s %-6s %7.4f",
         IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",)
     bonds = (
@@ -66,8 +65,8 @@ class RTFWriter(topbase.TopologyWriterBase):
                 "* User: {user}".format(user=user),
             )
         )
-        if issubclass(type(self._title), str) or issubclass(type(self._title), np.unicode):
-            self._title = (self._title,)
+        if not util.iterable(self._title):
+            self._title = util.asiterable(self._title)
 
     def _write_mass(self):
         _, idx = np.unique(self._atoms.names, return_index=True)
@@ -87,10 +86,10 @@ class RTFWriter(topbase.TopologyWriterBase):
         names = np.unique(self._atoms.names)[:, np.newaxis]
         decl = np.concatenate((names, names), axis=1)
         np.savetxt(self.rtffile, decl, fmt=native_str(self.fmt["DECL"]))
-        self.rtffile.write("\n".encode())
+        print(file=self.rtffile)
 
     def _write_residues(self, residue):
-        self.rtffile.write(self.fmt["RES"].format(residue.resname, residue.charge).encode())
+        print(self.fmt["RES"].format(residue.resname, residue.charge), file=self.rtffile)
 
         # Write the atom lines with site name, type, and charge.
         key = "ATOM"
@@ -143,7 +142,7 @@ class RTFWriter(topbase.TopologyWriterBase):
                 np.savetxt(self.rtffile, names, fmt=native_str(fmt))
             except (AttributeError,):
                 continue
-        self.rtffile.write("\n".encode())
+        print(file=self.rtffile)
 
     def write(self, universe):
         """Write a CHARMM-formatted RTF topology file.
@@ -154,11 +153,11 @@ class RTFWriter(topbase.TopologyWriterBase):
             A collection of atoms in a universe or atomgroup with bond definitions.
         """
         self._atoms = universe.atoms
-        with open(self.filename, "wb") as self.rtffile:
+        with util.openany(self.filename, "w") as self.rtffile:
             # Write the title and header information.
             for _ in self._title:
-                self.rtffile.write((_ + "\n").encode())
-            self.rtffile.write(self.fmt["HEADER"].format(36, 1).encode())
+                print(_, file=self.rtffile)
+            print(self.fmt["HEADER"].format(36, 1), file=self.rtffile)
 
             # Write the atom mass and declaration sections
             self._write_mass()
@@ -171,4 +170,4 @@ class RTFWriter(topbase.TopologyWriterBase):
             _, idx = np.unique(self._atoms.residues.resnames, return_index=True)
             for residue in self._atoms.residues[idx]:
                 self._write_residues(residue)
-            self.rtffile.write("END\n".encode())
+            print("END", file=self.rtffile)

@@ -18,7 +18,6 @@ import pandas as pd
 from MDAnalysis.lib import util
 from future.builtins import (
     dict,
-    open,
 )
 from future.utils import (
     native_str,
@@ -66,8 +65,8 @@ class STRWriter(topbase.TopologyWriterBase):
                 "* User: {user}".format(user=user),
             )
         )
-        if issubclass(type(self._title), str) or issubclass(type(self._title), np.unicode):
-            self._title = (self._title,)
+        if not util.iterable(self._title):
+            self._title = util.asiterable(self._title)
 
     def write(self, universe):
         """Write the bond information to a CHARMM-formatted stream file.
@@ -90,7 +89,7 @@ class STRWriter(topbase.TopologyWriterBase):
             raise_with_traceback(AttributeError("No bonds were found."))
 
         # Write the data to the file.
-        with open(self.filename, "wb") as stream_file:
+        with util.openany(self.filename, "w") as stream_file:
             for _ in self._title:
-                stream_file.write((_ + "\n").encode())
-            np.savetxt(stream_file, data, fmt=native_str(textwrap.dedent(self.fmt)), delimiter=native_str(""))
+                print(_, file=stream_file)
+            np.savetxt(stream_file, data, fmt=native_str(textwrap.dedent(self.fmt[1:])))

@@ -17,7 +17,7 @@ import pandas as pd
 from MDAnalysis.lib import util
 from future.builtins import (
     dict,
-    open,
+    next,
 )
 from future.utils import (
     native_str,
@@ -75,32 +75,34 @@ class IntcorReader(TopologyReaderBase):
             An internal coordinates table.
         """
         table = pd.DataFrame()
-        with open(self.filename, "r") as icfile:
+        with util.openany(self.filename, "r") as icfile:
             for line in icfile:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
                     continue       # ignore TITLE and empty lines
-                line = np.fromiter(line.strip().split(), dtype=np.int)
-                key = "EXTENDED" if line[0] == 30 else "STANDARD"
-                key += "_RESID" if line[1] == 2 else ""
                 break
+            line = np.fromiter(line.strip().split(), dtype=np.int)
+            key = "EXTENDED" if line[0] == 30 else "STANDARD"
+            key += "_RESID" if line[1] == 2 else ""
+            resid_a = line[1]
 
-            TableParser = util.FORTRANReader(self.fmt[key])
-            nlines, resid = np.array(icfile.readline().strip().split(), dtype=np.int)
-            if resid != line[1]:
+            line = next(icfile).strip().split()
+            n_lines, resid_b = np.array(line, dtype=np.int)
+            if resid_a != resid_b:
                 raise IOError("A mismatch has occurred on determining the IC format.")
 
-            table = pd.DataFrame([TableParser.read(line) for line in icfile], dtype=np.unicode)
+            TableParser = util.FORTRANReader(self.fmt[key])
+            table = pd.DataFrame([TableParser.read(line) for line in icfile], dtype=np.object)
             table = table[table != ":"].dropna(axis=1).apply(pd.to_numeric, errors="ignore")
             table.set_index(0, inplace=True)
-            if nlines != table.shape[0]:
+            if n_lines != table.shape[0]:
                 raise IOError(
-                    "A mismatch has occurred between the number ",
-                    "of lines expected and the number of lines ",
-                    "read. ({:d} != {:d})".format(nlines, len(table))
+                    "A mismatch has occurred between the number "
+                    "of lines expected and the number of lines "
+                    "read. ({:d} != {:d})".format(n_lines, len(table))
                 )
 
-            if key == "STD":
+            if key == "STANDARD":
                 idx = np.where(
                     (self.cols != "segidI") & (self.cols != "segidJ") &
                     (self.cols != "segidK") & (self.cols != "segidL")
@@ -134,19 +136,19 @@ class IntcorWriter(TopologyWriterBase):
 
     fmt = dict(
         # fortran_format = "(I5,1X,4(I3,1X,A4),F9.4,3F8.2,F9.4)"
-        STD=(
+        STANDARD=(
             "%5d %3s %-4s%3s %-4%3s %-4%3s %-4%9.4f%8.2f%8.2f%8.2f%9.4f"
         ),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
-        STD_EXT=(
+        EXTENDED=(
             "%9d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f"
         ),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        RESID=(
+        STANDARD_RESID=(
             "%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"
         ),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        RESID_EXT=(
+        EXTENDED_RESID=(
             "%10d %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
         ),
     )
@@ -156,9 +158,8 @@ class IntcorWriter(TopologyWriterBase):
         self._intcor = None
         self._extended = kwargs.get("extended", True)
         self._resid = kwargs.get("resid", True)
-        self.key = "RESID" if self._resid else "STD"
-        if self._extended:
-            self.key += "_EXT"
+        self.key = "EXTENDED" if self._extended else "STANDARD"
+        self.key += "_RESID" if self._resid else ""
 
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
@@ -169,8 +170,8 @@ class IntcorWriter(TopologyWriterBase):
                 "* User: {user}".format(user=user),
             )
         )
-        if issubclass(type(self._title), str) or issubclass(type(self._title), np.unicode):
-            self._title = (self._title,)
+        if not util.iterable(self._title):
+            self._title = util.asiterable(self._title)
 
     def write(self, table):
         """Write an internal coordinates table.
@@ -184,9 +185,9 @@ class IntcorWriter(TopologyWriterBase):
         rescol = ["resI", "resJ", "resK", "resL", ]
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
-        with open(self.filename, "wb") as icfile:
+        with util.openany(self.filename, "w") as icfile:
             for _ in self._title:
-                icfile.write((_ + "\n").encode())
+                print (_, file=icfile)
             line = np.zeros(20, dtype=np.int)
             line[0] = 30 if self._extended else 20
             line[1] = 2 if self._resid else 1
@@ -195,4 +196,4 @@ class IntcorWriter(TopologyWriterBase):
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
             np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%4d"), delimiter=native_str(""))
-            np.savetxt(icfile, ictable.reset_index(), fmt=native_str(self.fmt[self.key]), delimiter=native_str(""))
+            np.savetxt(icfile, ictable.reset_index(), fmt=native_str(self.fmt[self.key]))

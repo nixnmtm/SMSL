@@ -92,8 +92,8 @@ class CORWriter(CRD.CRDWriter):
         filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
              name of the output file or a stream
         """
-        self.filename = util.filename(filename, ext="cor")
         super().__init__(filename, **kwargs)
+        self.filename = util.filename(filename, ext="cor")
         self.crd = None
 
     def write(self, selection, frame=None):

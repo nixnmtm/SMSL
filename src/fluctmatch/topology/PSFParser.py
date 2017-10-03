@@ -28,18 +28,32 @@ from MDAnalysis.core.topologyattrs import (
     Segids,
 )
 from MDAnalysis.lib import util
-from MDAnalysis.lib.util import FORTRANReader
 from MDAnalysis.topology import PSFParser
 from MDAnalysis.topology.base import change_squash
 from future.builtins import (
     dict,
-    open,
     range,
 )
 from future.utils import (
     native_str,
 )
 
+from MDAnalysis.core.topologyattrs import (
+    Atomids,
+    Atomnames,
+    Atomtypes,
+    Masses,
+    Charges,
+    Resids,
+    Resnums,
+    Resnames,
+    Segids,
+    Bonds,
+    Angles,
+    Dihedrals,
+    Impropers
+)
+from MDAnalysis.core.topology import Topology
 from fluctmatch.topology import base
 
 logger = logging.getLogger("MDAnalysis.topology.PSF")
@@ -66,6 +80,69 @@ class PSF36Parser(PSFParser.PSFParser):
     .. _PSF: http://www.charmm.org/documentation/c35b1/struct.html
     """
     format = 'PSF'
+
+    def parse(self):
+        """Parse PSF file into Topology
+
+        Returns
+        -------
+        MDAnalysis *Topology* object
+        """
+        # Open and check psf validity
+        with util.openany(self.filename, 'r') as psffile:
+            header = next(psffile)
+            if not header.startswith("PSF"):
+                err = ("{0} is not valid PSF file (header = {1})"
+                       "".format(self.filename, header))
+                logger.error(err)
+                raise ValueError(err)
+            header_flags = header[3:].split()
+
+            if "NAMD" in header_flags:
+                self._format = "NAMD"        # NAMD/VMD
+            elif "EXT" in header_flags:
+                self._format = "EXTENDED"    # CHARMM
+            else:
+                self._format = "STANDARD"    # CHARMM
+            if "XPLOR" in header_flags:
+                self._format += "_XPLOR"
+
+            next(psffile)
+            title = next(psffile).split()
+            if not (title[1] == "!NTITLE"):
+                err = "{0} is not a valid PSF file".format(psffile.name)
+                logger.error(err)
+                raise ValueError(err)
+            # psfremarks = [psffile.next() for i in range(int(title[0]))]
+            for _ in range(int(title[0])):
+                next(psffile)
+            logger.debug("PSF file {0}: format {1}"
+                         "".format(psffile.name, self._format))
+
+            # Atoms first and mandatory
+            top = self._parse_sec(
+                psffile, ('NATOM', 1, 1, self._parseatoms))
+            # Then possibly other sections
+            sections = (
+                #("atoms", ("NATOM", 1, 1, self._parseatoms)),
+                (Bonds, ("NBOND", 2, 4, self._parsesection)),
+                (Angles, ("NTHETA", 3, 3, self._parsesection)),
+                (Dihedrals, ("NPHI", 4, 2, self._parsesection)),
+                (Impropers, ("NIMPHI", 4, 2, self._parsesection)),
+                #("donors", ("NDON", 2, 4, self._parsesection)),
+                #("acceptors", ("NACC", 2, 4, self._parsesection))
+            )
+
+            try:
+                for attr, info in sections:
+                    next(psffile)
+                    top.add_TopologyAttr(
+                        attr(self._parse_sec(psffile, info)))
+            except StopIteration:
+                # Reached the end of the file before we expected
+                pass
+
+        return top
 
     def _parseatoms(self, lines, atoms_per, numlines):
         """Parses atom section in a Charmm PSF file.
@@ -125,7 +202,7 @@ class PSF36Parser(PSFParser.PSFParser):
             EXTENDED_XPLOR="I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A6,1X,2F14.6,I8",
             NAMD="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
         )
-        atom_parser = FORTRANReader(atom_parsers[self._format])
+        atom_parser = util.FORTRANReader(atom_parsers[self._format])
         # once partitioned, assigned each component the correct type
         set_type = lambda x: (int(x[0]) - 1, x[1] or "SYSTEM", int(x[2]), x[3],
                               x[4], x[5], float(x[6]), float(x[7]))
@@ -165,7 +242,7 @@ class PSF36Parser(PSFParser.PSFParser):
                 # last ditch attempt: this *might* be a NAMD/VMD
                 # space-separated "PSF" file from VMD version < 1.9.1
                 try:
-                    atom_parser = FORTRANReader(atom_parsers['NAMD'])
+                    atom_parser = util.FORTRANReader(atom_parsers['NAMD'])
                     vals = atom_parser.read(line)
                     logger.warn("Guessing that this is actually a"
                                 " NAMD-type PSF file..."
@@ -173,7 +250,7 @@ class PSF36Parser(PSFParser.PSFParser):
                     logger.debug("First NAMD-type line: {0}: {1}"
                                  "".format(i, line.rstrip()))
                 except ValueError:
-                    atom_parser = FORTRANReader(atom_parsers[self._format].replace("A6", "A4"))
+                    atom_parser = util.FORTRANReader(atom_parsers[self._format].replace("A6", "A4"))
                     vals = atom_parser.read(line)
                     logger.warn("Guessing that this is actually a"
                                 " pre CHARMM36 PSF file..."
@@ -278,19 +355,19 @@ class PSFWriter(base.TopologyWriterBase):
 
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
-        self.title = kwargs.get(
+        self._title = kwargs.get(
             "title",
             (
                 "* Created by fluctmatch on {date}".format(date=date),
                 "* User: {user}".format(user=user),
             )
         )
-        if issubclass(type(self.title), str) or issubclass(type(self.title), np.unicode):
-            self.title = (self.title, )
+        if not util.iterable(self._title):
+            self._title = util.asiterable(self._title)
 
         self.col_width = 10 if self._extended else 8
-        self.sect_hdr = "{:>10d} !{}\n" if self._extended else "{:>8d} !{}"
-        self.sect_hdr2 = "{:>10d}{:>10d} !{}\n" if self._extended else "{:>8d}{:>8d} !{}"
+        self.sect_hdr = "{:>10d} !{}" if self._extended else "{:>8d} !{}"
+        self.sect_hdr2 = "{:>10d}{:>10d} !{}" if self._extended else "{:>8d}{:>8d} !{}"
         self.sections = (("bonds", "NBOND: bonds", 8),
                          ("angles", "NTHETA: angles", 9),
                          ("dihedrals", "NPHI: dihedrals", 8),
@@ -325,13 +402,13 @@ class PSFWriter(base.TopologyWriterBase):
         if self._version < 36:
             self._fmtkey += "_C35"
 
-        with open(self.filename, "wb") as psffile:
-            psffile.write((header + "\n").encode())
-            n_title = len(self.title)
-            psffile.write(self.sect_hdr.format(n_title, "NTITLE").encode())
-            for _ in self.title:
-                psffile.write((_ + "\n").encode())
-            psffile.write("\n".encode())
+        with util.openany(self.filename, "w") as psffile:
+            print(header, file=psffile)
+            n_title = len(self._title)
+            print(self.sect_hdr.format(n_title, "NTITLE"), file=psffile)
+            for _ in self._title:
+                print(_, file=psffile)
+            print(file=psffile)
             self._write_atoms(psffile)
             for section in self.sections:
                 self._write_sec(psffile, section)
@@ -363,7 +440,7 @@ class PSFWriter(base.TopologyWriterBase):
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8,2G14.6) XPLOR,c35,CHEQ
         """
         fmt = self._fmt[self._fmtkey]
-        psffile.write(self.sect_hdr.format(self._universe.atoms.n_atoms, "NATOM").encode())
+        print(self.sect_hdr.format(self._universe.atoms.n_atoms, "NATOM"), file=psffile)
         atoms = self._universe.atoms
         lines = (
             (atoms.ids+1),
@@ -387,15 +464,17 @@ class PSFWriter(base.TopologyWriterBase):
             cheq = pd.concat([pd.DataFrame(_) for _ in cheq], axis=1)
             lines = pd.concat([lines, cheq], axis=1)
         np.savetxt(psffile, lines, fmt=native_str(fmt))
-        psffile.write("\n".encode())
+        print(file=psffile)
 
     def _write_sec(self, psffile, section_info):
         attr, header, n_perline = section_info
         if not hasattr(self._universe, attr):
-            psffile.write((self.sect_hdr.format(0, header) + "\n\n").encode())
+            print(self.sect_hdr.format(0, header), file=psffile)
+            print("\n", file=psffile)
             return
         if len(getattr(self._universe, attr).to_indices()) < 2:
-            psffile.write((self.sect_hdr.format(0, header) + "\n\n").encode())
+            print(self.sect_hdr.format(0, header), file=psffile)
+            print("\n", file=psffile)
             return
 
         values = np.asarray(getattr(self._universe, attr).to_indices()) + 1
@@ -406,9 +485,9 @@ class PSFWriter(base.TopologyWriterBase):
             n_extra = n_values - (n_rows % n_values)
             values = np.concatenate((values, np.full((n_extra, n_cols), "", dtype=np.object)), axis=0)
         values = values.reshape((values.shape[0] // n_values, n_perline))
-        psffile.write(self.sect_hdr.format(n_rows, header).encode())
+        print(self.sect_hdr.format(n_rows, header), file=psffile)
         np.savetxt(psffile, values, fmt=native_str("%{:d}s".format(self.col_width)), delimiter=native_str(""))
-        psffile.write("\n".encode())
+        print(file=psffile)
 
     def _write_other(self, psffile):
         n_atoms = self._universe.atoms.n_atoms
@@ -421,16 +500,16 @@ class PSFWriter(base.TopologyWriterBase):
         if dn_cols > 0:
             nnb = np.concatenate([nnb, np.empty(missing, dtype=np.object)], axis=0)
         nnb = nnb.reshape((nnb.size // n_cols, n_cols))
-        psffile.write((self.sect_hdr.format(0, "NNB") + "\n").encode())
+        print(self.sect_hdr.format(0, "NNB") + "\n", file=psffile)
         np.savetxt(psffile, nnb, fmt=native_str("%{:d}s".format(self.col_width)), delimiter=native_str(""))
-        psffile.write("\n".encode())
+        print(file=psffile)
 
         # NGRP NST2
-        psffile.write(self.sect_hdr2.format(1, 0, "NGRP NST2").encode())
+        print(self.sect_hdr2.format(1, 0, "NGRP NST2"), file=psffile)
         line = np.zeros(3, dtype=np.int)
         line = line.reshape((1, line.size))
         np.savetxt(psffile, line, fmt=native_str("%{:d}d".format(self.col_width)), delimiter=native_str(""))
-        psffile.write("\n".encode())
+        print(file=psffile)
 
         # MOLNT
         if self._cheq:
@@ -438,17 +517,17 @@ class PSFWriter(base.TopologyWriterBase):
             if dn_cols > 0:
                 line = np.concatenate([line, np.zeros(missing, dtype=np.object)], axis=0)
             line = line.reshape((line.size // n_cols, n_cols))
-            psffile.write(self.sect_hdr.format(1, "MOLNT").encode())
+            print(self.sect_hdr.format(1, "MOLNT"), file=psffile)
             np.savetxt(psffile, line, fmt=native_str("%{:d}s".format(self.col_width)), delimiter=native_str(""))
-            psffile.write("\n".encode())
+            print(file=psffile)
         else:
-            psffile.write(self.sect_hdr.format(0, "MOLNT").encode())
-            psffile.write("\n".encode())
+            print(self.sect_hdr.format(0, "MOLNT"), file=psffile)
+            print(file=psffile)
 
         # NUMLP NUMLPH
-        psffile.write(self.sect_hdr2.format(0, 0, "NUMLP NUMLPH").encode())
-        psffile.write("\n".encode())
+        print(self.sect_hdr2.format(0, 0, "NUMLP NUMLPH"), file=psffile)
+        print(file=psffile)
 
         # NCRTERM: cross-terms
-        psffile.write(self.sect_hdr.format(0, "NCRTERM: cross-terms").encode())
-        psffile.write("\n".encode())
+        print(self.sect_hdr.format(0, "NCRTERM: cross-terms"), file=psffile)
+        print(file=psffile)

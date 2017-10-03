@@ -15,7 +15,10 @@ from future.builtins import (
 )
 
 from fluctmatch.fluctmatch import utils as fmutils
-from fluctmatch.models.base import ModelBase
+from fluctmatch.models.base import (
+    ModelBase,
+    rename_universe,
+)
 
 
 class Enm(ModelBase):
@@ -46,7 +49,7 @@ class Enm(ModelBase):
     def _initialize(self, *args, **kwargs):
         self.__dict__.update(self.atu.__dict__)
 
-        universe.rename_universe(self)
+        rename_universe(self)
         charges = kwargs.get("charges", False)
         if not charges:
             self.atoms.charges = 0.

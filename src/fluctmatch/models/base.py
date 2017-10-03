@@ -39,7 +39,7 @@ from fluctmatch.models import (
 )
 
 
-class _ModelMeta(type):
+class _ModelMeta(abc.ABCMeta):
     # Auto register upon class creation
     def __init__(cls, name, bases, classdict):
         type.__init__(type, name, bases, classdict)
