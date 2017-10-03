@@ -49,8 +49,8 @@ from future.builtins import (
 )
 
 
-class CRDWriter(CRD.CRDWriter):
-    """CRD writer that implements the CHARMM CRD EXT coordinate format.
+class CORWriter(CRD.CRDWriter):
+    """COR writer that implements the CHARMM CRD EXT coordinate format.
 
     This class supercedes the original class provided by MDAnalysis by
     writing only the EXT format regardless of the number of atoms in the
@@ -66,7 +66,7 @@ class CRDWriter(CRD.CRDWriter):
     .. versionchanged:: 0.11.0
        Frames now 0-based instead of 1-based
     """
-    format = "CRD"
+    format = "COR"
     units = {"time": None, "length": "Angstrom"}
 
     fmt = {
@@ -92,7 +92,7 @@ class CRDWriter(CRD.CRDWriter):
         filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
              name of the output file or a stream
         """
-        self.filename = util.filename(filename, ext="crd")
+        self.filename = util.filename(filename, ext="cor")
         super().__init__(filename, **kwargs)
         self.crd = None
 
@@ -142,11 +142,11 @@ class CRDWriter(CRD.CRDWriter):
                 missing_topology.append(attr)
         # ChainIDs - Try ChainIDs first, fall back to Segids
         try:
-            attrs["segids"] = atoms.segids
+            attrs["chainIDs"] = atoms.segids
         except (NoDataError, AttributeError):
             # try looking for segids instead
             try:
-                attrs["chainIDs"] = atoms.segids
+                attrs["chainIDs"] = atoms.chainIDs
             except (NoDataError, AttributeError):
                 attrs["chainIDs"] = itertools.cycle(("",))
                 missing_topology.append(attr)
@@ -171,7 +171,7 @@ class CRDWriter(CRD.CRDWriter):
             resids = attrs["resids"]
             for i, pos, resname, name, chainID, resid, tempfactor in zip(
                 range(n_atoms), coor, attrs["resnames"], attrs["names"],
-                attrs["segids"], attrs["resids"], attrs["tempfactors"]):
+                attrs["chainIDs"], attrs["resids"], attrs["tempfactors"]):
                 if not i == 0 and resids[i] != resids[i - 1]:
                     current_resid += 1
 
