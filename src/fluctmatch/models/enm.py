@@ -14,8 +14,8 @@ from future.builtins import (
     zip,
 )
 
-from .base import ModelBase
-from ..fluctmatch import utils as fmutils
+from fluctmatch.fluctmatch import utils as fmutils
+from fluctmatch.models.base import ModelBase
 
 
 class Enm(ModelBase):

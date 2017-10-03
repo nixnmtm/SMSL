@@ -45,7 +45,7 @@ def bond_stats(universe, func="mean"):
     ----------
     universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
         A collection of atoms in a universe or AtomGroup with bond information.
-    func : str, optional
+    func : {"mean", "std"}
         Determine either the mean or the standard deviation of the bond lengths.
 
     Returns
