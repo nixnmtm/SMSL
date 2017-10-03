@@ -27,10 +27,10 @@ from future.utils import (
     raise_with_traceback,
 )
 
-from . import base
+from fluctmatch.topology import base as topbase
 
 
-class STRWriter(base.TopologyWriterBase):
+class STRWriter(topbase.TopologyWriterBase):
     """Write a stream file to define internal coordinates within CHARMM.
 
     Parameters

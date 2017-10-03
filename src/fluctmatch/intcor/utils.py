@@ -19,6 +19,7 @@ _HEADER = ["segidI", "resI", "I", "segidJ", "resJ", "J",
            "segidK", "resK", "K", "segidL", "resL", "L",
            "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"]
 
+
 def create_empty_table(universe):
     """Create an empty table of internal coordinates from an atomgroup
 

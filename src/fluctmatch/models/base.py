@@ -32,11 +32,11 @@ from future.utils import (
     with_metaclass,
 )
 
-from . import (
+from fluctmatch import _MODELS
+from fluctmatch.models import (
     topattrs,
     trajectory,
 )
-from .. import _MODELS
 
 
 class _ModelMeta(type):

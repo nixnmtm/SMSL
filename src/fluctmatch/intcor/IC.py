@@ -23,7 +23,10 @@ from future.utils import (
     native_str,
 )
 
-from ..topology.base import (TopologyReaderBase, TopologyWriterBase)
+from fluctmatch.topology.base import (
+    TopologyReaderBase,
+    TopologyWriterBase
+)
 
 
 class IntcorReader(TopologyReaderBase):

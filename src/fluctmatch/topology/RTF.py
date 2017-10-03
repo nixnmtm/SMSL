@@ -20,10 +20,10 @@ from future.utils import (
     native_str,
 )
 
-from . import base
+from fluctmatch.topology import base as topbase
 
 
-class RTFWriter(base.TopologyWriterBase):
+class RTFWriter(topbase.TopologyWriterBase):
     """Write a CHARMM-formatted topology file.
 
     Parameters

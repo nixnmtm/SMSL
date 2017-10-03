@@ -14,7 +14,7 @@ from future.builtins import (
     zip,
 )
 
-from .base import ModelBase
+from fluctmatch.models.base import ModelBase
 
 
 class Water(ModelBase):

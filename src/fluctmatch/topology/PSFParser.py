@@ -9,10 +9,8 @@ from __future__ import (
     unicode_literals,
 )
 
-import functools
 import logging
 import time
-from math import ceil
 from os import environ
 
 import numpy as np
@@ -28,15 +26,11 @@ from MDAnalysis.core.topologyattrs import (
     Resnums,
     Resnames,
     Segids,
-    Bonds,
-    Angles,
-    Dihedrals,
-    Impropers
 )
 from MDAnalysis.lib import util
-
-Afrom MDAnalysis.lib.util import (openany, FORTRANReader)
-from MDAnalysis.topology.base import TopologyReaderBase, change_squash
+from MDAnalysis.lib.util import FORTRANReader
+from MDAnalysis.topology import PSFParser
+from MDAnalysis.topology.base import change_squash
 from future.builtins import (
     dict,
     open,
@@ -46,13 +40,13 @@ from future.utils import (
     native_str,
 )
 
-from . import base
+from fluctmatch.topology import base
 
 logger = logging.getLogger("MDAnalysis.topology.PSF")
 
 
 # Changed the segid squash_by to change_squash to prevent segment ID sorting.
-class PSFParser(TopologyReaderBase):
+class PSF36Parser(PSFParser.PSFParser):
     """Read topology information from a CHARMM/NAMD/XPLOR PSF_ file.
 
     Creates a Topology with the following Attributes:
@@ -72,96 +66,6 @@ class PSFParser(TopologyReaderBase):
     .. _PSF: http://www.charmm.org/documentation/c35b1/struct.html
     """
     format = 'PSF'
-
-    def parse(self):
-        """Parse PSF file into Topology
-
-        Returns
-        -------
-        MDAnalysis *Topology* object
-        """
-        # Open and check psf validity
-        with openany(self.filename, 'r') as psffile:
-            header = next(psffile)
-            if not header.startswith("PSF"):
-                err = ("{0} is not valid PSF file (header = {1})"
-                       "".format(self.filename, header))
-                logger.error(err)
-                raise ValueError(err)
-            header_flags = header[3:].split()
-
-            if "NAMD" in header_flags:
-                self._format = "NAMD"        # NAMD/VMD
-            elif "EXT" in header_flags:
-                self._format = "EXTENDED"    # CHARMM
-            else:
-                self._format = "STANDARD"    # CHARMM
-            if "XPLOR" in header_flags:
-                self._format += "_XPLOR"
-
-            next(psffile)
-            title = next(psffile).split()
-            if not (title[1] == "!NTITLE"):
-                err = "{0} is not a valid PSF file".format(psffile.name)
-                logger.error(err)
-                raise ValueError(err)
-            # psfremarks = [psffile.next() for i in range(int(title[0]))]
-            for _ in range(int(title[0])):
-                next(psffile)
-            logger.debug("PSF file {0}: format {1}"
-                         "".format(psffile.name, self._format))
-
-            # Atoms first and mandatory
-            top = self._parse_sec(
-                psffile, ('NATOM', 1, 1, self._parseatoms))
-            # Then possibly other sections
-            sections = (
-                #("atoms", ("NATOM", 1, 1, self._parseatoms)),
-                (Bonds, ("NBOND", 2, 4, self._parsesection)),
-                (Angles, ("NTHETA", 3, 3, self._parsesection)),
-                (Dihedrals, ("NPHI", 4, 2, self._parsesection)),
-                (Impropers, ("NIMPHI", 4, 2, self._parsesection)),
-                #("donors", ("NDON", 2, 4, self._parsesection)),
-                #("acceptors", ("NACC", 2, 4, self._parsesection))
-            )
-
-            try:
-                for attr, info in sections:
-                    next(psffile)
-                    top.add_TopologyAttr(
-                        attr(self._parse_sec(psffile, info)))
-            except StopIteration:
-                # Reached the end of the file before we expected
-                pass
-
-        return top
-
-    def _parse_sec(self, psffile, section_info):
-        """Parse a single section of the PSF
-
-        Returns
-        -------
-        A list of Attributes from this section
-        """
-        desc, atoms_per, per_line, parsefunc = section_info
-        header = next(psffile)
-        while header.strip() == "":
-            header = next(psffile)
-        header = header.split()
-        # Get the number
-        num = float(header[0])
-        sect_type = header[1].strip('!:')
-        # Make sure the section type matches the desc
-        if not sect_type == desc:
-            err = ("Expected section {0} but found {1}"
-                   "".format(desc, sect_type))
-            logger.error(err)
-            raise ValueError(err)
-        # Now figure out how many lines to read
-        numlines = int(ceil(num/per_line))
-
-        psffile_next = functools.partial(next, psffile)
-        return parsefunc(psffile_next, atoms_per, numlines)
 
     def _parseatoms(self, lines, atoms_per, numlines):
         """Parses atom section in a Charmm PSF file.
@@ -316,16 +220,6 @@ class PSFParser(TopologyReaderBase):
                        residue_segindex=segidx)
 
         return top
-
-    def _parsesection(self, lines, atoms_per, numlines):
-        section = []
-
-        for i in range(numlines):
-            # Subtract 1 from each number to ensure zero-indexing for the atoms
-            fields = np.int64(lines().split()) - 1
-            for j in range(0, len(fields), atoms_per):
-                section.append(tuple(fields[j:j+atoms_per]))
-        return section
 
 
 class PSFWriter(base.TopologyWriterBase):

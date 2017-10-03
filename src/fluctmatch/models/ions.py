@@ -13,8 +13,8 @@ from future.builtins import (
     zip,
 )
 
-from .base import ModelBase
-from .selection import *
+from fluctmatch.models.base import ModelBase
+from fluctmatch.models.selection import *
 
 
 class SolventIons(ModelBase):

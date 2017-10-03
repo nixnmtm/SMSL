@@ -18,7 +18,7 @@ from future.utils import (
     viewitems,
 )
 
-from .selection import *
+from fluctmatch.models.selection import *
 
 
 class _Trajectory(base.ReaderBase):

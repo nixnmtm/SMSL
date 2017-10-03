@@ -35,15 +35,15 @@ from future.utils import (
 )
 from scipy import constants
 
-from . import base as fmbase
-from . import utils as fmutils
-from .data import (
+from fluctmatch.fluctmatch import base as fmbase
+from fluctmatch.fluctmatch import utils as fmutils
+from fluctmatch.fluctmatch.data import (
     charmm36_nma,
     charmm_nma,
 )
-from ..intcor import utils as icutils
-from ..models import enm
-from ..parameter import utils as prmutils
+from fluctmatch.intcor import utils as icutils
+from fluctmatch.models import enm
+from fluctmatch.parameter import utils as prmutils
 
 if PY2:
     FileNotFoundError = IOError
@@ -149,10 +149,10 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             fixed_prm=path.join(self.outdir, ".".join((self.prefix, "prm"))),
             psf_file=path.join(self.outdir, ".".join((self.prefix, "psf"))),
             xplor_psf_file=path.join(self.outdir, ".".join((self.prefix, "xplor", "psf"))),
-            crd_file=path.join(self.outdir, ".".join((self.prefix, "crd"))),
+            crd_file=path.join(self.outdir, ".".join((self.prefix, "cor"))),
             stream_file=path.join(self.outdir, ".".join((self.prefix, "stream"))),
             topology_file=path.join(self.outdir, ".".join((self.prefix, "rtf"))),
-            nma_crd=path.join(self.outdir, ".".join((self.prefix, "vib", "crd"))),
+            nma_crd=path.join(self.outdir, ".".join((self.prefix, "vib", "cor"))),
             nma_vib=path.join(self.outdir, ".".join((self.prefix, "vib"))),
             charmm_input=path.join(self.outdir, ".".join((self.prefix, "inp"))),
             charmm_log=path.join(self.outdir, ".".join((self.prefix, "log"))),

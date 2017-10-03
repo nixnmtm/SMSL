@@ -15,22 +15,22 @@ __all__ = [
     "SolventIons", "BioIons", "NobleAtoms",
 ]
 
-from .protein import (
+from fluctmatch.models.protein import (
     Calpha,
     Caside,
     Ncsc,
 )
-from .enm import Enm
-from .nucleic import (
+from fluctmatch.models.enm import Enm
+from fluctmatch.models.nucleic import (
     Nucleic3,
     Nucleic4,
 )
-from .ions import (
+from fluctmatch.models.ions import (
     SolventIons,
     BioIons,
     NobleAtoms,
 )
-from .solvent import (
+from fluctmatch.models.solvent import (
     Water,
     Tip3p,
     Dma,
