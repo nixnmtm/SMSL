@@ -53,7 +53,7 @@ class _ModelMeta(type):
                 _MODELS[f] = cls
 
 
-class ModelBase(with_metaclass(base._ModelMeta, mda.Universe)):
+class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     """Base class for creating coarse-grain models.
 
     Parameters
