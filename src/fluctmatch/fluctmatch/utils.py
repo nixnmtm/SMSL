@@ -8,6 +8,7 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import PY2
 
 import os
 from os import path
@@ -17,57 +18,89 @@ import MDAnalysis.analysis.base as analysis
 import numpy as np
 import pandas as pd
 from MDAnalysis.coordinates import memory
+from future.builtins import super
 from future.utils import native_str
 
+if PY2:
+    FileNotFoundError = OSError
 
-def average_structure(universe):
+
+class AverageStructure(analysis.AnalysisBase):
     """Calculate the average structure of a trajectory.
-
-    Parameters
-    ----------
-    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
-        A collection of atoms in a universe or AtomGroup.
-
-    Returns
-    -------
-    :class:`~numpy.ndarray`
-        Average coordinates of the trajectory.
     """
-    system = analysis.AnalysisFromFunction(lambda atoms: atoms.positions, universe.trajectory, universe.atoms).run()
-    positions = np.mean(system.results, axis=0)
-    return positions
+    def __init__(self, atomgroup, **kwargs):
+        """
+        Parameters
+        ----------
+        atomgroup : :class:`~MDAnalysis.Universe.AtomGroup`
+            An AtomGroup
+        start : int, optional
+            start frame of analysis
+        stop : int, optional
+            stop frame of analysis
+        step : int, optional
+            number of frames to skip between each analysed frame
+        verbose : bool, optional
+            Turn on verbosity
+        """
+        super().__init__(atomgroup.universe.trajectory, **kwargs)
+        self._ag = atomgroup
+
+    def _prepare(self):
+        self.result = []
+
+    def _single_frame(self):
+        self.result.append(self._ag.positions)
+
+    def _conclude(self):
+        self.result = np.mean(self.result, axis=0)
 
 
-def bond_stats(universe, func="mean"):
-    """Calculate the average bond lengths from a trajectory.
+class BondStats(analysis.AnalysisBase):
+    """Calculate either the average bond length or the fluctuation in bond lengths.
 
-    Parameters
-    ----------
-    universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
-        A collection of atoms in a universe or AtomGroup with bond information.
-    func : {"mean", "std"}
-        Determine either the mean or the standard deviation of the bond lengths.
-
-    Returns
-    -------
-    :class:`~pandas.DataFrame`
-        Average bond lengths of the trajectory.
     """
-    system = analysis.AnalysisFromFunction(lambda bonds: bonds.bonds(), universe.trajectory, universe.bonds).run()
-    if func == "mean":
-        callback = np.mean
-    elif func == "std":
-        callback = np.std
-    else:
-        raise KeyError("The 'func' keyword must either be 'mean' or 'std'."
-                       "")
-    bonds = pd.concat([
-        pd.Series(universe.bonds.atom1.names),
-        pd.Series(universe.bonds.atom2.names),
-        pd.Series(callback(system.results, axis=0)),
-    ], axis=1)
-    bonds.columns = ["I", "J", "r_IJ"]
-    return bonds.set_index(["I", "J"])
+    def __init__(self, atomgroup, func="mean", **kwargs):
+        """
+        Parameters
+        ----------
+        atomgroup : :class:`~MDAnalysis.Universe.AtomGroup`
+            An AtomGroup
+        func : {"mean", "std"}, optional
+            Calculate either the mean or the standard deviation of the bonds
+        start : int, optional
+            start frame of analysis
+        stop : int, optional
+            stop frame of analysis
+        step : int, optional
+            number of frames to skip between each analysed frame
+        verbose : bool, optional
+            Turn on verbosity
+        """
+        super().__init__(atomgroup.universe.trajectory, **kwargs)
+        self._ag = atomgroup
+        if func == "mean":
+            self._func = np.mean
+        elif func == "std":
+            self._func = np.std
+        else:
+            raise AttributeError("func must either be 'mean' or 'std'")
+
+    def _prepare(self):
+        self.result = []
+
+    def _single_frame(self):
+        self.result.append(self._ag.bonds.bonds())
+
+    def _conclude(self):
+        self.result = self._func(self.result, axis=0)
+        bonds = pd.concat([
+            pd.Series(self._ag.bonds.atom1.names),
+            pd.Series(self._ag.bonds.atom2.names),
+            pd.Series(self.result),
+        ], axis=1)
+        bonds.columns = ["I", "J", "r_IJ"]
+        self.result = bonds.copy(deep=True)
 
 
 def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True, **kwargs):
@@ -118,26 +151,13 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
         native_str(filenames["psf_file"]), **kwargs) as psf:
         psf.write(universe)
 
-    # Calculate the average coordinates, average bond lengths, and
-    # fluctuations of bond lengths from the trajectory.
-    print("Determining the average structure of the trajectory. ")
-    print("Note: This could take a while depending upon the side of your trajectory.")
-    positions = average_structure(universe)
-    avg_universe = mda.Universe(
-        filenames["psf_file"],
-        [positions, ],
-        format=memory.MemoryReader,
-        order="fac"
-    )
-    print("Writing {}...".format(filenames["crd_file"]))
-    with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
-        crd.write(avg_universe.atoms)
-
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
-        print("Writing the trajectory {}.".format(filenames["traj_file"]))
+        kwargs["start"] = 1
+        kwargs["step"] = 1
+        print("Writing the trajectory {}...".format(filenames["traj_file"]))
         print("This may take a while depending upon the size and length of the trajectory.")
-        with mda.Writer(native_str(filenames["traj_file"]), n_atoms=universe.atoms.n_atoms, dt=1.0, **kwargs) as trj:
+        with mda.Writer(native_str(filenames["traj_file"]), universe.atoms.n_atoms, dt=1.0, **kwargs) as trj:
             for ts in universe.trajectory:
                 trj.write(ts)
 
@@ -148,3 +168,27 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
     print("Writing {}...".format(filenames["xplor_psf_file"]))
     with mda.Writer(native_str(filenames["xplor_psf_file"]), **kwargs) as psf:
         psf.write(universe)
+
+    # Calculate the average coordinates, average bond lengths, and
+    # fluctuations of bond lengths from the trajectory.
+    if universe.trajectory.n_frames > 1:
+        print("Determining the average structure of the trajectory. ")
+        print("Note: This could take a while depending upon the side of your trajectory.")
+        try:
+            u = mda.Universe(filenames["psf_file"], filenames["traj_file"])
+        except FileNotFoundError:
+            u = mda.Universe(universe.filename, universe.trajectory.filename)
+        positions = AverageStructure(u.atoms).run().result
+        avg_universe = mda.Universe(
+            filenames["psf_file"],
+            [positions, ],
+            format=memory.MemoryReader,
+            order="fac"
+        )
+        print("Writing {}...".format(filenames["crd_file"]))
+        with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+            crd.write(avg_universe.atoms)
+    else:
+        print("Writing {}...".format(filenames["crd_file"]))
+        with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+            crd.write(universe.atoms)

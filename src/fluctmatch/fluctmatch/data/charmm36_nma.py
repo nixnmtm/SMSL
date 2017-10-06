@@ -26,7 +26,7 @@ nma = (
     
     ! Open CHARMM topology and parameter file
     read rtf  card name "{topology_file}"
-    read para card name "{fixed_prm}" flex
+    read para card flex name "{fixed_prm}"
     
     ! Open PSF and coordinate files
     read psf  card name "{xplor_psf_file}" xplor

@@ -141,7 +141,7 @@ class IntcorWriter(TopologyWriterBase):
         ),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
         EXTENDED=(
-            "%9d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f"
+            "%10d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f"
         ),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
         STANDARD_RESID=(
@@ -182,6 +182,10 @@ class IntcorWriter(TopologyWriterBase):
             A CHARMM-compliant internal coordinate table.
         """
         ictable = table.copy(deep=True)
+
+        # Increment index.
+        if ictable.index[0] == 0:
+            ictable.index += 1
         rescol = ["resI", "resJ", "resK", "resL", ]
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
@@ -195,5 +199,5 @@ class IntcorWriter(TopologyWriterBase):
             line = np.zeros(2, dtype=np.int)
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
-            np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%4d"), delimiter=native_str(""))
+            np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%5d"), delimiter=native_str(""))
             np.savetxt(icfile, ictable.reset_index(), fmt=native_str(self.fmt[self.key]))

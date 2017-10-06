@@ -14,8 +14,9 @@ import itertools
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
+from future.builtins import super
 from future.utils import (
-    viewitems,
+    viewvalues,
 )
 
 from fluctmatch.models.selection import *
@@ -31,7 +32,7 @@ class _Trajectory(base.ReaderBase):
     coarse grained trajectories.
     """
 
-    def __init__(self, universe, mapping, n_atoms=1, convert_units=True, com=True, **kwargs):
+    def __init__(self, universe, mapping, n_atoms=1, com=True):
         """
 
         Parameters
@@ -49,26 +50,42 @@ class _Trajectory(base.ReaderBase):
         kwargs : dict, optional
             Additonal arguments for use within the MDAnalysis coordinate reader.
         """
-        super().__init__(universe.trajectory.filename, convert_units=convert_units, **kwargs)
+#         super().__init__(universe.trajectory.filename, convert_units=convert_units, **kwargs)
         self._u = universe
         self._t = universe.trajectory
         self._mapping = mapping
+        self._beads = [
+            res.atoms.select_atoms(selection)
+            for res, selection in itertools.product(self._u.residues, viewvalues(self._mapping))
+            if res.atoms.select_atoms(selection)
+        ]
+
         self.com = com
+        self._auxs = self._t._auxs
 
         self.n_atoms = n_atoms
-        self.n_frames = len(self._t)
+        self.n_frames = self._t.n_frames
         self.format = self._t.format
         self.units.update(self._t.units)
         self.convert_units = MDAnalysis.core.flags["convert_lengths"]
+        try:
+            self.fixed = self._t.fixed
+        except AttributeError:
+            self.fixed = False
+        try:
+            self.periodic = self._t.periodic
+        except AttributeError:
+            self.periodic = True
 
-        self.fixed = False
-        self.periodic = True
-        self.skip = 1
-
-        self.ts = self._Timestep(self.n_atoms, **self._t._ts_kwargs)
-        self._frame = 0
+        self.ts = self._Timestep(
+            self.n_atoms,
+            positions=self._t.ts.has_positions,
+            velocities=self._t.ts.has_velocities,
+            forces=self._t.ts.has_forces
+        )
+        self._frame = self._t.frame
         self.ts.dt = self._t.ts.dt
-        self.ts.dimensions = self._t.ts.dimensions
+        self.ts.order = self._t.ts.order
 
         self._fill_ts(self._t.ts)
 
@@ -98,36 +115,31 @@ class _Trajectory(base.ReaderBase):
         self.ts.frame = other_ts.frame
         self.ts._unitcell = other_ts._unitcell
         residues = self._u.atoms.split("residue")
-        if self.com:
-            self.ts._pos[:] = [
-                res.select_atoms(selection).center_of_mass()
-                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
-                if res.select_atoms(selection)
-            ]
-        else:
-            self.ts._pos[:] = [
-                res.select_atoms(selection).center_of_geometry()
-                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
-                if res.select_atoms(selection)
-            ]
+        if self.ts.has_positions:
+            if self.com:
+                self.ts._pos[:] = [
+                    bead.center_of_mass()
+                    for bead in self._beads
+                ]
+            else:
+                self.ts._pos[:] = [
+                    bead.center_of_geometry()
+                    for bead in self._beads
+                ]
 
-        try:
+        if self.ts.has_velocities:
             self.ts._velocities[:] = [
                 res.select_atoms(selection).velocities.sum()
                 for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
                 if res.select_atoms(selection)
             ]
-        except (AttributeError, MDAnalysis.NoDataError):
-            pass
 
-        try:
+        if self.ts.has_forces:
             self.ts._forces[:] = [
                 res.select_atoms(selection).forces.sum()
                 for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
                 if res.select_atoms(selection)
             ]
-        except (AttributeError, MDAnalysis.NoDataError):
-            pass
 
     def _reopen(self):
         # Rewind my reference trajectory
@@ -143,7 +155,8 @@ class _Trajectory(base.ReaderBase):
                 raise StopIteration
 
     def __len__(self):
-        return self.n_frames
+#         return self.n_frames
+        return len(self._u.trajectory)
 
     def __repr__(self):
         return "<CG Trajectory doing {:d} beads >".format(self.n_atoms)

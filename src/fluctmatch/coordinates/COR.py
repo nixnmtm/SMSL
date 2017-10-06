@@ -49,6 +49,17 @@ from future.builtins import (
 )
 
 
+class CORReader(CRD.CRDReader):
+    """CRD reader that implements the standard and extended CRD coordinate formats
+
+    .. versionchanged:: 0.11.0
+       Now returns a ValueError instead of FormatError.
+       Frames now 0-based instead of 1-based.
+    """
+    format = "COR"
+    units = {"time": None, "length": "Angstrom"}
+
+
 class CORWriter(CRD.CRDWriter):
     """COR writer that implements the CHARMM CRD EXT coordinate format.
 

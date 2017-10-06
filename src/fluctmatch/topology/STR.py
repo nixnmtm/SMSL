@@ -46,15 +46,26 @@ class STRWriter(topbase.TopologyWriterBase):
     units = dict(time=None, length="Angstrom")
 
     def __init__(self, filename, **kwargs):
-        width = 4 if kwargs.get("charmm_version", 41) < 36 else 8
-        self.fmt = (
-            """
-            IC EDIT
-            DIST %-{width}s %{width}d %-{width}s %-{width}s %{width}d %-{width}s%{width}.1f
-            END
-            """.format(width=width)
-        )
         self.filename = util.filename(filename, ext=native_str("stream"))
+        self._version = kwargs.get("charmm_version", 41)
+
+        width = 4 if self._version < 36 else 8
+        if self._version >= 36:
+            self.fmt = (
+                """
+                IC EDIT
+                DIST %-{width}s %{width}d %-{width}s %-{width}s %{width}d %-{width}s%{width}.1f
+                END
+                """.format(width=width)
+            )
+        else:
+            self.fmt = (
+                """
+                IC EDIT
+                DIST BYNUM %{width}d BYNUM %{width}d %{width}.1f
+                END
+                """.format(width=width)
+            )
 
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
@@ -78,13 +89,18 @@ class STRWriter(topbase.TopologyWriterBase):
         """
         # Create the table
         try:
-            a1, a2 = universe.atoms.bonds.atom1, universe.atoms.bonds.atom2
-            data = (
-                a1.segids, a1.resids, a1.names,
-                a2.segids, a2.resids, a2.names,
-                np.zeros(a1.n_atoms, dtype=np.float)
-            )
-            data = pd.concat([pd.DataFrame(_) for _ in data], axis=1)
+            dist = np.zeros_like(universe.atoms.bonds.bonds(), dtype=np.float)
+            if self._version >= 36:
+                a1, a2 = universe.atoms.bonds.atom1, universe.atoms.bonds.atom2
+                data = (
+                    a1.segids, a1.resids, a1.names,
+                    a2.segids, a2.resids, a2.names,
+                    dist,
+                )
+                data = pd.concat([pd.DataFrame(_) for _ in data], axis=1)
+            else:
+                data = universe._topology.bonds.values
+                data = np.concatenate((data, dist[:, np.newaxis]), axis=1)
         except AttributeError:
             raise_with_traceback(AttributeError("No bonds were found."))
 
@@ -93,3 +109,4 @@ class STRWriter(topbase.TopologyWriterBase):
             for _ in self._title:
                 print(_, file=stream_file)
             np.savetxt(stream_file, data, fmt=native_str(textwrap.dedent(self.fmt[1:])))
+            print("\nRETURN", file=stream_file)

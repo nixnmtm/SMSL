@@ -399,8 +399,8 @@ class PSFWriter(base.TopologyWriterBase):
 
         if xplor:
             self._fmtkey += "_XPLOR"
-        if self._version < 36:
-            self._fmtkey += "_C35"
+            if self._version < 36:
+                self._fmtkey += "_C35"
 
         with util.openany(self.filename, "w") as psffile:
             print(header, file=psffile)
@@ -443,7 +443,7 @@ class PSFWriter(base.TopologyWriterBase):
         print(self.sect_hdr.format(self._universe.atoms.n_atoms, "NATOM"), file=psffile)
         atoms = self._universe.atoms
         lines = (
-            (atoms.ids+1),
+            np.arange(atoms.n_atoms) + 1,
             atoms.segids,
             atoms.resids,
             atoms.resnames,
@@ -526,8 +526,8 @@ class PSFWriter(base.TopologyWriterBase):
 
         # NUMLP NUMLPH
         print(self.sect_hdr2.format(0, 0, "NUMLP NUMLPH"), file=psffile)
-        print(file=psffile)
+        print("\n", file=psffile)
 
         # NCRTERM: cross-terms
         print(self.sect_hdr.format(0, "NCRTERM: cross-terms"), file=psffile)
-        print(file=psffile)
+        print("\n", file=psffile)

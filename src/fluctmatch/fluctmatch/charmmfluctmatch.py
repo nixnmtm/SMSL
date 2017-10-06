@@ -54,7 +54,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
     """Fluctuation matching using CHARMM."""
     dynamic_params = dict()
     bond_def = ["I", "J"]
-    error_hdr = ["step", "r.m.s.d.", "Kb_err", "b0_err"]
+    error_hdr = ["step", "Kb_rms", "fluct_rms", "b0_rms"]
 
     def __init__(self, *args, **kwargs):
         """Initialization of fluctuation matching using the CHARMM program.
@@ -142,9 +142,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         """
         super().__init__(*args, **kwargs)
         self.filenames = dict(
-            init_avg_ic=path.join(self.outdir, "init.avg.ic"),
+            init_avg_ic=path.join(self.outdir, "init.average.ic"),
             init_fluct_ic=path.join(self.outdir, "init.fluct.ic"),
-            avg_ic=path.join(self.outdir, "avg.ic"),
+            avg_ic=path.join(self.outdir, "average.ic"),
             fluct_ic=path.join(self.outdir, "fluct.ic"),
             dynamic_prm=path.join(self.outdir, "{}.dist.prm".format(self.prefix)),
             fixed_prm=path.join(self.outdir, ".".join((self.prefix, "prm"))),
@@ -153,7 +153,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             crd_file=path.join(self.outdir, ".".join((self.prefix, "cor"))),
             stream_file=path.join(self.outdir, ".".join((self.prefix, "stream"))),
             topology_file=path.join(self.outdir, ".".join((self.prefix, "rtf"))),
-            nma_crd=path.join(self.outdir, ".".join((self.prefix, "vib", "cor"))),
+            nma_crd=path.join(self.outdir, ".".join((self.prefix, "mini", "cor"))),
             nma_vib=path.join(self.outdir, ".".join((self.prefix, "vib"))),
             charmm_input=path.join(self.outdir, ".".join((self.prefix, "inp"))),
             charmm_log=path.join(self.outdir, ".".join((self.prefix, "log"))),
@@ -185,7 +185,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             universe = enm.Enm(*self.args, **self.kwargs)
 
             # Create and write initial internal coordinate files.
-            avg_bonds = fmutils.bond_stats(universe, func="mean")
+            avg_bonds = fmutils.BondStats(universe, func="mean").run().result
             avg_table = icutils.create_empty_table(universe.atoms)
             hdr = avg_table.columns
             avg_table.set_index(self.bond_def, inplace=True)
@@ -196,7 +196,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             with mda.Writer(self.filenames["init_avg_ic"], **self.kwargs) as table:
                 table.write(avg_table)
 
-            std_bonds = fmutils.bond_stats(universe, func="std")
+            std_bonds = fmutils.BondStats(universe, func="std").run().result
             fluct_table = icutils.create_empty_table(universe.atoms)
             fluct_table.set_index(self.bond_def, inplace=True)
             fluct_table.drop(["r_IJ", ], axis=1, inplace=True)
@@ -231,6 +231,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         else:
             try:
                 # Read the parameter files.
+                print("Loading parameter and internal coordinate files.")
                 with reader(self.filenames["fixed_prm"]) as fixed:
                     self.parameters.update(fixed.read())
                 with reader(self.filenames["dynamic_prm"]) as dynamic:
@@ -244,6 +245,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 table = pd.concat([fluct_table, avg_table], axis=1)
 
                 # Set the target fluctuation values.
+                print("Files loaded successfully...")
                 self.target = copy.deepcopy(self.parameters)
                 self.target["BONDS"].set_index(self.bond_def, inplace=True)
                 table.columns = self.target["BONDS"].columns
@@ -251,16 +253,16 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             except (FileNotFoundError, IOError):
                 raise_with_traceback((IOError("Some files are missing. Unable to restart.")))
 
-    def run(self, nma_exec=None, tol=1.e-4, n_cycles=250):
+    def run(self, nma_exec=None, tol=2.5e-3, n_cycles=250):
         """Perform a self-consistent fluctuation matching.
 
         Parameters
         ----------
         nma_exec : str
             executable file for normal mode analysis
-        tol : float
+        tol : float, optional
             error tolerance
-        n_cycles : int
+        n_cycles : int, optional
             number of fluctuation matching cycles
         """
         try:
@@ -323,32 +325,37 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 fluct_ic = intcor.read().set_index(self.bond_def)["r_IJ"]
 
             vib_ic = pd.concat([fluct_ic, avg_ic], axis=1)
-            vib_ic.columns = self.dynamic_params["BONDS"].columns
+            vib_ic.columns = bond_values
 
-            # Calculate the r.m.s.d. between fluctuation and distances.
-            vib_error = np.square(self.target["BONDS"] - vib_ic).mean(axis=0)
-            vib_error = pd.DataFrame(np.sqrt(vib_error)).T
-            self.error["r.m.s.d."] = copy.deepcopy(vib_error[bond_values[0]])
-            self.error[self.error.columns[-1]] = copy.deepcopy(vib_error[bond_values[-1]])
+            # Calculate the r.m.s.d. between fluctuation and distances
+            # compared with the target values.
+            vib_error = self.target["BONDS"] - vib_ic
+            vib_error = vib_error.apply(np.square).mean(axis=0)
+            vib_error = np.sqrt(vib_error)
+            self.error[self.error.columns[-2:]] = vib_error.T.values
 
             # Calculate the new force constant.
-            optimized = 1. / np.square(self.target["BONDS"][bond_values[0]])
-            optimized -= 1. / np.square(vib_ic[bond_values[0]])
-            kb = self.parameters["BONDS"][bond_values[0]] - (optimized * self.BOLTZ * self.KFACTOR)
-            vib_ic[bond_values[0]] = kb.copy(deep=True)
+            optimized = vib_ic.apply(np.reciprocal).apply(np.square)
+            target = self.target["BONDS"].apply(np.reciprocal).apply(np.square)
+            optimized -= target
+            optimized *= self.BOLTZ * self.KFACTOR
+            vib_ic[bond_values[0]] = self.parameters["BONDS"][bond_values[0]] - optimized[bond_values[0]]
+            vib_ic[bond_values[0]] = vib_ic[bond_values[0]].where(vib_ic[bond_values[0]] >= 0., 0.)
 
             # r.m.s.d. between previous and current force constant
-            diff = np.square(self.parameters["BONDS"][bond_values[0]] - kb)
-            self.error[self.error.columns[-2]] = np.sqrt(diff.mean(axis=0))
+            diff = self.dynamic_params["BONDS"] - vib_ic
+            diff = diff.apply(np.square).mean(axis=0)
+            diff = np.sqrt(diff)
+            self.error[self.error.columns[1]] = diff.values[0]
 
             # Update the parameters and write to file.
             self.parameters["BONDS"][bond_values[0]] = vib_ic[bond_values[0]].copy(deep=True)
             self.dynamic_params["BONDS"] = vib_ic.copy(deep=True)
             self.parameters["BONDS"].reset_index(inplace=True)
             self.dynamic_params["BONDS"].reset_index(inplace=True)
-            with mda.Writer(self.filenames["fixed_prm"]) as prm:
+            with mda.Writer(self.filenames["fixed_prm"], **self.kwargs) as prm:
                 prm.write(self.parameters)
-            with mda.Writer(self.filenames["dynamic_prm"]) as prm:
+            with mda.Writer(self.filenames["dynamic_prm"], **self.kwargs) as prm:
                 prm.write(self.dynamic_params)
 
             # Update the error values.
@@ -356,10 +363,11 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 np.savetxt(
                     error_file,
                     self.error,
-                    fmt=native_str("%10d%10.6f%10.6f%10.6f"),
+                    fmt=native_str("%10d%10.6f%10.6f%10.6f",),
+                    delimiter=native_str(""),
                 )
 
-            if (self.error["r.m.s.d."] < tol).bool():
-            	break
+            if (self.error[self.error.columns[1]] < tol).bool():
+                break
             self.error["step"] += 1
         self.target["BONDS"].reset_index(inplace=True)
