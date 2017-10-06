@@ -95,7 +95,7 @@ class ParamTable(object):
                 table.reset_index(inplace=True)
                 table = table.set_index(self._index)[self._tbltype].to_frame()
                 table.columns = [path.basename(directory), ]
-                self.table.append(table)
+                self.table.append(table.copy(deep=True))
 
         self.table = pd.concat(self.table, axis=1)
         self.table.columns = self.table.columns.astype(np.int)
