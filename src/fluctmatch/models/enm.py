@@ -66,7 +66,7 @@ class Enm(ModelBase):
             self._add_impropers()
 
     def _add_bonds(self):
-        positions = fmutils.average_structure(self.atu)
+        positions = fmutils.AverageStructure(self.atu.atoms).run().result
         dm = distance_array(positions, positions, backend="OpenMP")
         if self._rmin > 0.:
             a0, a1 = np.where((dm >= self._rmin) & (dm <= self._rmax))

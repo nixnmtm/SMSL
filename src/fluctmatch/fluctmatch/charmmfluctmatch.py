@@ -3,6 +3,15 @@
 #
 """Fluctuation matching using CHARMM.
 
+Notes
+------
+For CHARMM to work with the fluctuation matching code, it must be
+recompiled with some modifications to the source code. `ATBMX` and
+`MAXCB` (located in dimens.fcm [c35] or dimens_ltm.src [c41]) must
+be increased. `ATBMX` determines the number of bonds allowed per
+atom and `MAXCB` determines the maximum number of bond parameters
+in the CHARMM parameter file. Additionally, `CHSIZE` may need to
+be increased if using an earlier version (< c36).
 
 """
 
@@ -182,10 +191,13 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         """
         if not restart:
             # Initialize variables and load the universe.
+            print("Setting up elastic network model...")
             universe = enm.Enm(*self.args, **self.kwargs)
 
             # Create and write initial internal coordinate files.
+            print("Determining the average bond distances...")
             avg_bonds = fmutils.BondStats(universe, func="mean").run().result
+            avg_bonds.set_index(self.bond_def, inplace=True)
             avg_table = icutils.create_empty_table(universe.atoms)
             hdr = avg_table.columns
             avg_table.set_index(self.bond_def, inplace=True)
@@ -196,7 +208,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             with mda.Writer(self.filenames["init_avg_ic"], **self.kwargs) as table:
                 table.write(avg_table)
 
+            print("Determining the fluctuation of bond distances...")
             std_bonds = fmutils.BondStats(universe, func="std").run().result
+            std_bonds.set_index(self.bond_def, inplace=True)
             fluct_table = icutils.create_empty_table(universe.atoms)
             fluct_table.set_index(self.bond_def, inplace=True)
             fluct_table.drop(["r_IJ", ], axis=1, inplace=True)
@@ -207,6 +221,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 table.write(fluct_table)
 
             # Write the parameter files.
+            print("Calculating the initial CHARMM parameters...")
             target = pd.concat([std_bonds, avg_bonds], axis=1).reset_index()
             self.target.update(prmutils.create_empty_parameters(universe, **self.kwargs))
             target.columns = self.target["BONDS"].columns
