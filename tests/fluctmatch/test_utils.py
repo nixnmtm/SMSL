@@ -27,7 +27,7 @@ def test_average_structure():
         universe.atoms.positions
         for _ in universe.trajectory
     ], axis=0)
-    positions = fmutils.average_structure(universe)
+    positions = fmutils.AverageStructure(universe.atoms).run().result
     testing.assert_allclose(
         positions,
         avg_positions,
@@ -41,7 +41,7 @@ def test_average_bonds():
         universe.bonds.bonds()
         for _ in universe.trajectory
     ], axis=0)
-    bonds = fmutils.bond_stats(universe, func="mean")
+    bonds = fmutils.BondStats(universe, func="mean").run().result
     testing.assert_allclose(
         bonds["r_IJ"],
         avg_bonds,
@@ -55,7 +55,7 @@ def test_bond_fluctuation():
         universe.bonds.bonds()
         for _ in universe.trajectory
     ], axis=0)
-    bonds = fmutils.bond_stats(universe, func="std")
+    bonds = fmutils.BondStats(universe, func="std").run().result
     testing.assert_allclose(
         bonds["r_IJ"],
         bond_fluct,
