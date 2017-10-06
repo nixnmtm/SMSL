@@ -268,7 +268,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             except (FileNotFoundError, IOError):
                 raise_with_traceback((IOError("Some files are missing. Unable to restart.")))
 
-    def run(self, nma_exec=None, tol=2.5e-3, n_cycles=250):
+    def run(self, nma_exec=None, tol=1.e-4, n_cycles=250):
         """Perform a self-consistent fluctuation matching.
 
         Parameters
