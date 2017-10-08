@@ -314,9 +314,9 @@ def Merge(*args):
     from MDAnalysis.analysis.base import AnalysisFromFunction
 
     print("This might take a while depending upon the number of trajectory frames.")
-    if not np.all([issubclass(u.__class__, mda.Universe) for u in args]):
+    if not all([issubclass(u.__class__, mda.Universe) for u in args]):
         raise TypeError("The universes must all be derived from MDAnalysis.Universe.")
-    if not np.all([u.trajectory.n_frames == args[0].trajectory.n_frames for u in args]):
+    if not all([u.trajectory.n_frames == args[0].trajectory.n_frames for u in args]):
         raise ValueError("The trajectories are not the same length.")
     ag = [_.atoms for _ in args]
     universe = mda.Merge(*ag)
