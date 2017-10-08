@@ -227,16 +227,16 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         vdwradii = np.zeros_like(atomids)
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
-        atomnames = topologyattrs.Atomnames(np.asarray(atomnames))
+        atomnames = topologyattrs.Atomnames(np.asarray(atomnames, dtype=np.object))
         atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms)+100))
         charges = topologyattrs.Charges(np.asarray(charges))
         masses = topologyattrs.Masses(np.asarray(masses))
 
         # Residue
         # resids, resnames
-        segids = np.asarray(segids)
+        segids = np.asarray(segids, dtype=np.object)
         resids = np.asarray(resids)
-        resnames = np.asarray(resnames)
+        resnames = np.asarray(resnames, dtype=np.object)
         residx, (new_resids, new_resnames, new_segids) = topbase.change_squash((resids,), (resids, resnames, segids))
 
         # transform from atom:Rid to atom:Rix
