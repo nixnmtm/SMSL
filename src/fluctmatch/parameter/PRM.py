@@ -40,7 +40,6 @@ class ParamReader(TopologyReaderBase):
     format = "PRM"
     units = dict(time=None, length="Angstrom")
 
-    parameters = dict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
     _prmindex = dict(
         ATOMS=np.arange(1, 4),
         BONDS=np.arange(4),
@@ -65,6 +64,7 @@ class ParamReader(TopologyReaderBase):
         -------
         Dictionary with CHARMM parameters per key.
         """
+        parameters = dict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
         headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
         with util.openany(self.filename, "r") as prmfile:
             for line in prmfile:
@@ -89,12 +89,16 @@ class ParamReader(TopologyReaderBase):
                     field = field[:5]
                 if section == "DIHEDRALS" or section == "IMPROPER":
                     field = field[:7]
-                self.parameters[section].append(field)
+                parameters[section].append(field)
 
-        for key, value in self.parameters.items():
-            self.parameters[key] = pd.DataFrame(value, columns=self._prmcolumns[key])
-            self.parameters[key] = self.parameters[key].apply(pd.to_numeric, errors="ignore")
-        return self.parameters
+        for key, value in parameters.items():
+            parameters[key] = pd.DataFrame(value, columns=self._prmcolumns[key])
+            parameters[key] = parameters[key].apply(pd.to_numeric, errors="ignore")
+        return parameters
+
+
+class PARReader(ParamReader):
+    format = "PAR"
 
 
 class ParamWriter(TopologyWriterBase):
@@ -197,3 +201,7 @@ class ParamWriter(TopologyWriterBase):
                 print(textwrap.dedent(nb_header[1:]), file=prmfile)
                 np.savetxt(prmfile, nb_list, fmt=native_str(self._fmt["NONBONDED"]), delimiter=native_str(""))
             print("\nEND", file=prmfile)
+
+
+class PARWriter(ParamWriter):
+    format = "PAR"

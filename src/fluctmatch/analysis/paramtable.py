@@ -108,6 +108,7 @@ class ParamTable(object):
         self.table = self.table.drop_duplicates(subset=self._index)
         self.table.set_index(self._index, inplace=True)
         self.table.fillna(0., inplace=True)
+        self.table.sort_index(kind="mergesort", inplace=True)
 
     def from_file(self, filename):
         """Load a parameter table from a file.

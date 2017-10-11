@@ -22,9 +22,6 @@ from future.utils import (
 
 class FluctMatch(with_metaclass(abc.ABCMeta, object)):
     """Base class for fluctuation matching."""
-    parameters = dict()
-    target = dict()
-
     def __init__(self, *args, **kwargs):
         """Initialization of fluctuation matching.
 
@@ -95,6 +92,9 @@ class FluctMatch(with_metaclass(abc.ABCMeta, object)):
         rmax
             Maximum distance to consider for bond lengths.
         """
+        self.parameters = dict()
+        self.target = dict()
+
         self.outdir = kwargs.get("outdir", os.curdir)
         self.prefix = kwargs.get("prefix", "fluctmatch")
         self.temperature = kwargs.get("temperature", 300.0)

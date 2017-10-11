@@ -61,7 +61,6 @@ if PY2:
 
 class CharmmFluctMatch(fmbase.FluctMatch):
     """Fluctuation matching using CHARMM."""
-    dynamic_params = dict()
     bond_def = ["I", "J"]
     error_hdr = ["step", "Kb_rms", "fluct_rms", "b0_rms"]
 
@@ -150,6 +149,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             Include the nonbonded section in the parameter file.
         """
         super().__init__(*args, **kwargs)
+        self.dynamic_params = dict()
         self.filenames = dict(
             init_avg_ic=path.join(self.outdir, "init.average.ic"),
             init_fluct_ic=path.join(self.outdir, "init.fluct.ic"),
