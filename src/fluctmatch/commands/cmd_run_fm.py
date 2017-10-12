@@ -148,7 +148,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     help="Restart simulation",
 )
 @pass_context
-def run_fm(
+def cli(
     topology, trajectory, outdir, nma_exec, temperature,
     n_cylces, tol, rmin, rmax, prefix, charmm_version,
     extended, resid, cmap, cheq, nonbonded, restart,

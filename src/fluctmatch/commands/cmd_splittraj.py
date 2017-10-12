@@ -126,7 +126,7 @@ from fluctmatch.fluctmatch import utils
     help="Size of each subtrajectory",
 )
 @pass_context
-def split_gmx(ctx, gromacs, toppar, topology, trajectory, index, outfile, logfile, system, start, stop, window_size):
+def cli(ctx, gromacs, toppar, topology, trajectory, index, outfile, logfile, system, start, stop, window_size):
     half_ws = window_size // 2
     Info = collections.namedtuple("Info", "subdir start stop")
     values = zip(range(start, stop+1, half_ws), range(start+window_size, stop+1, half_ws))
@@ -149,7 +149,7 @@ def split_gmx(ctx, gromacs, toppar, topology, trajectory, index, outfile, logfil
             system=system,
         )
     else:
-        if ext0 != ".dcd" or ext1 != ".dcd":
+        if ext0 != ".dcd" and ext1 != ".dcd":
             raise IOError("The trajectory input and output files must "
                           "end with '.dcd'.")
         func = functools.partial(

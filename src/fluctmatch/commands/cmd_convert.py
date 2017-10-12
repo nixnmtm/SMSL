@@ -64,8 +64,8 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
 @click.option(
     "-m",
     "--models",
-    type=click.Choice(viewkeys(_MODELS)),
-    nargs=-1,
+    type=click.STRING,
+    multiple=True,
     help="Model(s) to which to convert",
 )
 @click.option(
@@ -118,7 +118,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     help="Convert the trajectory file",
 )
 @pass_context
-def convert(
+def cli(
     topology, trajectory, outdir, prefix, models, charmm_version,
     com, extended, resid, cmap, cheq, nonbonded, write_traj,
 ):

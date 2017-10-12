@@ -69,8 +69,7 @@ from fluctmatch.analysis import paramtable
     "--verbose",
     is_flag=True,
 )
-
-def table(data_dir, outdir, prefix, tbltype, ressep, verbose):
+def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
     pt = paramtable.ParamTable(data_dir, prefix=prefix, tbltype=tbltype, ressep=ressep)
     pt.run(verbose=verbose)
 
