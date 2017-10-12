@@ -10,7 +10,12 @@ from __future__ import (
 )
 from future.utils import PY2
 
+import copy
+import collections
 import os
+import subprocess
+import tempfile
+import textwrap
 from os import path
 
 import MDAnalysis as mda
@@ -18,8 +23,11 @@ import MDAnalysis.analysis.base as analysis
 import numpy as np
 import pandas as pd
 from MDAnalysis.coordinates import memory
+from MDAnalysis.lib import util as mdutil
 from future.builtins import super
 from future.utils import native_str
+
+from fluctmatch.fluctmatch.data import charmm_split
 
 if PY2:
     FileNotFoundError = OSError
@@ -66,7 +74,7 @@ class BondStats(analysis.AnalysisBase):
         ----------
         atomgroup : :class:`~MDAnalysis.Universe.AtomGroup`
             An AtomGroup
-        func : {"mean", "std"}, optional
+        func : {"mean", "std", "both"}, optional
             Calculate either the mean or the standard deviation of the bonds
         start : int, optional
             start frame of analysis
@@ -80,9 +88,11 @@ class BondStats(analysis.AnalysisBase):
         super().__init__(atomgroup.universe.trajectory, **kwargs)
         self._ag = atomgroup
         if func == "mean":
-            self._func = np.mean
+            self._func = (np.mean,)
         elif func == "std":
-            self._func = np.std
+            self._func = (np.std,)
+        elif func == "both":
+            self._func = (np.mean, np.std)
         else:
             raise AttributeError("func must either be 'mean' or 'std'")
 
@@ -93,14 +103,15 @@ class BondStats(analysis.AnalysisBase):
         self.result.append(self._ag.bonds.bonds())
 
     def _conclude(self):
-        self.result = self._func(self.result, axis=0)
-        bonds = pd.concat([
+        self.result = [func(self.result, axis=0) for func in self._func]
+        bonds = [pd.concat([
             pd.Series(self._ag.bonds.atom1.names),
             pd.Series(self._ag.bonds.atom2.names),
-            pd.Series(self.result),
-        ], axis=1)
-        bonds.columns = ["I", "J", "r_IJ"]
-        self.result = bonds.copy(deep=True)
+            pd.Series(_),
+        ], axis=1) for _ in self.result]
+        for _ in bonds:
+            _.columns = ["I", "J", "r_IJ"]
+        self.result = copy.deepcopy(bonds)
 
 
 def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True, **kwargs):
@@ -192,3 +203,124 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
         print("Writing {}...".format(filenames["crd_file"]))
         with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
             crd.write(universe.atoms)
+
+
+def split_gmx(info, data_dir=path.join(os.curdir, "data"), **kwargs):
+    """Create a subtrajectory from a Gromacs trajectory.
+
+    Parameters
+    ----------
+    info : :class:`collections.namedTuple`
+        Contains information about the data subdirectory and start and stop frames
+    data_dir : str, optional
+        Location of the main data directory
+    topology : str, optional
+        Topology filename (e.g., tpr gro g96 pdb brk ent)
+    trajectory : str, optional
+        A Gromacs trajectory file (e.g., xtc trr)
+    index : str, optional
+        A Gromacs index file (e.g., ndx)
+    outfile : str, optional
+        A Gromacs trajectory file (e.g., xtc trr)
+    logfile : str, optional
+        Log file for output of command
+    system : int
+        Atom selection from Gromacs index file (0 = System, 1 = Protein)
+    """
+    if mdutil.which("gmx") is None:
+        raise OSError("Gromacs 5.0+ is required. "
+                      "If installed, please ensure that it is in your path.")
+    if not issubclass(info.__class__, collections.namedtuple()):
+        raise ValueError("The info variable must be a named tuple.")
+
+    # Trajectory splitting information
+    subdir = path.join(data_dir, "{:d}".format(info.subdir))
+    start = info.start
+    stop = info.stop
+
+    # Various filenames
+    topology = kwargs.get("topology", "md.tpr")
+    trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.xtc"))
+    index = kwargs.get("index")
+    outfile = kwargs.get("outfile", "aa.xtc")
+    logfile = kwargs.get("logfile", "split.log")
+
+    if index is not None:
+        command = [
+            "gmx",
+            "-s", topology,
+            "-f", trajectory,
+            "-n", index,
+            "-o", path.join(subdir, outfile),
+            "-b", "{:d}".format(start),
+            "-e", "{:d}".format(stop),
+        ]
+    else:
+        command = [
+            "gmx",
+            "-s", topology,
+            "-f", trajectory,
+            "-o", path.join(subdir, outfile),
+            "-b", "{:d}".format(start),
+            "-e", "{:d}".format(stop),
+        ]
+    with tempfile.NamedTemporaryFile("w") as temp, \
+        mdutil.openany(logfile, mode="w") as log:
+        print(kwargs.get("system", 0), file=temp)
+        subprocess.check_call(command, stdin=temp, stdout=logfile)
+
+
+def split_charmm(info, data_dir=path.join(os.curdir, "data"), **kwargs):
+    """Create a subtrajectory from a CHARMM trajectory.
+
+    Parameters
+    ----------
+    info : :class:`collections.namedTuple`
+        Contains information about the data subdirectory and start and stop frames
+    data_dir : str, optional
+        Location of the main data directory
+    toppar : str, optional
+        Directory containing CHARMM topology/parameter files
+    trajectory : str, optional
+        A CHARMM trajectory file (e.g., dcd)
+    outfile : str, optional
+        A CHARMM trajectory file (e.g., dcd)
+    logfile : str, optional
+        Log file for output of command
+    charmm_version : int
+        Version of CHARMM
+    """
+    if mdutil.which("charmm") is None:
+        raise OSError("CHARMM is required. "
+                      "If installed, please ensure that it is in your path.")
+    if not issubclass(info.__class__, collections.namedtuple()):
+        raise ValueError("The info variable must be a named tuple.")
+
+    # Trajectory splitting information
+    subdir = path.join(data_dir, "{:d}".format(info.subdir))
+    start = info.start
+    stop = info.stop
+
+    # Various filenames
+    version = kwargs.get("charmm_version", 41)
+    toppar = kwargs.get("toppar", "/opt/local/charmm/c{:d}b1/toppar".format(version))
+    trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.dcd"))
+    outfile = path.join(subdir, kwargs.get("outfile", "aa.dcd"))
+    logfile = kwargs.get("logfile", "split.log")
+    inpfile = path.join(subdir, "split.inp")
+
+    with mdutil.openany(inpfile, "w") as charmm_input:
+        charmm_inp = charmm_split.split_inp.format(
+            toppar=toppar,
+            trajectory=trajectory,
+            outfile=outfile,
+            version=version,
+        )
+        charmm_inp = textwrap.dedent(charmm_inp[1:])
+        print(charmm_inp, file=charmm_input)
+    command = [
+        "charmm",
+        "-i", inpfile,
+        "-o", path.join(subdir, logfile),
+    ]
+    subprocess.check_call(command)

@@ -95,7 +95,7 @@ class FluctMatch(with_metaclass(abc.ABCMeta, object)):
         self.parameters = dict()
         self.target = dict()
 
-        self.outdir = kwargs.get("outdir", os.curdir)
+        self.outdir = kwargs.get("outdir", os.getcwd())
         self.prefix = kwargs.get("prefix", "fluctmatch")
         self.temperature = kwargs.get("temperature", 300.0)
         self.args = args

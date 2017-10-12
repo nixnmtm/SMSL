@@ -15,7 +15,9 @@ nma = (
     * script was written by Prof. Jhih-Wei Chu
     *
     
-    {dimens}
+    {dimension}
+
+    set version {version}
     bomlev -5 ! This is for CHARMM 39
     
     ! Additional information
@@ -26,10 +28,14 @@ nma = (
     
     ! Open CHARMM topology and parameter file
     read rtf  card name "{topology_file}"
-    read para card name "{fixed_prm}"
+    read para card {flex} name "{fixed_prm}"
     
     ! Open PSF and coordinate files
-    read psf  card name "{psf_file}"
+    if @version .ge. 39 then
+        read psf  card name "{xplor_psf_file}"
+    else
+        read psf  card name "{psf_file}"
+    endif
     read coor card name "{crd_file}"
     coor copy comp
     

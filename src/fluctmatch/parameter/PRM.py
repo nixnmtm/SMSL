@@ -161,7 +161,7 @@ class ParamWriter(TopologyWriterBase):
                 print(title, file=prmfile)
             prmfile.write("\n".encode())
 
-            if self._version >= 36 and parameters["ATOMS"].empty:
+            if self._version >= 35 and parameters["ATOMS"].empty:
                 if atomgroup:
                     if np.issubdtype(atomgroup.types.dtype, np.int):
                         atom_types = atomgroup.types
@@ -178,7 +178,7 @@ class ParamWriter(TopologyWriterBase):
 
             for key in self._headers:
                 value = parameters[key]
-                if value.empty or (self._version < 36 and key == "ATOMS"):
+                if value.empty or (self._version < 35 and key == "ATOMS"):
                     continue
                 print(key, file=prmfile)
                 np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))

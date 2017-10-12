@@ -34,7 +34,7 @@ def create_empty_parameters(universe, **kwargs):
     containing the necessary information. Tables for bonds, angles, dihedrals,
     and impropers will have values of 0 that can be filled by the user.
     """
-    charmm40 = kwargs.get("charmm40", False)
+    version = kwargs.get("charmm_version", 41)
     parameters = dict(
         ATOMS=pd.DataFrame(),
         BONDS=pd.DataFrame(),
@@ -58,7 +58,7 @@ def create_empty_parameters(universe, **kwargs):
     atoms = [types, universe.atoms.names, universe.atoms.masses]
     parameters["ATOMS"] = pd.concat([pd.DataFrame(_) for _ in atoms], axis=1)
     parameters["ATOMS"].columns = param_columns["ATOMS"]
-    if charmm40:
+    if version > 39:
         parameters["ATOMS"]["type"] = -1
 
     # Bonds

@@ -35,7 +35,6 @@ from MDAnalysis.lib import util
 from MDAnalysis.coordinates.core import reader
 from future.builtins import (
     dict,
-    open,
     super,
 )
 from future.utils import (
@@ -48,7 +47,6 @@ from scipy import constants
 from fluctmatch.fluctmatch import base as fmbase
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.fluctmatch.data import (
-    charmm36_nma,
     charmm_nma,
 )
 from fluctmatch.intcor import utils as icutils
@@ -181,6 +179,15 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             columns=self.error_hdr,
         )
 
+    def _create_ic_table(self, universe, data):
+        data.set_index(self.bond_def, inplace=True)
+        table = icutils.create_empty_table(universe.atoms)
+        hdr = table.columns
+        table.set_index(self.bond_def, inplace=True)
+        table.drop(["r_IJ", ], axis=1, inplace=True)
+        table = pd.concat([table, data["r_IJ"]], axis=1)
+        return table.reset_index()[hdr]
+
     def initialize(self, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
 
@@ -196,28 +203,16 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
             # Create and write initial internal coordinate files.
             print("Determining the average bond distances...")
-            avg_bonds = fmutils.BondStats(universe, func="mean").run().result
-            avg_bonds.set_index(self.bond_def, inplace=True)
-            avg_table = icutils.create_empty_table(universe.atoms)
-            hdr = avg_table.columns
-            avg_table.set_index(self.bond_def, inplace=True)
-            avg_table.drop(["r_IJ", ], axis=1, inplace=True)
-            avg_table = pd.concat([avg_table, avg_bonds["r_IJ"]], axis=1)
-            avg_table = avg_table.reset_index()[hdr]
+            avg_bonds, std_bonds = fmutils.BondStats(universe, func="both").run().result
             print("Writing {}...".format(self.filenames["init_avg_ic"]))
             with mda.Writer(self.filenames["init_avg_ic"], **self.kwargs) as table:
+                avg_table = self._create_ic_table(universe, avg_bonds)
                 table.write(avg_table)
 
             print("Determining the fluctuation of bond distances...")
-            std_bonds = fmutils.BondStats(universe, func="std").run().result
-            std_bonds.set_index(self.bond_def, inplace=True)
-            fluct_table = icutils.create_empty_table(universe.atoms)
-            fluct_table.set_index(self.bond_def, inplace=True)
-            fluct_table.drop(["r_IJ", ], axis=1, inplace=True)
-            fluct_table = pd.concat([fluct_table, std_bonds["r_IJ"]], axis=1)
-            fluct_table = fluct_table.reset_index()[hdr]
             print("Writing {}...".format(self.filenames["init_fluct_ic"]))
             with mda.Writer(self.filenames["init_fluct_ic"], **self.kwargs) as table:
+                fluct_table = self._create_ic_table(universe, std_bonds)
                 table.write(fluct_table)
 
             # Write the parameter files.
@@ -294,13 +289,19 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
         # Write CHARMM input file.
         if not path.exists(self.filenames["charmm_input"]):
+            version = self.kwargs.get("charmm_version", 41)
+            dimension = (
+                "dimension chsize 500000 maxres 3000000"
+                if version >= 36
+                else ""
+            )
             with util.openany(self.filenames["charmm_input"], "w") as charmm_file:   # type: Optional[IO[str]]
-                dimens = "dimension chsize 500000" if self.kwargs.get("charmm_version", 41) >= 36 else ""
-                charmm_inp = (
-                    charmm36_nma.nma.format(temperature=self.temperature, **self.filenames)
-                    if self.kwargs.get("charmm_version", 41) >= 39
-                    else charmm_nma.nma.format(temperature=self.temperature, dimens=dimens, **self.filenames)
-                )
+                charmm_inp = charmm_nma.nma.format(
+                    temperature=self.temperature,
+                    flex="flex" if version else "",
+                    version=version,
+                    dimension=dimension,
+                    **self.filenames)
                 charmm_inp = textwrap.dedent(charmm_inp[1:])
                 print(charmm_inp, file=charmm_file)
 
