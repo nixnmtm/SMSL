@@ -143,8 +143,6 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         super().__init__()
 
         self._com = kwargs.pop("com", True)
-        self._extended = kwargs.pop("extended", True)
-        self._xplor = kwargs.pop("xplor", True)
 
         # Atomistic Universe
         try:
