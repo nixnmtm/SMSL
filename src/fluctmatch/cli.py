@@ -108,10 +108,11 @@ class ComplexCLI(click.MultiCommand):
     "--data",
     default=path.join(os.getcwd(), "data"),
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=False,
         writable=True,
-        resolve_path=True
+        readable=True,
+        resolve_path=True,
     ),
     help="Directory to write data.",
 )

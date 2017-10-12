@@ -140,6 +140,12 @@ def write_charmm_files(universe, outdir=os.getcwd(), prefix="cg", write_traj=Tru
     """
     from MDAnalysis.core import (topologyattrs,)
 
+    # Attempt to create the necessary subdirectory
+    try:
+        os.makedirs(outdir)
+    except OSError:
+        pass
+
     filename = path.join(outdir, prefix)
     filenames = dict(
         psf_file=".".join((filename, "psf")),
@@ -234,9 +240,15 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         raise ValueError("The info variable must be a named tuple.")
 
     # Trajectory splitting information
-    subdir = path.join(data_dir, "{:d}".format(info.subdir))
+    subdir = path.join(data_dir, "{}".format(info.subdir))
     start = info.start
     stop = info.stop
+
+    # Attempt to create the necessary subdirectory
+    try:
+        os.makedirs(subdir)
+    except OSError:
+        pass
 
     # Various filenames
     topology = kwargs.get("topology", "md.tpr")
@@ -297,9 +309,15 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         raise ValueError("The info variable must be a named tuple.")
 
     # Trajectory splitting information
-    subdir = path.join(data_dir, "{:d}".format(info.subdir))
+    subdir = path.join(data_dir, "{}".format(info.subdir))
     start = info.start
     stop = info.stop
+
+    # Attempt to create the necessary subdirectory
+    try:
+        os.makedirs(subdir)
+    except OSError:
+        pass
 
     # Various filenames
     version = kwargs.get("charmm_version", 41)
@@ -315,6 +333,8 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             trajectory=trajectory,
             outfile=outfile,
             version=version,
+            start=start,
+            stop=stop,
         )
         charmm_inp = textwrap.dedent(charmm_inp[1:])
         print(charmm_inp, file=charmm_input)

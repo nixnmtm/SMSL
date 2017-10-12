@@ -64,9 +64,9 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
 @click.option(
     "-m",
     "--models",
-    type=click.STRING,
+    type=click.Choice(viewkeys(_MODELS)),
     multiple=True,
-    help="Model(s) to which to convert",
+    help="Model(s) to convert to",
 )
 @click.option(
     "-c",

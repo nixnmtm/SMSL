@@ -101,6 +101,12 @@ class FluctMatch(with_metaclass(abc.ABCMeta, object)):
         self.args = args
         self.kwargs = kwargs
 
+        # Attempt to create the necessary subdirectory
+        try:
+            os.makedirs(self.outdir)
+        except OSError:
+            pass
+
     @abc.abstractmethod
     def initialize(self, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
