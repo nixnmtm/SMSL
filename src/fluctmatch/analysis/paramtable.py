@@ -9,7 +9,9 @@ from __future__ import (
     unicode_literals,
 )
 
+import functools
 import glob
+from concurrent import futures
 from os import path
 
 from MDAnalysis.coordinates.core import reader
@@ -23,19 +25,39 @@ from future.utils import native_str
 import numpy as np
 import pandas as pd
 
+_header = ["I", "J"]
+_index = ["segidI", "resI", "I", "segidJ", "resJ", "J"]
+
+
+def _create_table(directory, intcor="average.ic", parmfile="fluctmatch.dist.prm", tbltype="Kb", verbose=False):
+    if path.isdir(directory):
+        if verbose:
+            print("Reading directory {}".format(directory))
+        with reader(path.join(directory, intcor)) as ic_file:
+            if verbose:
+                print("    Processing {}...".format(path.join(directory, intcor)))
+            ic_table = ic_file.read()
+            ic_table.set_index(_header, inplace=True)
+        with reader(path.join(directory, parmfile)) as prm_file:
+            if verbose:
+                print("    Processing {}...".format(path.join(directory, parmfile)))
+            prm_table = prm_file.read()["BONDS"].set_index(_header)
+        table = pd.concat([ic_table, prm_table], axis=1)
+        table.reset_index(inplace=True)
+        table = table.set_index(_index)[tbltype].to_frame()
+        table.columns = [path.basename(directory), ]
+        return table
+
 
 class ParamTable(object):
     """Create a parameter table time series for distance or coupling strength.
 
     """
-    _header = ["I", "J"]
-    _index = ["segidI", "resI", "I", "segidJ", "resJ", "J"]
-
-    def __init__(self, topdir, prefix="fluctmatch", tbltype="Kb", ressep=3):
+    def __init__(self, data_dir, prefix="fluctmatch", tbltype="Kb", ressep=3):
         """
         Parameters
         ----------
-        topdir : str
+        data_dir : str
             Parent directory for parameter files
         prefix : str, optional
             Filename prefix for files
@@ -44,7 +66,7 @@ class ParamTable(object):
         ressep : int, optional
             Number of residues to exclude from interactions.
         """
-        self._topdir = topdir
+        self._datadir = data_dir
         self._prefix = prefix
         self._tbltype = tbltype
         self._ressep = ressep
@@ -77,25 +99,18 @@ class ParamTable(object):
         """
         revcol = ["segidJ", "resJ", "J", "segidI", "resI", "I"]
 
-        directories = glob.iglob(path.join(self._topdir, "*"))
-        for directory in directories:
-            if path.isdir(directory):
-                if verbose:
-                    print("Reading directory {}".format(directory))
-                with reader(path.join(directory, self._filenames["intcor"])) as ic_file:
-                    if verbose:
-                        print("    Processing {}...".format(path.join(directory, self._filenames["intcor"])))
-                    ic_table = ic_file.read()
-                    ic_table.set_index(self._header, inplace=True)
-                with reader(path.join(directory, self._filenames["param"])) as prm_file:
-                    if verbose:
-                        print("    Processing {}...".format(path.join(directory, self._filenames["param"])))
-                    prm_table = prm_file.read()["BONDS"].set_index(self._header)
-                table = pd.concat([ic_table, prm_table], axis=1)
-                table.reset_index(inplace=True)
-                table = table.set_index(self._index)[self._tbltype].to_frame()
-                table.columns = [path.basename(directory), ]
-                self.table.append(table.copy(deep=True))
+        directories = glob.iglob(path.join(self._datadir, "*"))
+        create_table = functools.partial(
+            _create_table,
+            intcor=self._filenames["intcor"],
+            parmfile=self._filenames["param"],
+            tbltype=self._tbltype,
+            verbose=verbose,
+        )
+        with futures.ProcessPoolExecutor() as pool:
+            tables = [pool.submit(create_table, _) for _ in directories]
+            for _ in futures.as_completed(tables):
+                self.table.append(_.result())
 
         self.table = pd.concat(self.table, axis=1)
         self.table.columns = self.table.columns.astype(np.int)
@@ -105,8 +120,8 @@ class ParamTable(object):
         tmp.index.names = revcol
         self.table = pd.concat([self.table, tmp], axis=0)
         self.table.reset_index(inplace=True)
-        self.table = self.table.drop_duplicates(subset=self._index)
-        self.table.set_index(self._index, inplace=True)
+        self.table = self.table.drop_duplicates(subset=_index)
+        self.table.set_index(_index, inplace=True)
         self.table.fillna(0., inplace=True)
         self.table.sort_index(kind="mergesort", inplace=True)
 
@@ -124,7 +139,7 @@ class ParamTable(object):
                 skipinitialspace=True,
                 delim_whitespace=True,
                 header=0,
-                index_col=self._index,
+                index_col=_index,
             )
 
     def write(self, filename):
