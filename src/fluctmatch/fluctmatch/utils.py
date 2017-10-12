@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
-from future.builtins import super
+from future.builtins import (dict, super)
 from future.utils import native_str
 
 from fluctmatch.fluctmatch.data import charmm_split
@@ -114,7 +114,7 @@ class BondStats(analysis.AnalysisBase):
         self.result = copy.deepcopy(bonds)
 
 
-def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True, **kwargs):
+def write_charmm_files(universe, outdir=os.getcwd(), prefix="cg", write_traj=True, **kwargs):
     """Write CHARMM coordinate, topology PSF, stream, and topology RTF files.
 
     Parameters
@@ -147,7 +147,7 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
         crd_file=".".join((filename, "cor")),
         stream_file=".".join((filename, "stream")),
         topology_file=".".join((filename, "rtf")),
-        traj_file=".".join((filename, "dcd")),
+        traj_file=".".join((filename, "xtc")),
     )
 
     # Write required CHARMM input files.
@@ -205,7 +205,7 @@ def write_charmm_files(universe, outdir=os.curdir, prefix="cg", write_traj=True,
             crd.write(universe.atoms)
 
 
-def split_gmx(info, data_dir=path.join(os.curdir, "data"), **kwargs):
+def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     """Create a subtrajectory from a Gromacs trajectory.
 
     Parameters
@@ -270,7 +270,7 @@ def split_gmx(info, data_dir=path.join(os.curdir, "data"), **kwargs):
         subprocess.check_call(command, stdin=temp, stdout=logfile)
 
 
-def split_charmm(info, data_dir=path.join(os.curdir, "data"), **kwargs):
+def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     """Create a subtrajectory from a CHARMM trajectory.
 
     Parameters

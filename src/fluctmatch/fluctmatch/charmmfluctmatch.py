@@ -74,19 +74,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             MDAnalysis. A "structure" file (PSF, PDB or GRO, in the sense of a
             topology) is always required. Alternatively, an existing
             :class:`MDAnalysis.core.topology.Topology` instance may also be given.
-        extended
-            Renames the residues and atoms according to the extended CHARMM PSF format.
-            Standard CHARMM PSF limits the residue and atom names to four characters,
-            but the extended CHARMM PSF permits eight characters. The residues and
-            atoms are renamed according to the number of segments (1: A, 2: B, etc.)
-            and then the residue number or atom index number.
-         xplor
-            Assigns the atom type as either a numerical or an alphanumerical
-            designation. CHARMM normally assigns a numerical designation, but the
-            XPLOR version permits an alphanumerical designation with a maximum
-            size of 4. The numerical form corresponds to the atom index number plus a
-            factor of 100, and the alphanumerical form will be similar the standard
-            CHARMM atom name.
         topology_format
             Provide the file format of the topology file; ``None`` guesses it from
             the file extension [``None``] Can also pass a subclass of
