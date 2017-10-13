@@ -10,3 +10,4 @@ from future.builtins import dict
 __version__ = "3.0.0"
 
 _MODELS = dict()
+_DESCRIBE = dict()

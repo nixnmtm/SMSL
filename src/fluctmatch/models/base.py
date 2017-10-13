@@ -26,13 +26,14 @@ from future.builtins import (
     super,
     zip,
 )
+from future.builtins import zip
 from future.utils import (
     raise_with_traceback,
     viewitems,
     with_metaclass,
 )
 
-from fluctmatch import _MODELS
+from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models import (
     topattrs,
     trajectory,
@@ -45,12 +46,14 @@ class _ModelMeta(abc.ABCMeta):
         type.__init__(type, name, bases, classdict)
         try:
             fmt = asiterable(classdict['model'])
+            describe = asiterable(classdict['describe'])
         except KeyError:
             pass
         else:
-            for f in fmt:
+            for f, d in zip(fmt, describe):
                 f = f.upper()
                 _MODELS[f] = cls
+                _DESCRIBE[f] = d
 
 
 class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
