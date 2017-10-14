@@ -1,7 +1,22 @@
 # -*- coding: utf-8 -*-
-# coarse graining in MDAnalysis
-# Copyright (c) 2015 Richard J Gowers
-# Released under the GNU Lesser General Public License, version 2 or later.
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
+# The original code is from Richard J. Gowers.
+# https://github.com/richardjgowers/MDAnalysis-coarsegraining
+#
 from __future__ import (
     absolute_import,
     division,
@@ -14,12 +29,10 @@ import itertools
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
-from future.builtins import super
 from future.utils import (
+    viewitems,
     viewvalues,
 )
-
-from fluctmatch.models.selection import *
 
 
 class _Trajectory(base.ReaderBase):
@@ -37,26 +50,27 @@ class _Trajectory(base.ReaderBase):
 
         Parameters
         ----------
-        universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        universe : :class:`~MDAnalysis.Universe` / :class:`~MDAnalysis.AtomGroup`
             A collection of atoms in a universe or AtomGroup.
         mapping : dict
             Definitions of the beads.
         n_atoms : int, optional
             Number of atoms in the coarse-grain system.
         convert_units : bool, optional
-            units are converted to the MDAnalysis base format; None selects the value of MDAnalysis.core.flags [‘convert_lengths’].
+            units are converted to the MDAnalysis base format; None selects the
+            value of MDAnalysis.core.flags [‘convert_lengths’].
         com : bool, optional
             Calculate center of mass or center of geometry per bead definition.
         kwargs : dict, optional
             Additonal arguments for use within the MDAnalysis coordinate reader.
         """
-#         super().__init__(universe.trajectory.filename, convert_units=convert_units, **kwargs)
         self._u = universe
         self._t = universe.trajectory
         self._mapping = mapping
+        residue_selection = itertools.product(self._u.residues, viewvalues(self._mapping))
         self._beads = [
             res.atoms.select_atoms(selection)
-            for res, selection in itertools.product(self._u.residues, viewvalues(self._mapping))
+            for res, selection in residue_selection
             if res.atoms.select_atoms(selection)
         ]
 
@@ -127,17 +141,20 @@ class _Trajectory(base.ReaderBase):
                     for bead in self._beads
                 ]
 
+        residue_selection = itertools.product(
+            residues, viewitems(self._mapping)
+        )
         if self.ts.has_velocities:
             self.ts._velocities[:] = [
                 res.select_atoms(selection).velocities.sum()
-                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
+                for res, (_, selection) in residue_selection
                 if res.select_atoms(selection)
             ]
 
         if self.ts.has_forces:
             self.ts._forces[:] = [
                 res.select_atoms(selection).forces.sum()
-                for res, (_, selection) in itertools.product(residues, viewitems(self._mapping))
+                for res, (_, selection) in residue_selection
                 if res.select_atoms(selection)
             ]
 

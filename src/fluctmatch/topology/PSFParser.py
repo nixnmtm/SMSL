@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -179,20 +191,19 @@ class PSF36Parser(PSFParser.PSFParser):
         space separated, see release notes for VMD 1.9.1, psfplugin at
         http://www.ks.uiuc.edu/Research/vmd/current/devel.html :
 
-        psfplugin: Added more logic to the PSF plugin to determine cases where the
-        CHARMM "EXTended" PSF format cannot accomodate long atom types, and we add
-        a "NAMD" keyword to the PSF file flags line at the top of the file. Upon
-        reading, if we detect the "NAMD" flag there, we know that it is possible
-        to parse the file correctly using a simple space-delimited scanf() format
-        string, and we use that strategy rather than holding to the inflexible
-        column-based fields that are a necessity for compatibility with CHARMM,
-        CNS, X-PLOR, and other formats. NAMD and the psfgen plugin already assume
-        this sort of space-delimited formatting, but that's because they aren't
-        expected to parse the PSF variants associated with the other programs. For
-        the VMD PSF plugin, having the "NAMD" tag in the flags line makes it
-        absolutely clear that we're dealing with a NAMD-specific file so we can
-        take the same approach.
-
+        psfplugin: Added more logic to the PSF plugin to determine cases where
+        the CHARMM "EXTended" PSF format cannot accomodate long atom types, and
+        we add a "NAMD" keyword to the PSF file flags line at the top of the
+        file. Upon reading, if we detect the "NAMD" flag there, we know that it
+        is possible to parse the file correctly using a simple space-delimited
+        scanf() format string, and we use that strategy rather than holding to
+        the inflexible column-based fields that are a necessity for
+        compatibility with CHARMM, CNS, X-PLOR, and other formats. NAMD and the
+        psfgen plugin already assume this sort of space-delimited formatting,
+        but that's because they aren't expected to parse the PSF variants
+        associated with the other programs. For the VMD PSF plugin, having the
+        "NAMD" tag in the flags line makes it absolutely clear that we're
+        dealing with a NAMD-specific file so we can take the same approach.
         """
         # how to partition the line into the individual atom components
         atom_parsers = dict(
@@ -206,17 +217,6 @@ class PSF36Parser(PSFParser.PSFParser):
         # once partitioned, assigned each component the correct type
         set_type = lambda x: (int(x[0]) - 1, x[1] or "SYSTEM", int(x[2]), x[3],
                               x[4], x[5], float(x[6]), float(x[7]))
-
-        # Oli: I don't think that this is the correct OUTPUT format:
-        #   psf_atom_format = "   %5d %4s %4d %4s %-4s %-4s %10.6f      %7.4f%s\n"
-        # It should be rather something like:
-        #   psf_ATOM_format = '%(iatom)8d %(segid)4s %(resid)-4d %(resname)4s '+\
-        #                     '%(name)-4s %(type)4s %(charge)-14.6f%(mass)-14.4f%(imove)8d\n'
-
-        # source/psfres.src (CHEQ and now can be used for CHEQ EXTended), see comments above
-        #   II,LSEGID,LRESID,LRES,TYPE(I),IAC(I),CG(I),AMASS(I),IMOVE(I),ECH(I),EHA(I)
-        #  (I8,1X,A4, 1X,A4,  1X,A4,  1X,A4,  1X,I4,  1X,2G14.6,     I8,   2G14.6)
-        #   0:8   9:13   14:18   19:23   24:28   29:33   34:48 48:62 62:70 70:84 84:98
 
         # Allocate arrays
         atomids = np.zeros(numlines, dtype=np.int32)
@@ -250,7 +250,9 @@ class PSF36Parser(PSFParser.PSFParser):
                     logger.debug("First NAMD-type line: {0}: {1}"
                                  "".format(i, line.rstrip()))
                 except ValueError:
-                    atom_parser = util.FORTRANReader(atom_parsers[self._format].replace("A6", "A4"))
+                    atom_parser = util.FORTRANReader(
+                        atom_parsers[self._format].replace("A6", "A4")
+                    )
                     vals = atom_parser.read(line)
                     logger.warn("Guessing that this is actually a"
                                 " pre CHARMM36 PSF file..."
@@ -285,7 +287,10 @@ class PSF36Parser(PSFParser.PSFParser):
         residuenames = Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids,) = change_squash((perres_segids,), (perres_segids,))
+        segidx, (perseg_segids,) = change_squash(
+            (perres_segids,),
+            (perres_segids,)
+        )
         segids = Segids(perseg_segids)
 
         top = Topology(len(atomids), len(new_resids), len(segids),
@@ -367,7 +372,9 @@ class PSFWriter(base.TopologyWriterBase):
 
         self.col_width = 10 if self._extended else 8
         self.sect_hdr = "{:>10d} !{}" if self._extended else "{:>8d} !{}"
-        self.sect_hdr2 = "{:>10d}{:>10d} !{}" if self._extended else "{:>8d}{:>8d} !{}"
+        self.sect_hdr2 = (
+            "{:>10d}{:>10d} !{}" if self._extended else "{:>8d}{:>8d} !{}"
+        )
         self.sections = (("bonds", "NBOND: bonds", 8),
                          ("angles", "NTHETA: angles", 9),
                          ("dihedrals", "NPHI: dihedrals", 8),
@@ -381,7 +388,8 @@ class PSFWriter(base.TopologyWriterBase):
         Parameters
         ----------
         universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
-            A collection of atoms in a universe or atomgroup with bond definitions.
+            A collection of atoms in a universe or atomgroup with bond
+            definitions.
         """
         self._universe = universe
         xplor = not np.issubdtype(universe.atoms.types.dtype, np.int)
@@ -430,7 +438,7 @@ class PSFWriter(base.TopologyWriterBase):
             (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A6,1X,2G14.6,I8)  XPLOR
             (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A6,1X,2G14.6,I8,2G14.6)  XPLOR,CHEQ
             (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2G14.6,I8)  XPLOR,c35
-            (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2G14.6,I8,2G14.6)  XPLOR,c35,CHEQ
+            (I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2G14.6,I8,2G14.6) XPLOR,c35,CHEQ
           expanded format EXT:
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8)
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6) CHEQ
@@ -440,7 +448,10 @@ class PSFWriter(base.TopologyWriterBase):
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8,2G14.6) XPLOR,c35,CHEQ
         """
         fmt = self._fmt[self._fmtkey]
-        print(self.sect_hdr.format(self._universe.atoms.n_atoms, "NATOM"), file=psffile)
+        print(self.sect_hdr.format(
+            self._universe.atoms.n_atoms,
+            "NATOM"
+        ), file=psffile)
         atoms = self._universe.atoms
         lines = (
             np.arange(atoms.n_atoms) + 1,
@@ -483,10 +494,18 @@ class PSFWriter(base.TopologyWriterBase):
         n_values = n_perline // n_cols
         if n_rows % n_values > 0:
             n_extra = n_values - (n_rows % n_values)
-            values = np.concatenate((values, np.full((n_extra, n_cols), "", dtype=np.object)), axis=0)
+            values = np.concatenate(
+                (values, np.full((n_extra, n_cols), "", dtype=np.object)),
+                axis=0
+            )
         values = values.reshape((values.shape[0] // n_values, n_perline))
         print(self.sect_hdr.format(n_rows, header), file=psffile)
-        np.savetxt(psffile, values, fmt=native_str("%{:d}s".format(self.col_width)), delimiter=native_str(""))
+        np.savetxt(
+            psffile,
+            values,
+            fmt=native_str("%{:d}s".format(self.col_width)),
+            delimiter=native_str("")
+        )
         print(file=psffile)
 
     def _write_other(self, psffile):
@@ -501,24 +520,42 @@ class PSFWriter(base.TopologyWriterBase):
             nnb = np.concatenate([nnb, np.empty(missing, dtype=np.object)], axis=0)
         nnb = nnb.reshape((nnb.size // n_cols, n_cols))
         print(self.sect_hdr.format(0, "NNB") + "\n", file=psffile)
-        np.savetxt(psffile, nnb, fmt=native_str("%{:d}s".format(self.col_width)), delimiter=native_str(""))
+        np.savetxt(
+            psffile,
+            nnb,
+            fmt=native_str("%{:d}s".format(self.col_width)),
+            delimiter=native_str("")
+        )
         print(file=psffile)
 
         # NGRP NST2
         print(self.sect_hdr2.format(1, 0, "NGRP NST2"), file=psffile)
         line = np.zeros(3, dtype=np.int)
         line = line.reshape((1, line.size))
-        np.savetxt(psffile, line, fmt=native_str("%{:d}d".format(self.col_width)), delimiter=native_str(""))
+        np.savetxt(
+            psffile,
+            line,
+            fmt=native_str("%{:d}d".format(self.col_width)),
+            delimiter=native_str("")
+        )
         print(file=psffile)
 
         # MOLNT
         if self._cheq:
             line = np.full(n_atoms, "1", dtype=np.object)
             if dn_cols > 0:
-                line = np.concatenate([line, np.zeros(missing, dtype=np.object)], axis=0)
+                line = np.concatenate(
+                    [line, np.zeros(missing, dtype=np.object)],
+                    axis=0
+                )
             line = line.reshape((line.size // n_cols, n_cols))
             print(self.sect_hdr.format(1, "MOLNT"), file=psffile)
-            np.savetxt(psffile, line, fmt=native_str("%{:d}s".format(self.col_width)), delimiter=native_str(""))
+            np.savetxt(
+                psffile,
+                line,
+                fmt=native_str("%{:d}s".format(self.col_width)),
+                delimiter=native_str("")
+            )
             print(file=psffile)
         else:
             print(self.sect_hdr.format(0, "MOLNT"), file=psffile)

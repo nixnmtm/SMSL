@@ -1,7 +1,22 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
+# The original code is from Richard J. Gowers.
+# https://github.com/richardjgowers/MDAnalysis-coarsegraining
+#
 from __future__ import (
     absolute_import,
     division,
@@ -46,13 +61,19 @@ class _ModelMeta(abc.ABCMeta):
         type.__init__(type, name, bases, classdict)
         try:
             fmt = asiterable(classdict['model'])
-            describe = asiterable(classdict['describe'])
         except KeyError:
             pass
         else:
-            for f, d in zip(fmt, describe):
+            for f in fmt:
                 f = f.upper()
                 _MODELS[f] = cls
+        try:
+            description = asiterable(classdict['describe'])
+        except KeyError:
+            pass
+        else:
+            for f, d in zip(fmt, description):
+                f = f.upper()
                 _DESCRIBE[f] = d
 
 
@@ -69,18 +90,18 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         topology) is always required. Alternatively, an existing
         :class:`MDAnalysis.core.topology.Topology` instance may also be given.
     extended
-        Renames the residues and atoms according to the extended CHARMM PSF format.
-        Standard CHARMM PSF limits the residue and atom names to four characters,
-        but the extended CHARMM PSF permits eight characters. The residues and
-        atoms are renamed according to the number of segments (1: A, 2: B, etc.)
-        and then the residue number or atom index number.
+        Renames the residues and atoms according to the extended CHARMM PSF
+        format. Standard CHARMM PSF limits the residue and atom names to four
+        characters, but the extended CHARMM PSF permits eight characters. The
+        residues and atoms are renamed according to the number of segments
+        (1: A, 2: B, etc.) and then the residue number or atom index number.
      xplor
         Assigns the atom type as either a numerical or an alphanumerical
         designation. CHARMM normally assigns a numerical designation, but the
         XPLOR version permits an alphanumerical designation with a maximum
-        size of 4. The numerical form corresponds to the atom index number plus a
-        factor of 100, and the alphanumerical form will be similar the standard
-        CHARMM atom name.
+        size of 4. The numerical form corresponds to the atom index number plus
+        a factor of 100, and the alphanumerical form will be similar the
+        standard CHARMM atom name.
     topology_format
         Provide the file format of the topology file; ``None`` guesses it from
         the file extension [``None``] Can also pass a subclass of
@@ -131,15 +152,18 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         master ConnectivityGroups for each connectivity type
     """
     def __init__(self, *args, **kwargs):
-        """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
+        """Initialise like a normal MDAnalysis Universe but give the mapping and
+        com keywords.
 
         Mapping must be a dictionary with atom names as keys.
         Each name must then correspond to a selection string,
         signifying how to split up a single residue into many beads.
         eg:
         mapping = {"CA":"protein and name CA",
-                   "CB":"protein and not name N HN H HT* H1 H2 H3 CA HA* C O OXT OT*"}
-        Would split residues into 2 beads containing the C-alpha atom and the sidechain.
+                   "CB":"protein and not name N HN H HT* H1 H2 H3 CA HA* C O OXT
+                   OT*"}
+        would split residues into 2 beads containing the C-alpha atom and the
+        sidechain.
         """
         # Coarse grained Universe
         # Make a blank Universe for myself.
@@ -156,7 +180,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     def __repr__(self):
         message = "<CG Universe with {} beads".format(len(self.atoms._beads))
         try:
-            message += " and {:d} bonds".format(len(self._topology.bonds.values))
+            message += " and {:d} bonds".format(
+                len(self._topology.bonds.values)
+            )
         except AttributeError as exc:
             pass
         finally:
@@ -180,9 +206,13 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
 
         # This replaces load_new in a traditional Universe
         try:
-            self.trajectory = trajectory._Trajectory(self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com)
+            self.trajectory = trajectory._Trajectory(
+                self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com
+            )
         except (IOError, TypeError) as exc:
-            raise_with_traceback(RuntimeError("Unable to open {}".format(self.atu.trajectory.filename)))
+            raise_with_traceback(RuntimeError(
+                "Unable to open {}".format(self.atu.trajectory.filename))
+            )
 
     def _apply_map(self, mapping):
         """Apply the mapping scheme to the beads.
@@ -207,7 +237,10 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         masses = []
 
         residues = self.atu.atoms.split("residue")
-        for i, (res, (name, selection)) in enumerate(itertools.product(residues, viewitems(mapping))):
+        select_residues = enumerate(
+            itertools.product(residues, viewitems(mapping))
+        )
+        for i, (res, (name, selection)) in select_residues:
             bead = res.select_atoms(selection)
             if bead:
                 _beads.append(bead)
@@ -230,7 +263,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         vdwradii = np.zeros_like(atomids)
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
-        atomnames = topologyattrs.Atomnames(np.asarray(atomnames, dtype=np.object))
+        atomnames = topologyattrs.Atomnames(
+            np.asarray(atomnames, dtype=np.object)
+        )
         atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms)+100))
         charges = topologyattrs.Charges(np.asarray(charges))
         masses = topologyattrs.Masses(np.asarray(masses))
@@ -240,7 +275,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         segids = np.asarray(segids, dtype=np.object)
         resids = np.asarray(resids)
         resnames = np.asarray(resnames, dtype=np.object)
-        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash((resids,), (resids, resnames, segids))
+        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
+            (resids,), (resids, resnames, segids)
+        )
 
         # transform from atom:Rid to atom:Rix
         residueids = topologyattrs.Resids(new_resids)
@@ -248,7 +285,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         residuenames = topologyattrs.Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids,) = topbase.change_squash((new_segids,), (new_segids,))
+        segidx, (perseg_segids,) = topbase.change_squash(
+            (new_segids,), (new_segids,)
+        )
         segids = topologyattrs.Segids(perseg_segids)
 
         # Setup topology
@@ -283,7 +322,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     def _add_impropers(self):
         try:
             impropers = guessers.guess_improper_dihedrals(self.angles)
-            self._topology.add_TopologyAttr((topologyattrs.Impropers(impropers)))
+            self._topology.add_TopologyAttr(
+                (topologyattrs.Impropers(impropers))
+            )
             self._generate_from_topology()
         except AttributeError:
             pass
@@ -304,7 +345,7 @@ def Merge(*args):
 
     Parameters
     ----------
-    args : list or tuple of either :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+    args : iterable of either :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
 
     Returns
     -------
@@ -314,18 +355,24 @@ def Merge(*args):
     from MDAnalysis.coordinates.memory import MemoryReader
     from MDAnalysis.analysis.base import AnalysisFromFunction
 
-    print("This might take a while depending upon the number of trajectory frames.")
+    print("This might take a while depending upon the number of "
+          "trajectory frames.")
     if not all([issubclass(u.__class__, mda.Universe) for u in args]):
-        raise TypeError("The universes must all be derived from MDAnalysis.Universe.")
-    if not all([u.trajectory.n_frames == args[0].trajectory.n_frames for u in args]):
+        raise TypeError(
+            "The universes must all be derived from MDAnalysis.Universe."
+        )
+    if not all([
+            u.trajectory.n_frames == args[0].trajectory.n_frames for u in args
+    ]):
         raise ValueError("The trajectories are not the same length.")
     ag = [_.atoms for _ in args]
     universe = mda.Merge(*ag)
 
     atoms = universe.atoms
     attrs = universe._topology
-    residx, (new_resids, new_resnames, new_segids) = topbase.change_squash((atoms.resids,),
-                                                                           (atoms.resids, atoms.resnames, atoms.segids))
+    residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
+        (atoms.resids,), (atoms.resids, atoms.resnames, atoms.segids)
+    )
     # Update segment list
     # transform from atom:Rid to atom:Rix
     residueids = topologyattrs.Resids(new_resids)
@@ -333,14 +380,18 @@ def Merge(*args):
     residuenames = topologyattrs.Resnames(new_resnames)
 
     # Segment
-    segidx, (perseg_segids, ) = topbase.change_squash((new_segids,), (new_segids,))
+    segidx, (perseg_segids, ) = topbase.change_squash(
+        (new_segids,), (new_segids,)
+    )
     segids = topologyattrs.Segids(perseg_segids)
-    universe._topology = topology.Topology(attrs.n_atoms, attrs.n_residues, len(segids),
-                                           attrs=[attrs.indices, attrs.ids, attrs.names, attrs.types,
-                                                  attrs.charges, attrs.masses, attrs.radii, residueids,
-                                                  residuenums, residuenames, segids],
-                                           atom_resindex=residx,
-                                           residue_segindex=segidx)
+    universe._topology = topology.Topology(
+        attrs.n_atoms, attrs.n_residues, len(segids),
+        attrs=[attrs.indices, attrs.ids, attrs.names, attrs.types,
+               attrs.charges, attrs.masses, attrs.radii, residueids,
+               residuenums, residuenames, segids],
+        atom_resindex=residx,
+        residue_segindex=segidx
+    )
     universe._generate_from_topology()
 
     if args[0].trajectory.n_frames > 1:
@@ -350,8 +401,12 @@ def Merge(*args):
         ]
         coordinates = np.concatenate(coordinates, axis=1)
         if universe.atoms.n_atoms != coordinates.shape[1]:
-            raise RuntimeError("The number of sites does not match the number of coordinates.")
-        print("The new universe has {1} beads in {0} frames.".format(*coordinates.shape))
+            raise RuntimeError(
+                "The number of sites does not match the number of coordinates."
+            )
+        print("The new universe has {1} beads in {0} frames.".format(
+            *coordinates.shape
+        ))
         universe.load_new(coordinates, format=MemoryReader)
     return universe
 
@@ -359,10 +414,11 @@ def Merge(*args):
 def rename_universe(universe):
     """Rename the atoms and residues within a universe.
 
-    Standardizes naming of the universe by renaming atoms and residues based upon the
-    number of segments. Atoms are labeled as 'A001', 'A002', 'A003', ..., 'A999' for
-    the first segment, and 'B001', 'B002', 'B003', ..., 'B999' for the second segment.
-    Residues are named in a similar fashion according to their segment.
+    Standardizes naming of the universe by renaming atoms and residues based
+    upon the number of segments. Atoms are labeled as 'A001', 'A002', 'A003',
+    ..., 'A999' for the first segment, and 'B001', 'B002', 'B003', ..., 'B999'
+    for the second segment. Residues are named in a similar fashion according to
+    their segment.
 
     Parameters
     ----------
@@ -374,12 +430,16 @@ def rename_universe(universe):
     :class:`~MDAnalysis.Universe`
         The universe with renamed residues and atoms.
     """
-    atomnames = np.array(["{}{:0>3d}".format(lett, i)
-                          for lett, segment in zip(string.ascii_uppercase, universe.segments)
-                          for i, _ in enumerate(segment.atoms, 1)])
-    resnames = np.array(["{}{:0>3d}".format(lett, i)
-                         for lett, segment in zip(string.ascii_uppercase, universe.segments)
-                         for i, _ in enumerate(segment.residues, 1)])
+    atomnames = np.array([
+        "{}{:0>3d}".format(lett, i)
+        for lett, segment in zip(string.ascii_uppercase, universe.segments)
+        for i, _ in enumerate(segment.atoms, 1)
+    ])
+    resnames = np.array([
+        "{}{:0>3d}".format(lett, i)
+        for lett, segment in zip(string.ascii_uppercase, universe.segments)
+        for i, _ in enumerate(segment.residues, 1)
+    ])
 
     universe._topology.add_TopologyAttr(topologyattrs.Atomnames(atomnames))
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))

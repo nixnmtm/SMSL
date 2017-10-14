@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -68,7 +80,10 @@ def create_empty_parameters(universe, **kwargs):
             universe.bonds.atom2.names,
             np.zeros((universe.bonds.atom1.names.size, 2), dtype=np.float),
         ]
-        parameters["BONDS"] = pd.concat([pd.DataFrame(_) for _ in bonds], axis=1)
+        parameters["BONDS"] = pd.concat([
+            pd.DataFrame(_)
+            for _ in bonds
+        ], axis=1)
         parameters["BONDS"].columns = param_columns["BONDS"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass
@@ -81,7 +96,10 @@ def create_empty_parameters(universe, **kwargs):
             universe.angles.atom3.names,
             np.zeros((universe.angles.atom1.names.size, 2), dtype=np.float),
         ]
-        parameters["ANGLES"] = pd.concat([pd.DataFrame(_) for _ in angles], axis=1)
+        parameters["ANGLES"] = pd.concat([
+            pd.DataFrame(_)
+            for _ in angles
+        ], axis=1)
         parameters["ANGLES"].columns = param_columns["ANGLES"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass
@@ -97,7 +115,10 @@ def create_empty_parameters(universe, **kwargs):
             np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.int),
             np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.float),
         ]
-        parameters["DIHEDRALS"] = pd.concat([pd.DataFrame(_) for _ in dihedrals], axis=1)
+        parameters["DIHEDRALS"] = pd.concat([
+            pd.DataFrame(_)
+            for _ in dihedrals
+        ], axis=1)
         parameters["DIHEDRALS"].columns = param_columns["DIHEDRALS"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass
@@ -113,7 +134,10 @@ def create_empty_parameters(universe, **kwargs):
             np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.int),
             np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.float),
         ]
-        parameters["IMPROPER"] = pd.concat([pd.DataFrame(_) for _ in impropers], axis=1)
+        parameters["IMPROPER"] = pd.concat([
+            pd.DataFrame(_)
+            for _ in impropers
+        ], axis=1)
         parameters["IMPROPER"].columns = param_columns["DIHEDRALS"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass

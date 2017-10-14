@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -128,8 +140,8 @@ class IntcorWriter(TopologyWriterBase):
     resid : bool, optional
         Include segment names within each atom definition.
     title : str or list of str, optional
-        A header section written at the beginning of the stream file. If no title
-        is given, a default title will be written.
+        A header section written at the beginning of the stream file.
+        If no title is given, a default title will be written.
     """
     format = "IC"
     units = {"time": "picosecond", "length": "Angstrom"}
@@ -145,11 +157,13 @@ class IntcorWriter(TopologyWriterBase):
         ),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
         STANDARD_RESID=(
-            "%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"
+            "%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s: "
+            "%-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"
         ),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
         EXTENDED_RESID=(
-            "%10d %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
+            "%10d %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s: "
+            "%-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
         ),
     )
 
@@ -195,9 +209,23 @@ class IntcorWriter(TopologyWriterBase):
             line = np.zeros(20, dtype=np.int)
             line[0] = 30 if self._extended else 20
             line[1] = 2 if self._resid else 1
-            np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%4d"), delimiter=native_str(""))
+            np.savetxt(
+                icfile,
+                line[np.newaxis, :],
+                fmt=native_str("%4d"),
+                delimiter=native_str("")
+            )
             line = np.zeros(2, dtype=np.int)
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
-            np.savetxt(icfile, line[np.newaxis, :], fmt=native_str("%5d"), delimiter=native_str(""))
-            np.savetxt(icfile, ictable.reset_index(), fmt=native_str(self.fmt[self.key]))
+            np.savetxt(
+                icfile,
+                line[np.newaxis, :],
+                fmt=native_str("%5d"),
+                delimiter=native_str("")
+            )
+            np.savetxt(
+                icfile,
+                ictable.reset_index(),
+                fmt=native_str(self.fmt[self.key])
+            )

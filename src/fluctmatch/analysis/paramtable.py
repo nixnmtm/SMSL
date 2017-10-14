@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -11,7 +23,7 @@ from __future__ import (
 
 import functools
 import glob
-from concurrent import futures
+import multiprocessing as mp
 from os import path
 
 from MDAnalysis.coordinates.core import reader
@@ -107,12 +119,13 @@ class ParamTable(object):
             tbltype=self._tbltype,
             verbose=verbose,
         )
-        with futures.ProcessPoolExecutor() as pool:
-            tables = [pool.submit(create_table, _) for _ in directories]
-            for _ in futures.as_completed(tables):
-                self.table.append(_.result())
+        pool = mp.Pool()
+        tables = pool.map_async(create_table, directories)
+        pool.close()
+        pool.join()
+        tables.wait()
 
-        self.table = pd.concat(self.table, axis=1)
+        self.table = pd.concat(tables.get(), axis=1)
         self.table.columns = self.table.columns.astype(np.int)
         self.table = self.table[np.sort(self.table.columns)]
 

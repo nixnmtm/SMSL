@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -9,46 +21,52 @@ from __future__ import (
     unicode_literals,
 )
 
-import collections
 import functools
-from concurrent import futures
+import multiprocessing as mp
 import os
 from os import path
 
 from future.builtins import (
+    dict,
     range,
     zip,
 )
+from future.utils import viewkeys
 
 import click
-from fluctmatch.cli import pass_context
 from fluctmatch.fluctmatch import utils
 
+_CONVERT = dict(
+    GMX=utils.split_gmx,
+    CHARMM=utils.split_charmm,
+)
 
 @click.command("splittraj", short_help="Split a trajectory using Gromacs or CHARMM.")
 @click.option(
-    "--gmx / --charmm",
-    "gromacs",
-    default=True,
-    help="Split using either Gromacs or CHARMM"
+    "--type",
+    "program",
+    type=click.Choice(viewkeys(_CONVERT)),
+    default="GMX",
+    help="Split using an external MD program"
 )
 @click.option(
     "-s",
     "topology",
+    metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=True,
         resolve_path=True
     ),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
-    "-d",
-    "toppar",
+    "--toppar",
+    metavar="DIR",
     default=path.join(os.getcwd(), "toppar"),
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=False,
         resolve_path=True
     ),
@@ -57,19 +75,34 @@ from fluctmatch.fluctmatch import utils
 @click.option(
     "-f",
     "trajectory",
+    metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=True,
         resolve_path=True
     ),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
+    "--data",
+    metavar="DIR",
+    default=path.join(os.getcwd(), "data"),
+    type=click.Path(
+        exists=False,
+        file_okay=False,
+        writable=True,
+        readable=True,
+        resolve_path=True,
+    ),
+    help="Directory to write data.",
+)
+@click.option(
     "-n",
     "index",
+    metavar="FILE",
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=True,
         resolve_path=True
     ),
@@ -78,28 +111,31 @@ from fluctmatch.fluctmatch import utils
 @click.option(
     "-o",
     "outfile",
+    metavar="FILE",
     default="aa.xtc",
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=True,
-        resolve_path=True
+        resolve_path=False,
     ),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
     "-l",
     "logfile",
+    metavar="FILE",
     default="split.log",
     type=click.Path(
-        exists=True,
+        exists=False,
         file_okay=True,
-        resolve_path=True
+        resolve_path=False,
     ),
     help="Log file",
 )
 @click.option(
     "-t",
     "--system",
+    metavar="NDXNUM",
     default=0,
     type=click.INT,
     help="System selection based upon Gromacs index file",
@@ -107,6 +143,7 @@ from fluctmatch.fluctmatch import utils
 @click.option(
     "-b",
     "start",
+    metavar="FRAME",
     default=1,
     type=click.INT,
     help="Start time of trajectory",
@@ -114,6 +151,7 @@ from fluctmatch.fluctmatch import utils
 @click.option(
     "-e",
     "stop",
+    metavar="FRAME",
     default=10000,
     type=click.INT,
     help="Stop time of total trajectory",
@@ -121,48 +159,34 @@ from fluctmatch.fluctmatch import utils
 @click.option(
     "-w",
     "window_size",
+    metavar="WINSIZE",
     default=10000,
     type=click.INT,
     help="Size of each subtrajectory",
 )
-@pass_context
-def cli(ctx, gromacs, toppar, topology, trajectory, index, outfile, logfile, system, start, stop, window_size):
-    half_ws = window_size // 2
-    Info = collections.namedtuple("Info", "subdir start stop")
-    values = zip(range(start, stop+1, half_ws), range(start+window_size, stop+1, half_ws))
-    values = (Info(subdir=(y // half_ws) - 1, start=x, stop=y) for x, y in values)
+def cli(
+    program, toppar, topology, trajectory, data, index, outfile, logfile,
+    system, start, stop, window_size
+):
+    half_size = window_size // 2
+    beg = start - half_size if start >= window_size else start
+    values = zip(range(beg, stop+1, half_size), range(beg+window_size-1, stop+1, half_size))
+    values = [((y // half_size) - 1, x, y) for x, y in values]
 
-    root0, ext0 = path.split(trajectory)
-    root1, ext1 = path.splitext(outfile)
-    if gromacs:
-        if ext0 == ".dcd" or ext1 == ".dcd":
-            raise IOError("The trajectory input and output files must "
-                          "not end with '.dcd'.")
-        func = functools.partial(
-            utils.split_gmx,
-            data_dir=ctx.data,
-            topology=topology,
-            trajectory=trajectory,
-            index=index,
-            outfile=outfile,
-            logfile=logfile,
-            system=system,
-        )
-    else:
-        if ext0 != ".dcd" and ext1 != ".dcd":
-            raise IOError("The trajectory input and output files must "
-                          "end with '.dcd'.")
-        func = functools.partial(
-            utils.split_charmm,
-            data_dir=ctx.data,
-            topology=toppar,
-            trajectory=trajectory,
-            outfile=outfile,
-            logfile=logfile,
-        )
+    func = functools.partial(
+        _CONVERT[program],
+        data_dir=data,
+        topology=topology,
+        toppar=toppar,
+        trajectory=trajectory,
+        index=index,
+        outfile=outfile,
+        logfile=logfile,
+        system=system,
+    )
 
     # Run multiple instances simultaneously
-    with futures.ProcessPoolExecutor() as pool:
-        data = [_ for _ in pool.submit(func, values)]
-        for _ in futures.as_completed(data):
-            _.result()
+    pool = mp.Pool()
+    pool.map_async(func, values)
+    pool.close()
+    pool.join()

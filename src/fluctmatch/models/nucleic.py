@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -19,9 +34,10 @@ from fluctmatch.models.selection import *
 
 
 class Nucleic3(ModelBase):
-    """Create a universe consisting of the phosphate, sugar, and base of the nucleic acid.
+    """A universe consisting of the phosphate, sugar, and base of the nucleic acid.
     """
     model = "NUCLEIC3"
+    describe = "Phosohate, sugar, and nucleotide of nucleic acid"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -58,9 +74,10 @@ class Nucleic3(ModelBase):
 
 
 class Nucleic4(ModelBase):
-    """Create a universe consisting of the phosphate, C4', C3', and base of the nucleic acid.
+    """A universe consisting of the phosphate, C4', C3', and base of the nucleic acid.
     """
     model = "NUCLEIC4"
+    describe = "Phosphate, C3', C4', and c.o.m./c.o.g. of C4/C5 of nucleic acid"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -76,10 +93,16 @@ class Nucleic4(ModelBase):
 
         # Update the masses and charges
         nucl_base = self.atu.select_atoms(_nucl).split("residue")
-        self.atoms.select_atoms("name C5").masses = np.array([_.total_mass() for _ in nucl_base])
+        self.atoms.select_atoms("name C5").masses = np.array([
+            _.total_mass()
+            for _ in nucl_base
+        ])
 
         try:
-            self.atoms.select_atoms("name C5").charges = np.array([_.total_charge() for _ in nucl_base])
+            self.atoms.select_atoms("name C5").charges = np.array([
+                _.total_charge()
+                for _ in nucl_base
+            ])
         except AttributeError:
             pass
 

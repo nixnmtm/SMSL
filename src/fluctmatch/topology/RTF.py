@@ -1,4 +1,19 @@
-# -*- coding: utf-8 -*-
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -32,8 +47,8 @@ class RTFWriter(topbase.TopologyWriterBase):
     n_atoms : int, optional
         The number of atoms in the output trajectory.
     title
-        A header section written at the beginning of the stream file. If no title
-        is given, a default title will be written.
+        A header section written at the beginning of the stream file.
+        If no title is given, a default title will be written.
     charmm_version
         Version of CHARMM for formatting (default: 41)
     """
@@ -80,7 +95,12 @@ class RTFWriter(topbase.TopologyWriterBase):
 
         if self._version >= 39:
             columns["itype"] = -1
-        np.savetxt(self.rtffile, columns, fmt=native_str(self.fmt["MASS"]), delimiter=native_str(""))
+        np.savetxt(
+            self.rtffile,
+            columns,
+            fmt=native_str(self.fmt["MASS"]),
+            delimiter=native_str("")
+        )
 
     def _write_decl(self):
         names = np.unique(self._atoms.names)[:, np.newaxis]
@@ -89,7 +109,10 @@ class RTFWriter(topbase.TopologyWriterBase):
         print(file=self.rtffile)
 
     def _write_residues(self, residue):
-        print(self.fmt["RES"].format(residue.resname, residue.charge), file=self.rtffile)
+        print(
+            self.fmt["RES"].format(residue.resname, residue.charge),
+            file=self.rtffile
+        )
 
         # Write the atom lines with site name, type, and charge.
         key = "ATOM"
@@ -111,7 +134,8 @@ class RTFWriter(topbase.TopologyWriterBase):
                 if len(bonds) == 0:
                     continue
 
-                # Create list of atom names and include "+" for atoms not within the residue.
+                # Create list of atom names and include "+" for atoms not
+                # within the residue.
                 names = np.concatenate([
                     _.atoms.names[np.newaxis, :]
                     for _ in bonds
@@ -120,14 +144,21 @@ class RTFWriter(topbase.TopologyWriterBase):
                     np.isin(_.atoms, atoms, invert=True)
                     for _ in bonds
                 ], axis=1)
-                pos_names = np.where(np.isin(bonds[idx], atoms, invert=True), "+", "").astype(np.object)
+                pos_names = np.where(
+                    np.isin(bonds[idx], atoms, invert=True),
+                    "+", ""
+                ).astype(np.object)
                 names[idx] = pos_names + names[idx]
                 names = names.astype(np.unicode)
 
                 # Eliminate redundancies.
                 # Code courtesy of Daniel F on
                 # https://stackoverflow.com/questions/45005477/eliminating-redundant-numpy-rows/45006131?noredirect=1#comment76988894_45006131
-                b = np.ascontiguousarray(np.sort(names, -1)).view(np.dtype((np.void, names.dtype.itemsize * names.shape[1])))
+                b = np.ascontiguousarray(
+                    np.sort(names, -1)
+                ).view(
+                    np.dtype((np.void, names.dtype.itemsize * names.shape[1]))
+                )
                 _, idx = np.unique(b, return_index=True)
                 names = names[idx]
 
@@ -150,7 +181,8 @@ class RTFWriter(topbase.TopologyWriterBase):
         Parameters
         ----------
         universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
-            A collection of atoms in a universe or atomgroup with bond definitions.
+            A collection of atoms in a universe or atomgroup with bond
+            definitions.
         """
         self._atoms = universe.atoms
         with util.openany(self.filename, "w") as self.rtffile:

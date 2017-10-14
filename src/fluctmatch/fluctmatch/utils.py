@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -114,7 +126,13 @@ class BondStats(analysis.AnalysisBase):
         self.result = copy.deepcopy(bonds)
 
 
-def write_charmm_files(universe, outdir=os.getcwd(), prefix="cg", write_traj=True, **kwargs):
+def write_charmm_files(
+    universe,
+    outdir=os.getcwd(),
+    prefix="cg",
+    write_traj=True,
+    **kwargs
+):
     """Write CHARMM coordinate, topology PSF, stream, and topology RTF files.
 
     Parameters
@@ -158,14 +176,21 @@ def write_charmm_files(universe, outdir=os.getcwd(), prefix="cg", write_traj=Tru
 
     # Write required CHARMM input files.
     print("Writing {}...".format(filenames["topology_file"]))
-    with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
+    with mda.Writer(
+        native_str(filenames["topology_file"]),
+        **kwargs
+    ) as rtf:
         rtf.write(universe)
     print("Writing {}...".format(filenames["stream_file"]))
-    with mda.Writer(native_str(filenames["stream_file"]), **kwargs) as stream:
+    with mda.Writer(
+        native_str(filenames["stream_file"]),
+        **kwargs
+    ) as stream:
         stream.write(universe)
     print("Writing {}...".format(filenames["psf_file"]))
     with mda.Writer(
-        native_str(filenames["psf_file"]), **kwargs) as psf:
+        native_str(filenames["psf_file"]), **kwargs
+    ) as psf:
         psf.write(universe)
 
     # Write the new trajectory in Gromacs XTC format.
@@ -173,7 +198,10 @@ def write_charmm_files(universe, outdir=os.getcwd(), prefix="cg", write_traj=Tru
         kwargs["start"] = 1
         kwargs["step"] = 1
         print("Writing the trajectory {}...".format(filenames["traj_file"]))
-        print("This may take a while depending upon the size and length of the trajectory.")
+        print(
+            "This may take a while depending upon the size and "
+            "length of the trajectory."
+        )
         with mda.Writer(native_str(filenames["traj_file"]), universe.atoms.n_atoms, dt=1.0, **kwargs) as trj:
             for ts in universe.trajectory:
                 trj.write(ts)
@@ -190,24 +218,31 @@ def write_charmm_files(universe, outdir=os.getcwd(), prefix="cg", write_traj=Tru
     # fluctuations of bond lengths from the trajectory.
     if universe.trajectory.n_frames > 1:
         print("Determining the average structure of the trajectory. ")
-        print("Note: This could take a while depending upon the side of your trajectory.")
-        try:
-            u = mda.Universe(filenames["psf_file"], filenames["traj_file"])
-        except FileNotFoundError:
-            u = mda.Universe(universe.filename, universe.trajectory.filename)
-        positions = AverageStructure(u.atoms).run().result
+        print(
+            "Note: This could take a while depending upon the "
+            "size of your trajectory."
+        )
+        positions = AverageStructure(universe.atoms).run()
         avg_universe = mda.Universe(
             filenames["psf_file"],
-            [positions, ],
+            [positions.result, ],
             format=memory.MemoryReader,
             order="fac"
         )
         print("Writing {}...".format(filenames["crd_file"]))
-        with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+        with mda.Writer(
+            native_str(filenames["crd_file"]),
+            dt=1.0,
+            **kwargs
+        ) as crd:
             crd.write(avg_universe.atoms)
     else:
         print("Writing {}...".format(filenames["crd_file"]))
-        with mda.Writer(native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+        with mda.Writer(
+            native_str(filenames["crd_file"]),
+            dt=1.0,
+            **kwargs
+        ) as crd:
             crd.write(universe.atoms)
 
 
@@ -217,7 +252,8 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     Parameters
     ----------
     info : :class:`collections.namedTuple`
-        Contains information about the data subdirectory and start and stop frames
+        Contains information about the data subdirectory and start and
+        stop frames
     data_dir : str, optional
         Location of the main data directory
     topology : str, optional
@@ -234,15 +270,14 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         Atom selection from Gromacs index file (0 = System, 1 = Protein)
     """
     if mdutil.which("gmx") is None:
-        raise OSError("Gromacs 5.0+ is required. "
-                      "If installed, please ensure that it is in your path.")
-    if not issubclass(info.__class__, collections.namedtuple()):
-        raise ValueError("The info variable must be a named tuple.")
+        raise OSError(
+            "Gromacs 5.0+ is required. "
+            "If installed, please ensure that it is in your path."
+        )
 
     # Trajectory splitting information
-    subdir = path.join(data_dir, "{}".format(info.subdir))
-    start = info.start
-    stop = info.stop
+    subdir, start, stop = info
+    subdir = path.join(data_dir, "{}".format(subdir))
 
     # Attempt to create the necessary subdirectory
     try:
@@ -269,17 +304,25 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         ]
     else:
         command = [
-            "gmx",
+            "gmx", "trjconv",
             "-s", topology,
             "-f", trajectory,
             "-o", path.join(subdir, outfile),
             "-b", "{:d}".format(start),
             "-e", "{:d}".format(stop),
         ]
-    with tempfile.NamedTemporaryFile("w") as temp, \
-        mdutil.openany(logfile, mode="w") as log:
+    fd, fpath = tempfile.mkstemp(text=True)
+    with mdutil.openany(fpath, "w") as temp:
         print(kwargs.get("system", 0), file=temp)
-        subprocess.check_call(command, stdin=temp, stdout=logfile)
+    with mdutil.openany(fpath, "r") as temp, \
+        mdutil.openany(path.join(subdir, logfile), mode="w") as log:
+        subprocess.check_call(
+            command,
+            stdin=temp,
+            stdout=log,
+            stderr=subprocess.STDOUT
+        )
+    os.remove(fpath)
 
 
 def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
@@ -288,7 +331,8 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     Parameters
     ----------
     info : :class:`collections.namedTuple`
-        Contains information about the data subdirectory and start and stop frames
+        Contains information about the data subdirectory and start and
+        stop frames
     data_dir : str, optional
         Location of the main data directory
     toppar : str, optional
@@ -303,15 +347,14 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         Version of CHARMM
     """
     if mdutil.which("charmm") is None:
-        raise OSError("CHARMM is required. "
-                      "If installed, please ensure that it is in your path.")
-    if not issubclass(info.__class__, collections.namedtuple()):
-        raise ValueError("The info variable must be a named tuple.")
+        raise OSError(
+            "CHARMM is required. If installed, "
+            "please ensure that it is in your path."
+        )
 
     # Trajectory splitting information
-    subdir = path.join(data_dir, "{}".format(info.subdir))
-    start = info.start
-    stop = info.stop
+    subdir, start, stop = info
+    subdir = path.join(data_dir, "{}".format(subdir))
 
     # Attempt to create the necessary subdirectory
     try:
@@ -321,7 +364,10 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
 
     # Various filenames
     version = kwargs.get("charmm_version", 41)
-    toppar = kwargs.get("toppar", "/opt/local/charmm/c{:d}b1/toppar".format(version))
+    toppar = kwargs.get(
+        "toppar",
+        "/opt/local/charmm/c{:d}b1/toppar".format(version)
+    )
     trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.dcd"))
     outfile = path.join(subdir, kwargs.get("outfile", "aa.dcd"))
     logfile = kwargs.get("logfile", "split.log")

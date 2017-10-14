@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -86,7 +98,9 @@ def test_caside_positions():
     for _ in aa_universe.select_atoms("protein").residues:
         positions.append(_.atoms.select_atoms("calpha").center_of_mass())
         if _.resname != "GLY":
-            positions.append(_.atoms.select_atoms("hsidechain").center_of_mass())
+            positions.append(
+                _.atoms.select_atoms("hsidechain").center_of_mass()
+            )
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
     testing.assert_allclose(
@@ -131,7 +145,9 @@ def test_ncsc_positions():
     for _ in aa_universe.select_atoms("protein").residues:
         positions.append(_.atoms.select_atoms("amine").center_of_mass())
         if _.resname != "GLY":
-            positions.append(_.atoms.select_atoms("hsidechain").center_of_mass())
+            positions.append(
+                _.atoms.select_atoms("hsidechain").center_of_mass()
+            )
         positions.append(_.atoms.select_atoms("carboxyl").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())

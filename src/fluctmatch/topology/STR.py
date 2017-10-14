@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -39,8 +51,8 @@ class STRWriter(topbase.TopologyWriterBase):
     n_atoms : int, optional
         The number of atoms in the output trajectory.
     title
-        A header section written at the beginning of the stream file. If no title
-        is given, a default title will be written.
+        A header section written at the beginning of the stream file.
+        If no title is given, a default title will be written.
     """
     format = "STREAM"
     units = dict(time=None, length="Angstrom")
@@ -85,7 +97,8 @@ class STRWriter(topbase.TopologyWriterBase):
         Parameters
         ----------
         universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
-            A collection of atoms in a universe or atomgroup with bond definitions.
+            A collection of atoms in a universe or atomgroup with bond
+            definitions.
         """
         # Create the table
         try:
@@ -108,5 +121,9 @@ class STRWriter(topbase.TopologyWriterBase):
         with util.openany(self.filename, "w") as stream_file:
             for _ in self._title:
                 print(_, file=stream_file)
-            np.savetxt(stream_file, data, fmt=native_str(textwrap.dedent(self.fmt[1:])))
+            np.savetxt(
+                stream_file,
+                data,
+                fmt=native_str(textwrap.dedent(self.fmt[1:]))
+            )
             print("\nRETURN", file=stream_file)

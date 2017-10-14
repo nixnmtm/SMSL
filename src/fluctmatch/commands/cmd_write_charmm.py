@@ -21,22 +21,18 @@ from __future__ import (
     unicode_literals,
 )
 
-import os
-from os import path
-
 import click
-from MDAnalysis.lib.util import which
-from fluctmatch.fluctmatch import charmmfluctmatch
+import MDAnalysis as mda
+from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command("run_fm", short_help="Run fluctuation matching.")
+@click.command("write_charmm", short_help="Write various CHARMM files.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
-    default=path.join(os.getcwd(), "md.tpr"),
     type=click.Path(
-        exists=False,
+        exists=True,
         file_okay=True,
         resolve_path=True
     ),
@@ -46,9 +42,8 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "-f",
     "trajectory",
     metavar="FILE",
-    default=path.join(os.getcwd(), "md.xtc"),
     type=click.Path(
-        exists=False,
+        exists=True,
         file_okay=True,
         resolve_path=True
     ),
@@ -58,57 +53,18 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "-o",
     "outdir",
     metavar="DIR",
-    default=os.getcwd(),
     type=click.Path(
-        exists=False,
+        exists=True,
         file_okay=False,
         resolve_path=True
     ),
-    help="Directory",
-)
-@click.option(
-    "-e",
-    "--exec",
-    "nma_exec",
-    metavar="FILE",
-    envvar="CHARMMEXEC",
-    default=which("charmm"),
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
-    help="CHARMM executable file",
-)
-@click.option(
-    "-t",
-    "--temperature",
-    metavar="TEMP",
-    type=click.FLOAT,
-    default=300.0,
-    help="Temperature of simulation",
-)
-@click.option(
-    "-n",
-    "--ncycles",
-    "n_cycles",
-    metavar="NCYCLES",
-    type=click.INT,
-    default=250,
-    help="Number of simulation cycles",
-)
-@click.option(
-    "--tol",
-    metavar="TOL",
-    type=click.FLOAT,
-    default=1.e-4,
-    help="Tolerance level between simulations",
+    help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
     "-p",
     "--prefix",
     metavar="PREFIX",
-    default="fluctmatch",
+    default="cg",
     type=click.STRING,
     help="Prefix for filenames",
 )
@@ -134,30 +90,35 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     help="Include nonbonded section in CHARMM parameter file",
 )
 @click.option(
-    "--resid / --no-resid",
-    "resid",
+    "--cmap / --no-cmap",
+    "cmap",
     default=True,
-    help="Include segment IDs in internal coordinate files",
+    help="Include CMAP section in CHARMM PSF file",
 )
 @click.option(
-    "--restart",
-    is_flag=True,
-    help="Restart simulation",
+    "--cheq / --no-cheq",
+    default=True,
+    help="Include charge equilibrium section in CHARMM PSF file",
+)
+@click.option(
+    "--write / --no-write",
+    "write_traj",
+    default=True,
+    help="Convert the trajectory file",
 )
 def cli(
-    topology, trajectory, outdir, nma_exec, temperature,
-    n_cycles, tol, prefix, charmm_version,
-    extended, resid, nonbonded, restart,
+    topology, trajectory, outdir, prefix, charmm_version,
+    extended, cmap, cheq, nonbonded, write_traj,
 ):
     kwargs = dict(
         prefix=prefix,
         outdir=outdir,
-        temperature=temperature,
         charmm_version=charmm_version,
         extended=extended,
-        resid=resid,
+        cmap=cmap,
+        cheq=cheq,
         nonbonded=nonbonded,
+        write_traj=write_traj,
     )
-    cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
-    cfm.initialize(restart=restart)
-    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles)
+    universe = mda.Universe(topology, trajectory)
+    fmutils.write_charmm_files(universe, **kwargs)

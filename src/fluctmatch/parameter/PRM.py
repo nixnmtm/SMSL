@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -151,10 +163,11 @@ class ParamWriter(TopologyWriterBase):
         Parameters
         ----------
         parameters : dict
-            Keys are the section names and the values are of class :class:`~pandas.DataFrame`,
-            which contain the corresponding parameter data.
+            Keys are the section names and the values are of class
+            :class:`~pandas.DataFrame`, which contain the corresponding parameter data.
         atomgroup : :class:`~MDAnalysis.AtomGroup`, optional
-            A collection of atoms in an AtomGroup to define the ATOMS section, if desired.
+            A collection of atoms in an AtomGroup to define the ATOMS section,
+            if desired.
         """
         with util.openany(self.filename, "w") as prmfile:
             for title in self._title:
@@ -168,10 +181,16 @@ class ParamWriter(TopologyWriterBase):
                     else:
                         atom_types = np.arange(atomgroup.n_atoms)+1
                     atoms = [atom_types, atomgroup.types, atomgroup.masses]
-                    parameters["ATOMS"] = pd.concat([pd.Series(_) for _ in atoms], axis=1)
+                    parameters["ATOMS"] = pd.concat([
+                        pd.Series(_)
+                        for _ in atoms
+                    ], axis=1)
                     parameters["ATOMS"].columns = ["type", "atom", "mass"]
                 else:
-                    raise RuntimeError("Either define ATOMS parameter or provide a MDAnalsys.AtomGroup")
+                    raise RuntimeError(
+                        "Either define ATOMS parameter or provide a "
+                        "MDAnalsys.AtomGroup"
+                    )
 
             if self._version >= 39 and not parameters["ATOMS"].empty:
                 parameters["ATOMS"]["type"] = -1
@@ -192,14 +211,22 @@ class ParamWriter(TopologyWriterBase):
                     """
                 )
                 atom_list = np.concatenate(
-                    (parameters["BONDS"]["I"].values, parameters["BONDS"]["J"].values),
+                    (
+                        parameters["BONDS"]["I"].values,
+                        parameters["BONDS"]["J"].values
+                    ),
                     axis=0,
                 )
                 atom_list = pd.DataFrame(np.unique(atom_list))
                 nb_list = pd.DataFrame(np.zeros((atom_list.size, 3)))
                 nb_list = pd.concat([atom_list, nb_list], axis=1)
                 print(textwrap.dedent(nb_header[1:]), file=prmfile)
-                np.savetxt(prmfile, nb_list, fmt=native_str(self._fmt["NONBONDED"]), delimiter=native_str(""))
+                np.savetxt(
+                    prmfile,
+                    nb_list,
+                    fmt=native_str(self._fmt["NONBONDED"]),
+                    delimiter=native_str("")
+                )
             print("\nEND", file=prmfile)
 
 

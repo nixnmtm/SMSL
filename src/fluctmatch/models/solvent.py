@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -21,6 +36,7 @@ class Water(ModelBase):
     """Create a universe consisting of the water oxygen.
     """
     model = "WATER"
+    describe = "c.o.m./c.o.g. of whole water molecule"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -39,6 +55,7 @@ class Water(ModelBase):
 class Tip3p(ModelBase):
     """Create a universe containing all three water atoms."""
     model = "TIP3P"
+    describe = "All-atom watter"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -81,6 +98,7 @@ class Dma(ModelBase):
     """Create a universe for N-dimethylacetamide.
     """
     model = "DMA"
+    describe = "c.o.m./c.o.g. of C1, N, C2, and C3 of DMA"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):

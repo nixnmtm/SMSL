@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -45,7 +57,9 @@ def test_water_from_tip3p_positions():
     aa_universe = mda.Universe(TIP3P)
     cg_universe = solvent.Water(TIP3P)
     for _ in aa_universe.select_atoms("name OW HW* MW").residues:
-        positions.append(_.atoms.select_atoms("name OW HW* MW").center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("name OW HW* MW").center_of_mass()
+        )
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -72,7 +86,9 @@ def test_water_from_tip4p_positions():
     aa_universe = mda.Universe(TIP4P)
     cg_universe = solvent.Water(TIP4P)
     for _ in aa_universe.select_atoms("name OW HW* MW").residues:
-        positions.append(_.atoms.select_atoms("name OW HW* MW").center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("name OW HW* MW").center_of_mass()
+        )
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -130,7 +146,9 @@ def test_ions_positions():
     aa_universe = mda.Universe(IONS)
     cg_universe = ions.SolventIons(IONS)
     for _ in aa_universe.select_atoms("name LI LIT K NA F CL BR I").residues:
-        positions.append(_.atoms.select_atoms("name LI LIT K NA F CL BR I").center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("name LI LIT K NA F CL BR I").center_of_mass()
+        )
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -160,10 +178,18 @@ def test_dma_positions():
     aa_universe = mda.Universe(DMA)
     cg_universe = solvent.Dma(DMA)
     for _ in aa_universe.select_atoms("resname DMA").residues:
-        positions.append(_.atoms.select_atoms("resname DMA and name C1 H1*").center_of_mass())
-        positions.append(_.atoms.select_atoms("resname DMA and name C N O").center_of_mass())
-        positions.append(_.atoms.select_atoms("resname DMA and name C2 H2*").center_of_mass())
-        positions.append(_.atoms.select_atoms("resname DMA and name C3 H3*").center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("resname DMA and name C1 H1*").center_of_mass()
+        )
+        positions.append(
+            _.atoms.select_atoms("resname DMA and name C N O").center_of_mass()
+        )
+        positions.append(
+            _.atoms.select_atoms("resname DMA and name C2 H2*").center_of_mass()
+        )
+        positions.append(
+            _.atoms.select_atoms("resname DMA and name C3 H3*").center_of_mass()
+        )
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,

@@ -1,7 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
+#
 from __future__ import (
     absolute_import,
     division,
@@ -42,8 +54,11 @@ def test_nucleic3_creation():
 def test_nucleic3_positions():
     positions = []
     cg_universe = nucleic.Nucleic3(PDB_dna)
-    for _ in mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG").residues:
-        positions.append(_.atoms.select_atoms("nucleicphosphate").center_of_mass())
+    dna = mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG")
+    for _ in dna.residues:
+        positions.append(
+            _.atoms.select_atoms("nucleicphosphate").center_of_mass()
+        )
         positions.append(_.atoms.select_atoms("hnucleicsugar").center_of_mass())
         positions.append(_.atoms.select_atoms("hnucleicbase").center_of_mass())
     testing.assert_allclose(
@@ -85,8 +100,11 @@ def test_nucleic4_creation():
 def test_nucleic4_positions():
     positions = []
     cg_universe = nucleic.Nucleic4(PDB_dna)
-    for _ in mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG").residues:
-        positions.append(_.atoms.select_atoms("nucleicphosphate").center_of_mass())
+    dna = mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG")
+    for _ in dna.residues:
+        positions.append(
+            _.atoms.select_atoms("nucleicphosphate").center_of_mass()
+        )
         positions.append(_.atoms.select_atoms("sugarC4").center_of_mass())
         positions.append(_.atoms.select_atoms("sugarC3").center_of_mass())
         positions.append(_.atoms.select_atoms("nucleiccenter").center_of_mass())

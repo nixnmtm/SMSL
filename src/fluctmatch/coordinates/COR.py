@@ -1,32 +1,25 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-# MDAnalysis --- http://www.mdanalysis.org
-# Copyright (c) 2006-2016 The MDAnalysis Development Team and contributors
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
 # (see the file AUTHORS for the full list of names)
 #
-# Released under the GNU Public Licence, v2 or any higher version
+# Released under the New BSD license.
 #
-# Please cite your use of MDAnalysis in published work:
+# Please cite your use of fluctmatch in published work:
 #
-# R. J. Gowers, M. Linke, J. Barnoud, T. J. E. Reddy, M. N. Melo, S. L. Seyler,
-# D. L. Dotson, J. Domanski, S. Buchoux, I. M. Kenney, and O. Beckstein.
-# MDAnalysis: A Python package for the rapid analysis of molecular dynamics
-# simulations. In S. Benthall and S. Rostrup editors, Proceedings of the 15th
-# Python in Science Conference, pages 102-109, Austin, TX, 2016. SciPy.
+# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
+# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
+# Simulation. Meth Enzymology. 578 (2016), 327-342,
+# doi:10.1016/bs.mie.2016.05.024.
 #
-# N. Michaud-Agrawal, E. J. Denning, T. B. Woolf, and O. Beckstein.
-# MDAnalysis: A Toolkit for the Analysis of Molecular Dynamics Simulations.
-# J. Comput. Chem. 32 (2011), 2319--2327, doi:10.1002/jcc.21787
-#
-
-"""CRD structure files in MDAnalysis --- :mod:`MDAnalysis.coordinates.CRD`
+"""COR structure files in fluctmatch --- :mod:`MDAnalysis.coordinates.CRD`
 ===========================================================================
 
 Read and write coordinates in CHARMM CARD coordinate format (suffix
-"crd"). The CHARMM "extended format" is handled automatically.
+"cord"). The CHARMM "extended format" is handled automatically.
 """
-
 from __future__ import (
     absolute_import,
     division,
@@ -80,21 +73,25 @@ class CORWriter(CRD.CRDWriter):
     format = "COR"
     units = {"time": None, "length": "Angstrom"}
 
-    fmt = {
+    fmt = dict(
         # crdtype = "extended"
         # fortran_format = "(2I10,2X,A8,2X,A8,3F20.10,2X,A8,2X,A8,F20.10)"
-        "ATOM_EXT"    : ("{serial:10d}{totRes:10d}  {resname:<8.8s}  {name:<8.8s}"
-                         "{pos[0]:20.10f}{pos[1]:20.10f}{pos[2]:20.10f}  "
-                         "{chainID:<8.8s}  {resSeq:<8d}{tempfactor:20.10f}\n"),
-        "NUMATOMS_EXT": "{0:10d} EXT\n",
+        ATOM_EXT=(
+            "{serial:10d}{totRes:10d}  {resname:<8.8s}  {name:<8.8s}""
+            "{pos[0]:20.10f}{pos[1]:20.10f}{pos[2]:20.10f}  ""
+            "{chainID:<8.8s}  {resSeq:<8d}{tempfactor:20.10f}\n"
+        ),
+        NUMATOMS_EXT="{0:10d} EXT\n",
         # crdtype = "standard"
         # fortran_format = "(2I5,1X,A4,1X,A4,3F10.5,1X,A4,1X,A4,F10.5)"
-        "ATOM"        : ("{serial:5d}{totRes:5d} {resname:<4.4s} {name:<4.4s}"
-                         "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} "
-                         "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"),
-        "TITLE"       : "* FRAME {frame} FROM {where}\n",
-        "NUMATOMS"    : "{0:5d}\n",
-    }
+        ATOM=(
+            "{serial:5d}{totRes:5d} {resname:<4.4s} {name:<4.4s}""
+            "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} ""
+            "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"
+        ),
+        TITLE="* FRAME {frame} FROM {where}\n",
+        NUMATOMS="{0:5d}\n",
+    )
 
     def __init__(self, filename, **kwargs):
         """
@@ -194,4 +191,5 @@ class CORWriter(CRD.CRDWriter):
                 crd.write(at_fmt.format(
                     serial=serial, totRes=current_resid, resname=resname,
                     name=name, pos=pos, chainID=chainID,
-                    resSeq=resid, tempfactor=tempfactor))
+                    resSeq=resid, tempfactor=tempfactor)
+                )
