@@ -145,18 +145,24 @@ class _Trajectory(base.ReaderBase):
             residues, viewitems(self._mapping)
         )
         if self.ts.has_velocities:
-            self.ts._velocities[:] = [
-                res.select_atoms(selection).velocities.sum()
-                for res, (_, selection) in residue_selection
-                if res.select_atoms(selection)
-            ]
+            try:
+                self.ts._velocities[:] = [
+                    res.select_atoms(selection).velocities.sum()
+                    for res, (_, selection) in residue_selection
+                    if res.select_atoms(selection)
+                ]
+            except ValueError:
+                pass
 
         if self.ts.has_forces:
-            self.ts._forces[:] = [
-                res.select_atoms(selection).forces.sum()
-                for res, (_, selection) in residue_selection
-                if res.select_atoms(selection)
-            ]
+            try:
+                self.ts._forces[:] = [
+                    res.select_atoms(selection).forces.sum()
+                    for res, (_, selection) in residue_selection
+                    if res.select_atoms(selection)
+                ]
+            except ValueError:
+                pass
 
     def _reopen(self):
         # Rewind my reference trajectory
