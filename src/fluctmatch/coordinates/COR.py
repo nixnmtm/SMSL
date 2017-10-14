@@ -77,16 +77,16 @@ class CORWriter(CRD.CRDWriter):
         # crdtype = "extended"
         # fortran_format = "(2I10,2X,A8,2X,A8,3F20.10,2X,A8,2X,A8,F20.10)"
         ATOM_EXT=(
-            "{serial:10d}{totRes:10d}  {resname:<8.8s}  {name:<8.8s}""
-            "{pos[0]:20.10f}{pos[1]:20.10f}{pos[2]:20.10f}  ""
+            "{serial:10d}{totRes:10d}  {resname:<8.8s}  {name:<8.8s}"
+            "{pos[0]:20.10f}{pos[1]:20.10f}{pos[2]:20.10f}  "
             "{chainID:<8.8s}  {resSeq:<8d}{tempfactor:20.10f}\n"
         ),
         NUMATOMS_EXT="{0:10d} EXT\n",
         # crdtype = "standard"
         # fortran_format = "(2I5,1X,A4,1X,A4,3F10.5,1X,A4,1X,A4,F10.5)"
         ATOM=(
-            "{serial:5d}{totRes:5d} {resname:<4.4s} {name:<4.4s}""
-            "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} ""
+            "{serial:5d}{totRes:5d} {resname:<4.4s} {name:<4.4s}"
+            "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} "
             "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"
         ),
         TITLE="* FRAME {frame} FROM {where}\n",
