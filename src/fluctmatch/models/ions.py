@@ -23,13 +23,15 @@ from __future__ import (
 
 from collections import OrderedDict
 
+from MDAnalysis.core import topologyattrs
+
+from fluctmatch.models.base import ModelBase
+from fluctmatch.models.selection import *
+
 from future.builtins import (
     super,
     zip,
 )
-
-from fluctmatch.models.base import ModelBase
-from fluctmatch.models.selection import *
 
 
 class SolventIons(ModelBase):
@@ -57,7 +59,8 @@ class SolventIons(ModelBase):
         ])
 
     def _add_bonds(self):
-        pass
+        self._topology.add_TopologyAttr(topologyattrs.Bonds([]))
+        self._generate_from_topology()
 
 
 class BioIons(ModelBase):
@@ -85,7 +88,8 @@ class BioIons(ModelBase):
         ])
 
     def _add_bonds(self):
-        pass
+        self._topology.add_TopologyAttr(topologyattrs.Bonds([]))
+        self._generate_from_topology()
 
 
 class NobleAtoms(ModelBase):
@@ -113,4 +117,5 @@ class NobleAtoms(ModelBase):
         ])
 
     def _add_bonds(self):
-        pass
+        self._topology.add_TopologyAttr(topologyattrs.Bonds([]))
+        self._generate_from_topology()
