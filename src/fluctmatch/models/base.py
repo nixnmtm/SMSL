@@ -357,10 +357,6 @@ def Merge(*args):
 
     print("This might take a while depending upon the number of "
           "trajectory frames.")
-    # if not all([issubclass(u.__class__, mda.Universe) for u in args]):
-    #     raise TypeError(
-    #         "The universes must all be derived from MDAnalysis.Universe."
-    #     )
     if not all([
             u.universe.trajectory.n_frames == args[0].universe.trajectory.n_frames for u in args
     ]):
@@ -368,6 +364,7 @@ def Merge(*args):
     ag = [_.atoms for _ in args]
     universe = mda.Merge(*ag)
 
+    # TODO Create trajectory class to follow merged trajectories
     if args[0].universe.trajectory.n_frames > 1:
         coordinates = [
             AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results

@@ -366,10 +366,11 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         print("Starting fluctuation matching")
         st = time.time()
         while (self.error["step"] <= n_cycles).bool():
-            with util.openany(self.filenames["charmm_log"], "w") as charmm_log:
-                subprocess.check_call(
-                    [charmm_exec, "-i", self.filenames["charmm_input"]],
-                    stdout=charmm_log)
+            subprocess.check_call([
+                charmm_exec,
+                "-i", self.filenames["charmm_input"],
+                "-o", self.filenames["charmm_log"]
+            ])
             self.dynamic_params["BONDS"].set_index(self.bond_def, inplace=True)
             self.parameters["BONDS"].set_index(self.bond_def, inplace=True)
 
