@@ -80,6 +80,18 @@ def test_merge_positions():
     )
 
 
+def test_merge_topology():
+    prot = protein.Ncsc(PDB_prot)
+    water = solvent.Water(TIP3P)
+    solvions = ions.SolventIons(IONS)
+
+    cg_universe = Merge(prot, water, solvions)
+    print(dir(cg_universe))
+    assert cg_universe.bonds == prot.universe.bonds
+    assert cg_universe.angles == prot.universe.angles
+    assert cg_universe.dihedrals == prot.universe.dihedrals
+
+
 def test_rename_universe():
     cg_universe = protein.Ncsc(PDB_prot)
     rename_universe(cg_universe)

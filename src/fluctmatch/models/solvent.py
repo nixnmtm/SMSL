@@ -49,7 +49,8 @@ class Water(ModelBase):
         self.atoms.select_atoms("name OW").types = 1
 
     def _add_bonds(self):
-        pass
+        self._topology.add_TopologyAttr(topologyattrs.Bonds([]))
+        self._generate_from_topology()
 
 
 class Tip3p(ModelBase):
