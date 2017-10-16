@@ -357,44 +357,18 @@ def Merge(*args):
 
     print("This might take a while depending upon the number of "
           "trajectory frames.")
-    if not all([issubclass(u.__class__, mda.Universe) for u in args]):
-        raise TypeError(
-            "The universes must all be derived from MDAnalysis.Universe."
-        )
+    # if not all([issubclass(u.__class__, mda.Universe) for u in args]):
+    #     raise TypeError(
+    #         "The universes must all be derived from MDAnalysis.Universe."
+    #     )
     if not all([
-            u.trajectory.n_frames == args[0].trajectory.n_frames for u in args
+            u.universe.trajectory.n_frames == args[0].universe.trajectory.n_frames for u in args
     ]):
         raise ValueError("The trajectories are not the same length.")
     ag = [_.atoms for _ in args]
     universe = mda.Merge(*ag)
 
-    atoms = universe.atoms
-    attrs = universe._topology
-    residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-        (atoms.resids,), (atoms.resids, atoms.resnames, atoms.segids)
-    )
-    # Update segment list
-    # transform from atom:Rid to atom:Rix
-    residueids = topologyattrs.Resids(new_resids)
-    residuenums = topologyattrs.Resnums(new_resids.copy())
-    residuenames = topologyattrs.Resnames(new_resnames)
-
-    # Segment
-    segidx, (perseg_segids, ) = topbase.change_squash(
-        (new_segids,), (new_segids,)
-    )
-    segids = topologyattrs.Segids(perseg_segids)
-    universe._topology = topology.Topology(
-        attrs.n_atoms, attrs.n_residues, len(segids),
-        attrs=[attrs.indices, attrs.ids, attrs.names, attrs.types,
-               attrs.charges, attrs.masses, attrs.radii, residueids,
-               residuenums, residuenames, segids],
-        atom_resindex=residx,
-        residue_segindex=segidx
-    )
-    universe._generate_from_topology()
-
-    if args[0].trajectory.n_frames > 1:
+    if args[0].universe.trajectory.n_frames > 1:
         coordinates = [
             AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results
             for u in ag
