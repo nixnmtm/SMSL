@@ -367,7 +367,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         st = time.time()
         while (self.error["step"] <= n_cycles).bool():
             subprocess.check_call([
-                charmm_exec,
+                "charmm",
                 "-i", self.filenames["charmm_input"],
                 "-o", self.filenames["charmm_log"]
             ])
