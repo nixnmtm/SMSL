@@ -294,14 +294,19 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         n_cycles : int, optional
             number of fluctuation matching cycles
         """
-        try:
-            charmm_exec = (
-                os.environ["CHARMMEXEC"] if nma_exec is None else nma_exec
-            )
-        except KeyError:
+        # Find CHARMM executable
+        charmm_exec = (
+            os.environ.get("CHARMMEXEC", util.which("charmm"))
+            if nma_exec is None
+            else nma_exec
+        )
+        if charmm_exec is None:
             raise_with_traceback(
-                OSError("Please set CHARMMEXEC with the location of your "
-                        "CHARMM executable file.")
+                OSError(
+                    "Please set CHARMMEXEC with the location of your CHARMM "
+                    "executable file or add the charmm path to your PATH "
+                    "environment."
+                )
             )
 
         # Read the parameters
@@ -365,12 +370,14 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Run simulation
         print("Starting fluctuation matching")
         st = time.time()
+
         while (self.error["step"] <= n_cycles).bool():
-            subprocess.check_call([
-                "charmm",
-                "-i", self.filenames["charmm_input"],
-                "-o", self.filenames["charmm_log"]
-            ])
+            with util.openany(self.filenames["charmm_log"], "w") as log_file:
+                subprocess.check_call(
+                    [charmm_exec, "-i", self.filenames["charmm_input"]],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                )
             self.dynamic_params["BONDS"].set_index(self.bond_def, inplace=True)
             self.parameters["BONDS"].set_index(self.bond_def, inplace=True)
 
