@@ -101,6 +101,27 @@ class ParamTable(object):
         table.set_index(index, inplace=True)
         return table
 
+    def _complete_table(self):
+        """Create a full table by reversing I and J designations.
+
+        Returns
+        -------
+
+        """
+        revcol = ["segidJ", "resJ", "J", "segidI", "resI", "I"]
+
+        columns = np.concatenate((revcol, self.table.columns[len(revcol):]))
+        temp = self.table.copy(deep=True)
+        same = temp[
+            (temp["segidI"] == temp["segidJ"]) &
+            (temp["resI"] != temp["resJ"])
+        ]
+
+        diff = temp[temp["segidI"] != temp["segidJ"]]
+        temp = pd.concat([same, diff], axis=0)
+        temp.columns = columns
+        self.table = pd.concat([self.table, temp], axis=0)
+
     def run(self, verbose=False):
         """Create the time series.
 
@@ -109,8 +130,6 @@ class ParamTable(object):
         verbose : bool, optional
             Print each directory as it is being processed
         """
-        revcol = ["segidJ", "resJ", "J", "segidI", "resI", "I"]
-
         directories = glob.iglob(path.join(self._datadir, "*"))
         create_table = functools.partial(
             _create_table,
@@ -128,12 +147,9 @@ class ParamTable(object):
         self.table = pd.concat(tables.get(), axis=1)
         self.table.columns = self.table.columns.astype(np.int)
         self.table = self.table[np.sort(self.table.columns)]
-
-        tmp = self.table.copy(deep=True)
-        tmp.index.names = revcol
-        self.table = pd.concat([self.table, tmp], axis=0)
         self.table.reset_index(inplace=True)
-        self.table = self.table.drop_duplicates(subset=_index)
+
+        self._complete_table()
         self.table.set_index(_index, inplace=True)
         self.table.fillna(0., inplace=True)
         self.table.sort_index(kind="mergesort", inplace=True)
