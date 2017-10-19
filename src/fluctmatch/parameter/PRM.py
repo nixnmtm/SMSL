@@ -23,6 +23,7 @@ from __future__ import (
 
 import textwrap
 import time
+from io import TextIOWrapper
 from os import environ
 
 import numpy as np
@@ -30,6 +31,7 @@ import pandas as pd
 from MDAnalysis.lib import util
 from future.builtins import (
     dict,
+    open,
 )
 from future.utils import (
     native_str,
@@ -78,8 +80,10 @@ class ParamReader(TopologyReaderBase):
         """
         parameters = dict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
         headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
-        with util.openany(self.filename, "r") as prmfile:
-            for line in prmfile:
+        with open(
+            self.filename, "rb"
+        ) as prmfile, TextIOWrapper(prmfile, encoding="utf-8") as buf:
+            for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
                     continue       # ignore TITLE and empty lines
@@ -169,10 +173,12 @@ class ParamWriter(TopologyWriterBase):
             A collection of atoms in an AtomGroup to define the ATOMS section,
             if desired.
         """
-        with util.openany(self.filename, "w") as prmfile:
+        with open(
+            self.filename, "wb"
+        ) as prmfile, TextIOWrapper(prmfile, encoding="utf-8") as buf:
             for title in self._title:
-                print(title, file=prmfile)
-            prmfile.write("\n".encode())
+                print(title, file=buf)
+            print(file=buf)
 
             if self._version >= 35 and parameters["ATOMS"].empty:
                 if atomgroup:
@@ -199,9 +205,9 @@ class ParamWriter(TopologyWriterBase):
                 value = parameters[key]
                 if value.empty or (self._version < 35 and key == "ATOMS"):
                     continue
-                print(key, file=prmfile)
+                print(key, file=buf)
                 np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))
-                print(file=prmfile)
+                print(file=buf)
 
             if self._nonbonded:
                 nb_header = (
@@ -220,14 +226,14 @@ class ParamWriter(TopologyWriterBase):
                 atom_list = pd.DataFrame(np.unique(atom_list))
                 nb_list = pd.DataFrame(np.zeros((atom_list.size, 3)))
                 nb_list = pd.concat([atom_list, nb_list], axis=1)
-                print(textwrap.dedent(nb_header[1:]), file=prmfile)
+                print(textwrap.dedent(nb_header[1:]), file=buf)
                 np.savetxt(
                     prmfile,
                     nb_list,
                     fmt=native_str(self._fmt["NONBONDED"]),
                     delimiter=native_str("")
                 )
-            print("\nEND", file=prmfile)
+            print("\nEND", file=buf)
 
 
 class PARWriter(ParamWriter):

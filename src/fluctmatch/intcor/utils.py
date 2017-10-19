@@ -27,9 +27,11 @@ from future.utils import (
     raise_with_traceback,
 )
 
-_HEADER = ["segidI", "resI", "I", "segidJ", "resJ", "J",
-           "segidK", "resK", "K", "segidL", "resL", "L",
-           "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"]
+_HEADER = [
+    "segidI", "resI", "I", "segidJ", "resJ", "J",
+    "segidK", "resK", "K", "segidL", "resL", "L",
+    "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
+]
 
 
 def create_empty_table(universe):

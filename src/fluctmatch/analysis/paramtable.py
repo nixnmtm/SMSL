@@ -27,10 +27,10 @@ import multiprocessing as mp
 from os import path
 
 from MDAnalysis.coordinates.core import reader
-from MDAnalysis.lib.util import openany
 
 from future.builtins import (
     dict,
+    open,
 )
 from future.utils import native_str
 
@@ -162,7 +162,7 @@ class ParamTable(object):
         filename : str or stream
             Filename of the parameter table.
         """
-        with openany(filename, mode="r") as table:
+        with open(filename, mode="rb") as table:
             self.table = pd.read_csv(
                 table,
                 skipinitialspace=True,
@@ -179,7 +179,7 @@ class ParamTable(object):
         filename : str or stream
             Location to write the parameter table.
         """
-        with openany(filename, mode="w") as table:
+        with open(filename, mode="wb") as table:
             self.table.to_csv(
                 table,
                 sep=native_str(" "),
