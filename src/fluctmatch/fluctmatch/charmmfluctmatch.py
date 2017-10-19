@@ -40,6 +40,7 @@ import os
 import subprocess
 import textwrap
 import time
+from io import TextIOWrapper
 from os import path
 
 import MDAnalysis as mda
@@ -49,6 +50,7 @@ from MDAnalysis.lib import util
 from MDAnalysis.coordinates.core import reader
 from future.builtins import (
     dict,
+    open,
     super,
 )
 from future.utils import (
@@ -326,10 +328,12 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 if version >= 36
                 else ""
             )
-            with util.openany(
+            with open(
                 self.filenames["charmm_input"],
-                mode="w"
-            ) as charmm_file:   # type: Optional[IO[str]]
+                mode="wb"
+            ) as charmm_file, TextIOWrapper(
+                charmm_file, encoding="utf-8"
+            ) as buf:
                 charmm_inp = charmm_nma.nma.format(
                     temperature=self.temperature,
                     flex="flex" if version else "",
@@ -337,7 +341,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     dimension=dimension,
                     **self.filenames)
                 charmm_inp = textwrap.dedent(charmm_inp[1:])
-                print(charmm_inp, file=charmm_file)
+                print(charmm_inp, file=buf)
 
         # Set the indices for the parameter tables.
         self.target["BONDS"].set_index(self.bond_def, inplace=True)
@@ -346,7 +350,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Check for restart.
         try:
             if os.stat(self.filenames["error_data"]).st_size > 0:
-                with util.openany(self.filenames["error_data"], "r") as data:
+                with open(
+                    self.filenames["error_data"], "rb") as data:
                     error_info = pd.read_csv(
                         data,
                         header=0,
@@ -358,7 +363,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             else:
                 raise FileNotFoundError
         except (FileNotFoundError, OSError):
-            with util.openany(self.filenames["error_data"], "w") as data:
+            with open(self.filenames["error_data"], "wb") as data:
                 np.savetxt(
                     data,
                     [self.error_hdr,],
@@ -372,10 +377,12 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         st = time.time()
 
         while (self.error["step"] <= n_cycles).bool():
-            with util.openany(self.filenames["charmm_log"], "w") as log_file:
+            with open(
+                self.filenames["charmm_log"], "wb"
+            ) as log_file, TextIOWrapper(log_file, encoding="utf-8") as buf:
                 subprocess.check_call(
                     [charmm_exec, "-i", self.filenames["charmm_input"]],
-                    stdout=log_file,
+                    stdout=buf,
                     stderr=subprocess.STDOUT,
                 )
             self.dynamic_params["BONDS"].set_index(self.bond_def, inplace=True)
@@ -434,7 +441,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 prm.write(self.dynamic_params)
 
             # Update the error values.
-            with util.openany(self.filenames["error_data"], "a") as error_file:
+            with open(self.filenames["error_data"], "ab") as error_file:
                 np.savetxt(
                     error_file,
                     self.error,

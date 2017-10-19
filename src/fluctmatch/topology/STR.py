@@ -23,18 +23,18 @@ from __future__ import (
 
 import textwrap
 import time
-from os import (environ)
+from io import TextIOWrapper
+from os import environ
 
 import numpy as np
 import pandas as pd
 from MDAnalysis.lib import util
 from future.builtins import (
     dict,
+    open,
 )
 from future.utils import (
     native_str,
-)
-from future.utils import (
     raise_with_traceback,
 )
 
@@ -118,12 +118,14 @@ class STRWriter(topbase.TopologyWriterBase):
             raise_with_traceback(AttributeError("No bonds were found."))
 
         # Write the data to the file.
-        with util.openany(self.filename, "w") as stream_file:
+        with open(
+            self.filename, "wb"
+        ) as stream_file, TextIOWrapper(stream_file, encoding="utf=8") as buf:
             for _ in self._title:
-                print(_, file=stream_file)
+                print(_, file=buf)
             np.savetxt(
                 stream_file,
                 data,
                 fmt=native_str(textwrap.dedent(self.fmt[1:]))
             )
-            print("\nRETURN", file=stream_file)
+            print("\nRETURN", file=buf)
