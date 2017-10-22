@@ -22,11 +22,9 @@ from __future__ import (
 )
 
 import os
-from io import TextIOWrapper
 from os import path
 
 import click
-from future.builtins import open
 from future.utils import native_str
 from MDAnalysis.lib.util import (filename, openany)
 
@@ -95,36 +93,26 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
 
     # Write the various tables to different files.
     fn = path.join(outdir, filename(tbltype.lower(), ext="txt", keep=True))
-    with open(
-        fn, "wb"
-    ) as table, TextIOWrapper(table, encoding="utf-8") as buf:
-        pt.table.to_csv(
-            buf,
-            header=True,
-            index=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
-        )
+    pt.write(fn)
+
     if tbltype == "Kb":
         fn = path.join(outdir, filename("perres", ext="txt"))
-        with open(
-            fn, "wb"
-        ) as table, TextIOWrapper(table, encoding="utf-8") as buf:
-            pt.table.to_csv(
-                buf,
+        with openany(fn, "w") as table:
+            pt.per_residue.to_csv(
+                table,
                 header=True,
                 index=True,
                 sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                float_format="%.6f",
+                encoding="utf-8",
             )
         fn = path.join(outdir, filename("interactions", ext="txt"))
-        with open(
-            fn, "wb"
-        ) as table, TextIOWrapper(table, encoding="utf-8") as buf:
-            pt.table.to_csv(
-                buf,
+        with openany(fn, "w") as table:
+            pt.interactions.to_csv(
+                table,
                 header=True,
                 index=True,
                 sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                float_format="%.6f",
+                encoding="utf-8",
             )

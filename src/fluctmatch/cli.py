@@ -123,25 +123,6 @@ class ComplexCLI(click.MultiCommand):
 
 
 @click.command(cls=ComplexCLI, context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "--data",
-    default=path.join(os.getcwd(), "data"),
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        writable=True,
-        readable=True,
-        resolve_path=True,
-    ),
-    help="Directory to write data.",
-)
-@click.option(
-    "-v",
-    "--verbose",
-    is_flag=True,
-    help="Enables verbose mode.",
-)
-@pass_context
-def main(ctx, data, verbose):
-    ctx.data = data
-    ctx.verbose = verbose
+@click.version_option()
+def main():
+    pass
