@@ -62,7 +62,6 @@ from fluctmatch.analysis import paramtable
         file_okay=True,
         resolve_path=True,
     ),
-    help="Table of coupling strengths",
 )
 @click.argument(
     "table2",
@@ -72,7 +71,6 @@ from fluctmatch.analysis import paramtable
         file_okay=True,
         resolve_path=True,
     ),
-    help="Table of coupling strengths",
 )
 def cli(outdir, ressep, table1, table2):
     """Calculate the differences between two coupling strength tables.
@@ -89,12 +87,15 @@ def cli(outdir, ressep, table1, table2):
     -------
 
     """
-    table_1 = paramtable.ParamTable(outdir, ressep=ressep).from_file(table1)
-    table_2 = paramtable.ParamTable(outdir, ressep=ressep).from_file(table2)
+    table_1 = paramtable.ParamTable(outdir, ressep=ressep)
+    table_1.from_file(table1)
+
+    table_2 = paramtable.ParamTable(outdir, ressep=ressep)
+    table_2.from_file(table2)
 
     d_table = table_1 - table_2
-    d_perres = table_1.per_res.subtract(
-        table_2.per_res,
+    d_perres = table_1.per_residue.subtract(
+        table_2.per_residue,
         fill_value=0.0
     )
     d_interactions = table_1.interactions.subtract(
