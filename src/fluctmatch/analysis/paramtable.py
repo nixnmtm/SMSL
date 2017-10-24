@@ -88,6 +88,18 @@ class ParamTable(object):
             param=".".join((self._prefix, "dist", "prm")),
         )
 
+    def __add__(self, other):
+        return self.table.add(other.table, fill_value=0.0)
+
+    def __sub__(self, other):
+        return self.table.subtract(other.table, fill_value=0.0)
+
+    def __mul__(self, other):
+        return self.table.multiply(other.table, fill_value=0.0)
+
+    def __truediv__(self, other):
+        return self.table.divide(other.table, fill_value=0.0)
+
     def _separate(self, prm_table):
         index = prm_table.index.names
         table = prm_table.reset_index()
