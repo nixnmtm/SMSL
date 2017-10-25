@@ -33,8 +33,8 @@ from fluctmatch.analysis.paramtable import ParamTable
 
 
 @click.command(
-    "diff",
-    short_help="Calculate differences between two tables."
+    "stats",
+    short_help="Calculate statistics of a table."
 )
 @click.option(
     "-s",
