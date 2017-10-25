@@ -88,7 +88,7 @@ from fluctmatch.analysis import paramtable
     is_flag=True,
 )
 def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
-    pt = paramtable.ParamTable(data_dir, prefix=prefix, tbltype=tbltype, ressep=ressep)
+    pt = paramtable.ParamTable(prefix=prefix, tbltype=tbltype, ressep=ressep)
     pt.run(verbose=verbose)
 
     # Write the various tables to different files.

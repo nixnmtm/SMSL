@@ -87,10 +87,10 @@ def cli(outdir, ressep, table1, table2):
     -------
 
     """
-    table_1 = paramtable.ParamTable(outdir, ressep=ressep)
+    table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table1)
 
-    table_2 = paramtable.ParamTable(outdir, ressep=ressep)
+    table_2 = paramtable.ParamTable(ressep=ressep)
     table_2.from_file(table2)
 
     d_table = table_1 - table_2
