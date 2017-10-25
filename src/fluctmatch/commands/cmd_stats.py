@@ -94,7 +94,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
     if stats:
         filename = path.join(
             outdir,
-            "_".join(tbltype.lower(), "table", "stats.txt")
+            "_".join((tbltype.lower(), "table", "stats.txt"))
         )
         with openany(filename, "w") as stat_file:
             print("Writing table statistics to {}".format(filename))
@@ -142,7 +142,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
     if hist:
         filename = path.join(
             outdir,
-            "_".join(tbltype.lower(), "table", "hist.txt")
+            "_".join((tbltype.lower(), "table", "hist.txt"))
         )
         with openany(filename, "w") as stat_file:
             print("Writing table histogram to {}".format(filename))
