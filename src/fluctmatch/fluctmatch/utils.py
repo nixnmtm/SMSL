@@ -171,7 +171,7 @@ def write_charmm_files(
         crd_file=".".join((filename, "cor")),
         stream_file=".".join((filename, "stream")),
         topology_file=".".join((filename, "rtf")),
-        traj_file=".".join((filename, "xtc")),
+        traj_file=".".join((filename, "dcd")),
     )
 
     # Write required CHARMM input files.

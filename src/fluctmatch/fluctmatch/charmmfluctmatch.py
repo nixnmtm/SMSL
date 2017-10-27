@@ -64,6 +64,7 @@ from fluctmatch.fluctmatch import base as fmbase
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.fluctmatch.data import (
     charmm_nma,
+    charmm_thermo,
 )
 from fluctmatch.intcor import utils as icutils
 from fluctmatch.parameter import utils as prmutils
@@ -174,6 +175,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             charmm_input=path.join(self.outdir, ".".join((self.prefix, "inp"))),
             charmm_log=path.join(self.outdir, ".".join((self.prefix, "log"))),
             error_data=path.join(self.outdir, "error.dat"),
+            thermo_input=path.join(self.outdir, "thermo.inp"),
+            thermo_log=path.join(self.outdir, "thermo.log"),
+            thermo_data=path.join(self.outdir, "thermo.dat"),
         )
 
         # Boltzmann constant
@@ -457,3 +461,93 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             "Fluctuation matching completed in {:.6f}".format(time.time() - st)
         )
         self.target["BONDS"].reset_index(inplace=True)
+
+    def calculate_thermo(self, nma_exec=None):
+        """Calculate the thermodynamic properties of the trajectory.
+
+        Parameters
+        ----------
+        nma_exec : str
+            executable file for normal mode analysis
+        """
+        # Find CHARMM executable
+        charmm_exec = (
+            os.environ.get("CHARMMEXEC", util.which("charmm"))
+            if nma_exec is None
+            else nma_exec
+        )
+        if charmm_exec is None:
+            raise_with_traceback(
+                OSError(
+                    "Please set CHARMMEXEC with the location of your CHARMM "
+                    "executable file or add the charmm path to your PATH "
+                    "environment."
+                )
+            )
+
+        if not path.exists(self.filenames["thermo_input"]):
+            version = self.kwargs.get("charmm_version", 41)
+            dimension = (
+                "dimension chsize 500000 maxres 3000000"
+                if version >= 36
+                else ""
+            )
+            with open(
+                self.filenames["thermo_input"],
+                mode="wb"
+            ) as charmm_file, TextIOWrapper(
+                charmm_file, encoding="utf-8"
+            ) as buf:
+                charmm_inp = charmm_thermo.thermodynamics.format(
+                    trajectory=path.join(self.outdir, self.args[-1]),
+                    temperature=self.temperature,
+                    flex="flex" if version else "",
+                    version=version,
+                    dimension=dimension,
+                    **self.filenames)
+                charmm_inp = textwrap.dedent(charmm_inp[1:])
+                print(charmm_inp, file=buf)
+
+        # Calculate thermodynamic properties of the trajectory.
+        with open(
+            self.filenames["thermo_log"], "wb"
+        ) as log_file, TextIOWrapper(log_file, encoding="utf-8") as buf:
+            subprocess.check_call(
+                [charmm_exec, "-i", self.filenames["thermo_input"]],
+                stdout=buf,
+                stderr=subprocess.STDOUT,
+            )
+
+        header = (
+            "SEGI  RESN  RESI     Entropy    Enthalpy     "
+            "Heatcap     Atm/res   Ign.frq"
+        )
+        columns = np.array(header.split())
+        columns[:3] = np.array(["segidI", "RESN", "resI"])
+        thermo = []
+
+        # Read log file
+        with open(self.filenames["thermo_log"], "rb") as log_file:
+            for line in log_file:
+                if line.find(header) < 0:
+                    continue
+                break
+            for line in log_file:
+                if len(line.strip().split()) == 0:
+                    break
+                thermo.append(line.strip().split())
+
+        # Create human-readable table
+        thermo = pd.DataFrame(thermo, columns=columns)
+        thermo.drop(["RESN", "Atm/res", "Ign.frq"], axis=1, inplace=True)
+        thermo.set_index(["segidI", "resI"], inplace=True)
+        thermo = thermo.astype(np.float)
+
+        # Write data to file
+        with util.openany(self.filenames["thermo_data"], "w") as data_file:
+            thermo.to_csv(
+                data_file,
+                sep=native_str(" "),
+                float_format=native_str("%.4f"),
+                encoding="utf-8"
+            )
