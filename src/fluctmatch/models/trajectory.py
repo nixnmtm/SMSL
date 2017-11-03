@@ -173,6 +173,8 @@ class _Trajectory(base.ReaderBase):
         # Get the next TS from the atom trajectory
         if self._frame == self.n_frames - 1:
             raise StopIteration
+        elif self._frame > self.n_frames - 1:
+            raise RuntimeError("Attempting to go beyond the last frame.")
 
         self._frame += 1
         self._read_frame(self._frame)

@@ -380,6 +380,10 @@ def Merge(*args):
             *coordinates.shape
         ))
         universe.load_new(coordinates, format=MemoryReader)
+
+        print("The new trajectory will is assigned an average unit cell "
+              "for the entire trajectory. This is currently a limitation "
+              "implemented by MDAnalysis.")
         universe.trajectory.ts._unitcell = unit_cell
     return universe
 
