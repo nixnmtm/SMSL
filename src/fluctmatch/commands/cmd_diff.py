@@ -79,13 +79,12 @@ def cli(outdir, ressep, table1, table2):
     ----------
     outdir : str
         Output directory for files
-    ressep : int
-    table1
-    table2
-
-    Returns
-    -------
-
+    ressep : int, optional
+        Separation between residues
+    table1 : str
+        Filename of table
+    table2 : str
+        Filename of table
     """
     table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table1)
