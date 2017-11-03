@@ -362,6 +362,7 @@ def Merge(*args):
     ]):
         raise ValueError("The trajectories are not the same length.")
     ag = [_.atoms for _ in args]
+    unit_cell = np.mean([_._unitcell for _ in args[0].trajectory], axis=0)
     universe = mda.Merge(*ag)
 
     # TODO Create trajectory class to follow merged trajectories
@@ -379,6 +380,7 @@ def Merge(*args):
             *coordinates.shape
         ))
         universe.load_new(coordinates, format=MemoryReader)
+        universe.trajectory.ts._unitcell = unit_cell
     return universe
 
 
