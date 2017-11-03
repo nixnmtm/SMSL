@@ -73,7 +73,6 @@ from fluctmatch.fluctmatch import utils as fmutils
     "-e",
     "stop",
     metavar="FRAME",
-    default=-1,
     type=click.INT,
     help="Stop time of total trajectory",
 )
