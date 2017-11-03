@@ -60,7 +60,7 @@ class RTFWriter(topbase.TopologyWriterBase):
         HEADER="{:>5d}{:>5d}\n",
         MASS="MASS %5d %-6s%12.5f",
         DECL="DECL +%s\nDECL -%s",
-        RES="RESI {:<4s} {:>12.4f}\nGROUP",
+        RES="RESI {:<4s} {:>12.4f}\nGROUP\n",
         ATOM="ATOM %-6s %-6s %7.4f",
         IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",)
     bonds = (
@@ -108,12 +108,11 @@ class RTFWriter(topbase.TopologyWriterBase):
         names = np.unique(self._atoms.names)[:, np.newaxis]
         decl = np.concatenate((names, names), axis=1)
         np.savetxt(self.rtffile, decl, fmt=native_str(self.fmt["DECL"]))
-        print(file=self.buf)
+        self.rtffile.write("\n".encode())
 
     def _write_residues(self, residue):
-        print(
-            self.fmt["RES"].format(residue.resname, residue.charge),
-            file=self.buf
+        self.rtffile.write(
+            self.fmt["RES"].format(residue.resname, residue.charge).encode()
         )
 
         # Write the atom lines with site name, type, and charge.
@@ -175,7 +174,7 @@ class RTFWriter(topbase.TopologyWriterBase):
                 np.savetxt(self.rtffile, names, fmt=native_str(fmt))
             except (AttributeError,):
                 continue
-        print(file=self.buf)
+        self.rtffile.write("\n".encode())
 
     def write(self, universe):
         """Write a CHARMM-formatted RTF topology file.
@@ -189,13 +188,13 @@ class RTFWriter(topbase.TopologyWriterBase):
         self._atoms = universe.atoms
         with open(
             self.filename, "wb"
-        ) as self.rtffile, TextIOWrapper(
-            self.rtffile, encoding="utf-8"
-        ) as self.buf:
+        ) as self.rtffile:
             # Write the title and header information.
             for _ in self._title:
-                print(_, file=self.buf)
-            print(self.fmt["HEADER"].format(36, 1), file=self.buf)
+                self.rtffile.write(_.encode())
+                self.rtffile.write("\n".encode())
+            self.rtffile.write(self.fmt["HEADER"].format(36, 1).encode())
+            self.rtffile.write("\n".encode())
 
             # Write the atom mass and declaration sections
             self._write_mass()
@@ -208,4 +207,4 @@ class RTFWriter(topbase.TopologyWriterBase):
             _, idx = np.unique(self._atoms.residues.resnames, return_index=True)
             for residue in self._atoms.residues[idx]:
                 self._write_residues(residue)
-            print("END", file=self.buf)
+            self.rtffile.write("END\n".encode())

@@ -177,5 +177,5 @@ def cli(
         nonbonded=nonbonded,
         write_traj=write_traj,
     )
-    universe = modeller(topology, trajectory, com=com, dt=1.0, model=model, **kwargs)
+    universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
     write_charmm_files(universe, **kwargs)

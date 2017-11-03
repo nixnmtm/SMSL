@@ -63,5 +63,5 @@ def modeller(*args, **kwargs):
         )
         raise_with_traceback(KeyError(msg))
 
-    universe = Merge(*universe)
+    universe = Merge(*universe) if len(universe) > 1 else universe[0]
     return universe

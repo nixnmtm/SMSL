@@ -212,9 +212,10 @@ class IntcorWriter(TopologyWriterBase):
 
         with open(
             self.filename, "wb"
-        ) as icfile, TextIOWrapper(icfile, encoding="utf-8") as buf:
+        ) as icfile:
             for _ in self._title:
-                print(_, file=buf)
+                icfile.write(_.encode())
+                icfile.write("\n".encode())
             line = np.zeros(20, dtype=np.int)
             line[0] = 30 if self._extended else 20
             line[1] = 2 if self._resid else 1

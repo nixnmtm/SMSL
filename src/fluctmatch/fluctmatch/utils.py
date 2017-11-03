@@ -195,14 +195,15 @@ def write_charmm_files(
 
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
-        kwargs["start"] = 1
-        kwargs["step"] = 1
         print("Writing the trajectory {}...".format(filenames["traj_file"]))
         print(
             "This may take a while depending upon the size and "
             "length of the trajectory."
         )
-        with mda.Writer(native_str(filenames["traj_file"]), universe.atoms.n_atoms, dt=1.0, **kwargs) as trj:
+        with mda.Writer(
+            native_str(filenames["traj_file"]), universe.atoms.n_atoms
+        ) as trj:
+            universe.trajectory.rewind()
             for ts in universe.trajectory:
                 trj.write(ts)
 
