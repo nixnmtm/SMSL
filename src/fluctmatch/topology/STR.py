@@ -120,12 +120,13 @@ class STRWriter(topbase.TopologyWriterBase):
         # Write the data to the file.
         with open(
             self.filename, "wb"
-        ) as stream_file, TextIOWrapper(stream_file, encoding="utf=8") as buf:
+        ) as stream_file:
             for _ in self._title:
-                print(_, file=buf)
+                stream_file.write(_.encode())
+                stream_file.write("\n".encode())
             np.savetxt(
                 stream_file,
                 data,
                 fmt=native_str(textwrap.dedent(self.fmt[1:]))
             )
-            print("\nRETURN", file=buf)
+            stream_file.write("RETURN\n".encode())

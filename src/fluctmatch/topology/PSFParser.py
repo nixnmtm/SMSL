@@ -377,12 +377,12 @@ class PSFWriter(base.TopologyWriterBase):
         self.sect_hdr2 = (
             "{:>10d}{:>10d} !{}" if self._extended else "{:>8d}{:>8d} !{}"
         )
-        self.sections = (("bonds", "NBOND: bonds", 8),
-                         ("angles", "NTHETA: angles", 9),
-                         ("dihedrals", "NPHI: dihedrals", 8),
-                         ("impropers", "NIMPHI: impropers", 8),
-                         ("donors", "NDON: donors", 8),
-                         ("acceptors", "NACC: acceptors", 8))
+        self.sections = (("bonds", "NBOND: bonds\n", 8),
+                         ("angles", "NTHETA: angles\n", 9),
+                         ("dihedrals", "NPHI: dihedrals\n", 8),
+                         ("impropers", "NIMPHI: impropers\n", 8),
+                         ("donors", "NDON: donors\n", 8),
+                         ("acceptors", "NACC: acceptors\n", 8))
 
     def write(self, universe):
         """Write universe to PSF format.
@@ -414,13 +414,16 @@ class PSFWriter(base.TopologyWriterBase):
 
         with open(
             self.filename, "wb"
-        ) as psffile, TextIOWrapper(psffile, encoding="utf-8") as buf:
-            print(header, file=psffile)
+        ) as psffile:
+            psffile.write(header.encode())
+            psffile.write("\n".encode())
             n_title = len(self._title)
-            print(self.sect_hdr.format(n_title, "NTITLE"), file=buf)
+            psffile.write(self.sect_hdr.format(n_title, "NTITLE").encode())
+            psffile.write("\n".encode())
             for _ in self._title:
-                print(_, file=buf)
-            print(file=buf)
+                psffile.write(_.encode())
+                psffile.write("\n".encode())
+            psffile.write("\n".encode())
             self._write_atoms(psffile)
             for section in self.sections:
                 self._write_sec(psffile, section)
@@ -452,68 +455,67 @@ class PSFWriter(base.TopologyWriterBase):
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8,2G14.6) XPLOR,c35,CHEQ
         """
         fmt = self._fmt[self._fmtkey]
-        with TextIOWrapper(psffile, encoding="utf-8") as buf:
-            print(self.sect_hdr.format(
-                self._universe.atoms.n_atoms,
-                "NATOM"
-            ), file=buf)
-            atoms = self._universe.atoms
-            lines = (
-                np.arange(atoms.n_atoms) + 1,
-                atoms.segids,
-                atoms.resids,
-                atoms.resnames,
-                atoms.names,
-                atoms.types,
-                atoms.charges,
-                atoms.masses,
-                np.zeros_like(atoms.ids)
-            )
-            lines = pd.concat([pd.DataFrame(_) for _ in lines], axis=1)
+        psffile.write(self.sect_hdr.format(
+            self._universe.atoms.n_atoms,
+            "NATOM"
+        ).encode())
+        psffile.write("\n".encode())
+        atoms = self._universe.atoms
+        lines = (
+            np.arange(atoms.n_atoms) + 1,
+            atoms.segids,
+            atoms.resids,
+            atoms.resnames,
+            atoms.names,
+            atoms.types,
+            atoms.charges,
+            atoms.masses,
+            np.zeros_like(atoms.ids)
+        )
+        lines = pd.concat([pd.DataFrame(_) for _ in lines], axis=1)
 
-            if self._cheq:
-                fmt += "%10.6f%18s"
-                cheq = (
-                    np.zeros_like(atoms.masses),
-                    np.full_like(atoms.names.astype(np.object), "-0.301140E-02")
-                )
-                cheq = pd.concat([pd.DataFrame(_) for _ in cheq], axis=1)
-                lines = pd.concat([lines, cheq], axis=1)
-            np.savetxt(psffile, lines, fmt=native_str(fmt))
-            print(file=buf)
+        if self._cheq:
+            fmt += "%10.6f%18s"
+            cheq = (
+                np.zeros_like(atoms.masses),
+                np.full_like(atoms.names.astype(np.object), "-0.301140E-02")
+            )
+            cheq = pd.concat([pd.DataFrame(_) for _ in cheq], axis=1)
+            lines = pd.concat([lines, cheq], axis=1)
+        np.savetxt(psffile, lines, fmt=native_str(fmt))
+        psffile.write("\n".encode())
 
     def _write_sec(self, psffile, section_info):
         attr, header, n_perline = section_info
 
-        with TextIOWrapper(psffile, encoding="utf-8") as buf:
-            if not hasattr(self._universe, attr):
-                print(self.sect_hdr.format(0, header), file=buf)
-                print("\n", file=buf)
-                return
-            if len(getattr(self._universe, attr).to_indices()) < 2:
-                print(self.sect_hdr.format(0, header), file=buf)
-                print("\n", file=buf)
-                return
+        if not hasattr(self._universe, attr):
+            psffile.write(self.sect_hdr.format(0, header).encode())
+            psffile.write("\n\n".encode())
+            return
+        if len(getattr(self._universe, attr).to_indices()) < 2:
+            psffile.write(self.sect_hdr.format(0, header).encode())
+            psffile.write("\n\n".encode())
+            return
 
-            values = np.asarray(getattr(self._universe, attr).to_indices()) + 1
-            values = values.astype(np.object)
-            n_rows, n_cols = values.shape
-            n_values = n_perline // n_cols
-            if n_rows % n_values > 0:
-                n_extra = n_values - (n_rows % n_values)
-                values = np.concatenate(
-                    (values, np.full((n_extra, n_cols), "", dtype=np.object)),
-                    axis=0
-                )
-            values = values.reshape((values.shape[0] // n_values, n_perline))
-            print(self.sect_hdr.format(n_rows, header), file=buf)
-            np.savetxt(
-                psffile,
-                values,
-                fmt=native_str("%{:d}s".format(self.col_width)),
-                delimiter=native_str("")
+        values = np.asarray(getattr(self._universe, attr).to_indices()) + 1
+        values = values.astype(np.object)
+        n_rows, n_cols = values.shape
+        n_values = n_perline // n_cols
+        if n_rows % n_values > 0:
+            n_extra = n_values - (n_rows % n_values)
+            values = np.concatenate(
+                (values, np.full((n_extra, n_cols), "", dtype=np.object)),
+                axis=0
             )
-            print(file=buf)
+        values = values.reshape((values.shape[0] // n_values, n_perline))
+        psffile.write(self.sect_hdr.format(n_rows, header).encode())
+        np.savetxt(
+            psffile,
+            values,
+            fmt=native_str("%{:d}s".format(self.col_width)),
+            delimiter=native_str("")
+        )
+        psffile.write("\n".encode())
 
     def _write_other(self, psffile):
         n_atoms = self._universe.atoms.n_atoms
@@ -523,57 +525,58 @@ class PSFWriter(base.TopologyWriterBase):
 
         # NNB
         nnb = np.full(n_atoms, "0", dtype=np.object)
-        if dn_cols > 0:
-            nnb = np.concatenate([nnb, np.empty(missing, dtype=np.object)], axis=0)
+        if missing > 0:
+            nnb = np.concatenate(
+                [nnb, np.full(missing, native_str(""), dtype=np.object)], axis=0
+            )
         nnb = nnb.reshape((nnb.size // n_cols, n_cols))
 
-        with TextIOWrapper(psffile, encoding="utf-8") as buf:
-            print(self.sect_hdr.format(0, "NNB") + "\n", file=buf)
-            np.savetxt(
-                psffile,
-                nnb,
-                fmt=native_str("%{:d}s".format(self.col_width)),
-                delimiter=native_str("")
-            )
-            print(file=buf)
+        psffile.write(self.sect_hdr.format(0, "NNB\n\n").encode())
+        np.savetxt(
+            psffile,
+            nnb,
+            fmt=native_str("%{:d}s".format(self.col_width)),
+            delimiter=native_str("")
+        )
+        psffile.write("\n".encode())
 
-            # NGRP NST2
-            print(self.sect_hdr2.format(1, 0, "NGRP NST2"), file=buf)
-            line = np.zeros(3, dtype=np.int)
-            line = line.reshape((1, line.size))
+        # NGRP NST2
+        psffile.write(self.sect_hdr2.format(1, 0, "NGRP NST2\n").encode())
+        line = np.zeros(3, dtype=np.int)
+        line = line.reshape((1, line.size))
+        np.savetxt(
+            psffile,
+            line,
+            fmt=native_str("%{:d}d".format(self.col_width)),
+            delimiter=native_str("")
+        )
+        psffile.write("\n".encode())
+
+        # MOLNT
+        if self._cheq:
+            line = np.full(n_atoms, "1", dtype=np.object)
+            if dn_cols > 0:
+                line = np.concatenate(
+                    [line, np.zeros(missing, dtype=np.object)],
+                    axis=0
+                )
+            line = line.reshape((line.size // n_cols, n_cols))
+            psffile.write(self.sect_hdr.format(1, "MOLNT\n").encode())
             np.savetxt(
                 psffile,
                 line,
-                fmt=native_str("%{:d}d".format(self.col_width)),
+                fmt=native_str("%{:d}s".format(self.col_width)),
                 delimiter=native_str("")
             )
-            print(file=buf)
+            psffile.write("\n".encode())
+        else:
+            psffile.write(self.sect_hdr.format(0, "MOLNT\n").encode())
+            psffile.write("\n\n".encode())
 
-            # MOLNT
-            if self._cheq:
-                line = np.full(n_atoms, "1", dtype=np.object)
-                if dn_cols > 0:
-                    line = np.concatenate(
-                        [line, np.zeros(missing, dtype=np.object)],
-                        axis=0
-                    )
-                line = line.reshape((line.size // n_cols, n_cols))
-                print(self.sect_hdr.format(1, "MOLNT"), file=buf)
-                np.savetxt(
-                    psffile,
-                    line,
-                    fmt=native_str("%{:d}s".format(self.col_width)),
-                    delimiter=native_str("")
-                )
-                print(file=buf)
-            else:
-                print(self.sect_hdr.format(0, "MOLNT"), file=buf)
-                print(file=buf)
+        # NUMLP NUMLPH
+        psffile.write(self.sect_hdr2.format(0, 0, "NUMLP NUMLPH\n").encode())
+        psffile.write("\n\n".encode())
 
-            # NUMLP NUMLPH
-            print(self.sect_hdr2.format(0, 0, "NUMLP NUMLPH"), file=buf)
-            print("\n", file=buf)
-
-            # NCRTERM: cross-terms
-            print(self.sect_hdr.format(0, "NCRTERM: cross-terms"), file=buf)
-            print("\n", file=buf)
+        # NCRTERM: cross-terms
+        psffile.write(self.sect_hdr.format(0, "NCRTERM: cross-terms\n").encode())
+        psffile.write("\n\n".encode())

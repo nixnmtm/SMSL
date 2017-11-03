@@ -331,9 +331,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             with open(
                 self.filenames["charmm_input"],
                 mode="wb"
-            ) as charmm_file, TextIOWrapper(
-                charmm_file, encoding="utf-8"
-            ) as buf:
+            ) as charmm_file:
                 charmm_inp = charmm_nma.nma.format(
                     temperature=self.temperature,
                     flex="flex" if version else "",
@@ -341,7 +339,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     dimension=dimension,
                     **self.filenames)
                 charmm_inp = textwrap.dedent(charmm_inp[1:])
-                print(charmm_inp, file=buf)
+                charmm_file.write(charmm_inp.encode())
 
         # Set the indices for the parameter tables.
         self.target["BONDS"].set_index(self.bond_def, inplace=True)
@@ -378,11 +376,11 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
         while (self.error["step"] <= n_cycles).bool():
             with open(
-                self.filenames["charmm_log"], "wb"
-            ) as log_file, TextIOWrapper(log_file, encoding="utf-8") as buf:
+                self.filenames["charmm_log"], "w"
+            ) as log_file:
                 subprocess.check_call(
                     [charmm_exec, "-i", self.filenames["charmm_input"]],
-                    stdout=buf,
+                    stdout=log_file,
                     stderr=subprocess.STDOUT,
                 )
             self.dynamic_params["BONDS"].set_index(self.bond_def, inplace=True)

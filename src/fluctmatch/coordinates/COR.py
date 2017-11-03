@@ -91,7 +91,7 @@ class CORWriter(CRD.CRDWriter):
             "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} "
             "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"
         ),
-        TITLE="* FRAME {frame} FROM {where}\n",
+        TITLE="* FRAME {frame} FROM {where}",
         NUMATOMS="{0:5d}\n",
     )
 
@@ -168,15 +168,16 @@ class CORWriter(CRD.CRDWriter):
 
         with open(
             self.filename, "wb"
-        ) as crd, TextIOWrapper(crd, encoding="utf-8") as buf:
+        ) as crd:
             # Write Title
-            print(self.fmt["TITLE"].format(
+            crd.write(self.fmt["TITLE"].format(
                 frame=frame, where=u.trajectory.filename
-            ), file=buf)
-            print("*", file=buf)
+            ).encode())
+            crd.write("\n".encode())
+            crd.write("*\n".encode())
 
             # Write NUMATOMS
-            print(self.fmt["NUMATOMS_EXT"].format(n_atoms), file=buf)
+            crd.write(self.fmt["NUMATOMS_EXT"].format(n_atoms).encode())
 
             # Write all atoms
 
@@ -193,10 +194,10 @@ class CORWriter(CRD.CRDWriter):
                 resid = int(str(resid)[-resid_len:])
                 current_resid = int(str(current_resid)[-totres_len:])
 
-                print(
+                crd.write(
                     at_fmt.format(
                         serial=serial, totRes=current_resid, resname=resname,
                         name=name, pos=pos, chainID=chainID,
                         resSeq=resid, tempfactor=tempfactor
-                    ), file=buf
+                    ).encode()
                 )
