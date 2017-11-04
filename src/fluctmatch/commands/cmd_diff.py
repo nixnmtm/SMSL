@@ -25,6 +25,7 @@ import os
 from os import path
 
 import click
+from future.builtins import open
 from MDAnalysis.lib.util import openany
 
 from fluctmatch.analysis import paramtable
@@ -103,34 +104,37 @@ def cli(outdir, ressep, table1, table2):
     )
 
     filename = path.join(outdir, "dcoupling.txt")
-    with openany(filename, mode="w") as output:
+    with open(filename, mode="wb") as output:
         print("Writing table differences to {}".format(filename))
-        d_table.to_csv(
-            output,
+        d_table = d_table.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(d_table.encode())
 
     filename = path.join(outdir, "dperres.txt")
-    with openany(filename, mode="w") as output:
+    with open(filename, mode="wb") as output:
         print("Writing per residue differences to {}".format(filename))
-        d_perres.to_csv(
-            output,
+        d_perres = d_perres.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(d_perres.encode())
 
     filename = path.join(outdir, "dinteractions.txt")
-    with openany(filename, mode="w") as output:
+    with open(filename, mode="wb") as output:
         print("Writing residue-residue differences to {}".format(filename))
-        d_interactions.to_csv(
-            output,
+        d_interactions = d_interactions.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(d_interactions.encode())

@@ -25,8 +25,8 @@ import os
 from os import path
 
 import click
-from future.utils import native_str
-from MDAnalysis.lib.util import (filename, openany)
+from future.builtins import open
+from MDAnalysis.lib.util import filename
 
 from fluctmatch.analysis import paramtable
 
@@ -97,22 +97,22 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
 
     if tbltype == "Kb":
         fn = path.join(outdir, filename("perres", ext="txt"))
-        with openany(fn, "w") as table:
-            pt.per_residue.to_csv(
-                table,
+        with open(fn, mode="wb") as output:
+            table = pt.per_residue.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
+                sep=" ",
                 float_format="%.6f",
                 encoding="utf-8",
             )
+            output.write(table.encode())
+
         fn = path.join(outdir, filename("interactions", ext="txt"))
-        with openany(fn, "w") as table:
-            pt.interactions.to_csv(
-                table,
+        with open(fn, mode="wb") as output:
+            table = pt.interactions.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
+                sep=" ",
                 float_format="%.6f",
-                encoding="utf-8",
             )
+            output.write(table.encode())

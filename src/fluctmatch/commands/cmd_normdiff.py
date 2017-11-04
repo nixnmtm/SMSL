@@ -26,7 +26,7 @@ from os import path
 
 import click
 import numpy as np
-from MDAnalysis.lib.util import openany
+from future.builtins import open
 
 from fluctmatch.analysis import paramtable
 
@@ -104,20 +104,24 @@ def cli(outdir, ressep, kb, b0):
     b0_table = 0.5 * b0_table.pow(2).groupby(level=resgrp).sum()
     b0_table = b0_table.apply(np.sqrt)
 
-    with openany("normed_kb.txt", "w") as output:
-        kb_table.to_csv(
-            output,
+    filename = path.join(outdir, "normed_kb.txt")
+    with open(filename, mode="wb") as output:
+        kb_table = kb_table.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(kb_table.encode())
 
-    with openany("normed_b0.txt", "w") as output:
-        b0_table.to_csv(
-            output,
+    filename = path.join(outdir, "normed_b0.txt")
+    with open(filename, mode="wb") as output:
+        b0_table = b0_table.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(b0_table.encode())

@@ -25,7 +25,7 @@ import os
 from os import path
 
 import click
-from MDAnalysis.lib.util import openany
+from future.builtins import open
 
 from fluctmatch.analysis import paramtable
 
@@ -83,36 +83,39 @@ def cli(outdir, ressep, table):
     d_interactions = table_1.interactions.diff(axis=1).dropna(axis=1)
 
     filename = path.join(outdir, "dframe_coupling.txt")
-    with openany(filename, mode="w") as output:
+    with open(filename, mode="wb") as output:
         print("Writing frame differences to {}".format(filename))
-        d_table.to_csv(
-            output,
+        d_table = d_table.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(d_table.encode())
 
     filename = path.join(outdir, "dframe_perres.txt")
-    with openany(filename, mode="w") as output:
+    with open(filename, mode="wb") as output:
         print("Writing per residue frame differences to {}".format(filename))
-        d_perres.to_csv(
-            output,
+        d_perres = d_perres.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(d_perres.encode())
 
     filename = path.join(outdir, "dframe_interactions.txt")
-    with openany(filename, mode="w") as output:
+    with open(filename, mode="wb") as output:
         print(
             "Writing residue-residue frame differences to {}".format(filename)
         )
-        d_interactions.to_csv(
-            output,
+        d_interactions = d_interactions.to_csv(
             header=True,
             index=True,
             sep=" ",
             float_format="%.4f",
+            encoding="utf-8",
         )
+        output.write(d_interactions.encode())

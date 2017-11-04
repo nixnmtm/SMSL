@@ -25,8 +25,8 @@ import os
 from os import path
 
 import click
+from future.builtins import open
 from future.utils import native_str
-from MDAnalysis.lib.util import openany
 
 from fluctmatch.analysis.paramstats import ParamStats
 from fluctmatch.analysis.paramtable import ParamTable
@@ -96,90 +96,90 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             outdir,
             "_".join((tbltype.lower(), "table", "stats.txt"))
         )
-        with openany(filename, "w") as stat_file:
+        with open(filename, mode="wb") as stat_file:
             print("Writing table statistics to {}".format(filename))
-            info = ps.table_stats()
-            info.to_csv(
-                stat_file,
+            info = ps.table_stats().to_csv(
                 header=True,
                 index=True,
                 float_format="%.4f",
-                sep=native_str(" ")
+                sep=" ",
+                encoding="utf-8",
             )
+            stat_file.write(info.encode())
 
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_stats.txt")
-            with openany(filename, "w") as stat_file:
+            with open(filename, mode="wb") as stat_file:
                 print(
                     "Writing residue-residue statistics to {}".format(filename)
                 )
                 ps._table._ressep = 0
-                info = ps.interaction_stats()
-                info.to_csv(
-                    stat_file,
+                info = ps.interaction_stats().to_csv(
                     header=True,
                     index=True,
                     float_format="%.4f",
-                    sep=native_str(" ")
+                    sep=" ",
+                    encoding="utf-8",
                 )
+            stat_file.write(info.encode())
 
             filename = path.join(outdir, "residue_stats.txt")
-            with openany(filename, "w") as stat_file:
+            with open(filename, mode="wb") as stat_file:
                 print(
                     "Writing individual residue statistics "
                     "to {}".format(filename)
                 )
                 ps._table._ressep = ressep
-                info = ps.residue_stats()
-                info.to_csv(
-                    stat_file,
+                info = ps.residue_stats().to_csv(
                     header=True,
                     index=True,
                     float_format="%.4f",
-                    sep=native_str(" ")
+                    sep=" ",
+                    encoding="utf-8",
                 )
+                stat_file.write(info.encode())
 
     if hist:
         filename = path.join(
             outdir,
             "_".join((tbltype.lower(), "table", "hist.txt"))
         )
-        with openany(filename, "w") as stat_file:
+        with open(filename, mode="wb") as stat_file:
             print("Writing table histogram to {}".format(filename))
-            info = ps.table_hist()
-            info.to_csv(
-                stat_file,
+            info = ps.table_hist().to_csv(
                 index=True,
                 float_format="%.4f",
-                sep=native_str(" ")
+                sep=" ",
+                encoding="utf-8",
             )
+            stat_file.write(info.encode())
 
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_hist.txt")
-            with openany(filename, "w") as stat_file:
+            with open(filename, mode="wb") as stat_file:
                 print(
                     "Writing residue-residue histogram to {}".format(filename)
                 )
                 ps._table._ressep = 0
-                info = ps.interaction_hist()
-                info.to_csv(
-                    stat_file,
+                info = ps.interaction_hist().to_csv(
                     index=True,
                     float_format="%.4f",
-                    sep=native_str(" ")
+                    sep=" ",
+                    encoding="utf-8",
                 )
+                stat_file.write(info.encode())
 
             filename = path.join(outdir, "residue_hist.txt")
-            with openany(filename, "w") as stat_file:
+            with open(filename, mode="wb") as stat_file:
                 print(
                     "Writing individual residue histogram "
                     "to {}".format(filename)
                 )
                 ps._table._ressep = ressep
-                info = ps.residue_hist()
-                info.to_csv(
-                    stat_file,
+                info = ps.residue_hist().to_csv(
                     index=True,
                     float_format="%.4f",
-                    sep=native_str(" ")
+                    sep=" ",
+                    encoding="utf-8",
                 )
+                stat_file.write(info.encode())

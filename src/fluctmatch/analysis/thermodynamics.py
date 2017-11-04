@@ -26,34 +26,12 @@ import glob
 import multiprocessing as mp
 from os import path
 
-from future.utils import (
-    native_str,
-    raise_from,
-    with_metaclass,
-)
 from future.builtins import (
-    ascii,
-    bytes,
-    chr,
-    dict,
-    filter,
-    hex,
-    input,
-    map,
-    next,
-    oct,
     open,
-    pow,
-    range,
-    round,
-    str,
-    super,
-    zip,
 )
 
 import numpy as np
 import pandas as pd
-from MDAnalysis.lib.util import openany
 
 from fluctmatch.fluctmatch import charmmfluctmatch
 
@@ -147,41 +125,45 @@ def create_thermo_tables(datadir, outdir, **kwargs):
         gibbs = enthalpy - (temperature * entropy)
 
         filename = path.join(outdir, "entropy.txt")
-        with openany(filename, "w") as thermo:
-            entropy.to_csv(
-                thermo,
+        with open(filename, mode="wb") as thermo:
+            table = entropy.to_csv(
                 header=True,
                 index=True,
-                float_format=native_str("%.4f"),
-                sep=native_str(" "),
+                float_format="%.4f",
+                sep=" ",
+                encoding="utf-8",
             )
+            thermo.write(table.encode())
 
         filename = path.join(outdir, "enthalpy.txt")
-        with openany(filename, "w") as thermo:
-            enthalpy.to_csv(
-                thermo,
+        with open(filename, mode="wb") as thermo:
+            table = enthalpy.to_csv(
                 header=True,
                 index=True,
-                float_format=native_str("%.4f"),
-                sep=native_str(" "),
+                float_format="%.4f",
+                sep=" ",
+                encoding="utf-8",
             )
+            thermo.write(table.encode())
 
         filename = path.join(outdir, "heat_capacity.txt")
-        with openany(filename, "w") as thermo:
-            heat.to_csv(
-                thermo,
+        with open(filename, mode="wb") as thermo:
+            table = heat.to_csv(
                 header=True,
                 index=True,
-                float_format=native_str("%.4f"),
-                sep=native_str(" "),
+                float_format="%.4f",
+                sep=" ",
+                encoding="utf-8",
             )
+            thermo.write(table.encode())
 
         filename = path.join(outdir, "gibbs.txt")
-        with openany(filename, "w") as thermo:
-            gibbs.to_csv(
-                thermo,
+        with open(filename, mode="wb") as thermo:
+            table = gibbs.to_csv(
                 header=True,
                 index=True,
-                float_format=native_str("%.4f"),
-                sep=native_str(" "),
+                float_format="%.4f",
+                sep=" ",
+                encoding="utf-8",
             )
+            thermo.write(table.encode())
