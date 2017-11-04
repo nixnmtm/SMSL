@@ -542,10 +542,11 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         thermo = thermo.astype(np.float)
 
         # Write data to file
-        with util.openany(self.filenames["thermo_data"], "w") as data_file:
-            thermo.to_csv(
-                data_file,
+        with open(self.filenames["thermo_data"], "wb") as data_file:
+            thermo = thermo.to_csv(
+                index=True,
                 sep=native_str(" "),
                 float_format=native_str("%.4f"),
                 encoding="utf-8"
             )
+            data_file.write(thermo.encode())
