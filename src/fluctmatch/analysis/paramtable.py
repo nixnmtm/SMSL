@@ -41,7 +41,10 @@ _header = ["I", "J"]
 _index = ["segidI", "resI", "I", "segidJ", "resJ", "J"]
 
 
-def _create_table(directory, intcor="average.ic", parmfile="fluctmatch.dist.prm", tbltype="Kb", verbose=False):
+def _create_table(
+    directory, intcor="average.ic", parmfile="fluctmatch.dist.prm",
+    tbltype="Kb", verbose=False
+):
     if path.isdir(directory):
         if verbose:
             print("Reading directory {}".format(directory))
