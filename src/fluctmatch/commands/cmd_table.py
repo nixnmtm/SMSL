@@ -26,6 +26,7 @@ from os import path
 
 import click
 from future.builtins import open
+from future.utils import native_str
 from MDAnalysis.lib.util import filename
 
 from fluctmatch.analysis import paramtable
@@ -101,8 +102,8 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
             table = pt.per_residue.to_csv(
                 header=True,
                 index=True,
-                sep=" ",
-                float_format="%.6f",
+                sep=native_str(" "),
+                float_format=native_str("%.4f"),
                 encoding="utf-8",
             )
             output.write(table.encode())
@@ -112,7 +113,8 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
             table = pt.interactions.to_csv(
                 header=True,
                 index=True,
-                sep=" ",
-                float_format="%.6f",
+                sep=native_str(" "),
+                float_format=native_str("%.4f"),
+                encoding="utf-8",
             )
             output.write(table.encode())

@@ -83,8 +83,8 @@ def cli(outdir, ressep, table):
         ent = table.coupling_entropy().to_csv(
             index=True,
             header=True,
-            float_format="%.4f",
-            sep=" ",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(ent.encode())
@@ -94,8 +94,8 @@ def cli(outdir, ressep, table):
         ent = table.relative_entropy().to_csv(
             index=True,
             header=True,
-            float_format="%.4f",
-            sep=" ",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(ent.encode())
@@ -105,8 +105,8 @@ def cli(outdir, ressep, table):
         ent = table.windiff_entropy().to_csv(
             index=True,
             header=True,
-            float_format="%.4f",
-            sep=" ",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(ent.encode())

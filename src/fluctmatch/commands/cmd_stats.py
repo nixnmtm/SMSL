@@ -117,8 +117,8 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 info = ps.interaction_stats().to_csv(
                     header=True,
                     index=True,
-                    float_format="%.4f",
-                    sep=" ",
+                    sep=native_str(" "),
+                    float_format=native_str("%.4f"),
                     encoding="utf-8",
                 )
             stat_file.write(info.encode())
@@ -133,8 +133,8 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 info = ps.residue_stats().to_csv(
                     header=True,
                     index=True,
-                    float_format="%.4f",
-                    sep=" ",
+                    sep=native_str(" "),
+                    float_format=native_str("%.4f"),
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
@@ -148,8 +148,8 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             print("Writing table histogram to {}".format(filename))
             info = ps.table_hist().to_csv(
                 index=True,
-                float_format="%.4f",
-                sep=" ",
+                sep=native_str(" "),
+                float_format=native_str("%.4f"),
                 encoding="utf-8",
             )
             stat_file.write(info.encode())
@@ -163,8 +163,8 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 ps._table._ressep = 0
                 info = ps.interaction_hist().to_csv(
                     index=True,
-                    float_format="%.4f",
-                    sep=" ",
+                    sep=native_str(" "),
+                    float_format=native_str("%.4f"),
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
@@ -178,8 +178,8 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 ps._table._ressep = ressep
                 info = ps.residue_hist().to_csv(
                     index=True,
-                    float_format="%.4f",
-                    sep=" ",
+                    sep=native_str(" "),
+                    float_format=native_str("%.4f"),
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())

@@ -27,6 +27,7 @@ from os import path
 import click
 import numpy as np
 from future.builtins import open
+from future.utils import native_str
 
 from fluctmatch.analysis import paramtable
 
@@ -109,8 +110,8 @@ def cli(outdir, ressep, kb, b0):
         kb_table = kb_table.to_csv(
             header=True,
             index=True,
-            sep=" ",
-            float_format="%.4f",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(kb_table.encode())
@@ -120,8 +121,8 @@ def cli(outdir, ressep, kb, b0):
         b0_table = b0_table.to_csv(
             header=True,
             index=True,
-            sep=" ",
-            float_format="%.4f",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(b0_table.encode())

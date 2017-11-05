@@ -26,6 +26,7 @@ from os import path
 
 import click
 from future.builtins import open
+from future.utils import native_str
 
 from fluctmatch.analysis import paramtable
 
@@ -88,8 +89,8 @@ def cli(outdir, ressep, table):
         d_table = d_table.to_csv(
             header=True,
             index=True,
-            sep=" ",
-            float_format="%.4f",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(d_table.encode())
@@ -100,8 +101,8 @@ def cli(outdir, ressep, table):
         d_perres = d_perres.to_csv(
             header=True,
             index=True,
-            sep=" ",
-            float_format="%.4f",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(d_perres.encode())
@@ -114,8 +115,8 @@ def cli(outdir, ressep, table):
         d_interactions = d_interactions.to_csv(
             header=True,
             index=True,
-            sep=" ",
-            float_format="%.4f",
+            sep=native_str(" "),
+            float_format=native_str("%.4f"),
             encoding="utf-8",
         )
         output.write(d_interactions.encode())
