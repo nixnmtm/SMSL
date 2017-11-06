@@ -52,8 +52,8 @@ from fluctmatch.analysis import paramtable
     "--ressep",
     metavar="RESSEP",
     default=3,
-    type=click.INT,
-    help="Separation between residues (I,I+n)"
+    type=click.IntRange(0, None, clamp=True),
+    help="Number of residues to exclude in I,I+r (default: 2)"
 )
 @click.argument(
     "table",
@@ -85,7 +85,7 @@ def cli(outdir, ressep, table):
 
     filename = path.join(outdir, "dframe_coupling.txt")
     with open(filename, mode="wb") as output:
-        print("Writing frame differences to {}".format(filename))
+        click.echo("Writing frame differences to {}".format(filename))
         d_table = d_table.to_csv(
             header=True,
             index=True,
@@ -97,7 +97,7 @@ def cli(outdir, ressep, table):
 
     filename = path.join(outdir, "dframe_perres.txt")
     with open(filename, mode="wb") as output:
-        print("Writing per residue frame differences to {}".format(filename))
+        click.echo("Writing per residue frame differences to {}".format(filename))
         d_perres = d_perres.to_csv(
             header=True,
             index=True,
@@ -109,7 +109,7 @@ def cli(outdir, ressep, table):
 
     filename = path.join(outdir, "dframe_interactions.txt")
     with open(filename, mode="wb") as output:
-        print(
+        click.echo(
             "Writing residue-residue frame differences to {}".format(filename)
         )
         d_interactions = d_interactions.to_csv(

@@ -52,8 +52,8 @@ from fluctmatch.analysis import paramtable
     "--ressep",
     metavar="RESSEP",
     default=3,
-    type=click.INT,
-    help="Separation between residues (I,I+n)"
+    type=click.IntRange(0, None, clamp=True),
+    help="Number of residues to exclude in I,I+r (default: 2)"
 )
 @click.argument(
     "table1",
@@ -105,7 +105,7 @@ def cli(outdir, ressep, table1, table2):
 
     filename = path.join(outdir, "dcoupling.txt")
     with open(filename, mode="wb") as output:
-        print("Writing table differences to {}".format(filename))
+        click.echo("Writing table differences to {}".format(filename))
         d_table = d_table.to_csv(
             header=True,
             index=True,
@@ -129,7 +129,7 @@ def cli(outdir, ressep, table1, table2):
 
     filename = path.join(outdir, "dinteractions.txt")
     with open(filename, mode="wb") as output:
-        print("Writing residue-residue differences to {}".format(filename))
+        click.echo("Writing residue-residue differences to {}".format(filename))
         d_interactions = d_interactions.to_csv(
             header=True,
             index=True,

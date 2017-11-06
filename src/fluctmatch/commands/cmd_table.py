@@ -80,8 +80,8 @@ from fluctmatch.analysis import paramtable
     "--ressep",
     metavar="RESSEP",
     default=3,
-    type=click.INT,
-    help="Separation between residues (I,I+n)"
+    type=click.IntRange(0, None, clamp=True),
+    help="Number of residues to exclude in I,I+r (default: 2)"
 )
 @click.option(
     "-v",

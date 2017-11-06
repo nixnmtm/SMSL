@@ -104,7 +104,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "charmm_version",
     metavar="VERSION",
     default=41,
-    type=click.INT,
+    type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
 @click.option(

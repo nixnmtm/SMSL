@@ -65,8 +65,8 @@ from fluctmatch.analysis.paramtable import ParamTable
     "--ressep",
     metavar="RESSEP",
     default=3,
-    type=click.INT,
-    help="Separation between residues (I,I+n)"
+    type=click.IntRange(0, None, clamp=True),
+    help="Number of residues to exclude in I,I+r (default: 2)"
 )
 @click.option(
     "-t",
@@ -97,7 +97,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             "_".join((tbltype.lower(), "table", "stats.txt"))
         )
         with open(filename, mode="wb") as stat_file:
-            print("Writing table statistics to {}".format(filename))
+            click.echo("Writing table statistics to {}".format(filename))
             info = ps.table_stats().to_csv(
                 header=True,
                 index=True,
@@ -110,7 +110,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_stats.txt")
             with open(filename, mode="wb") as stat_file:
-                print(
+                click.echo(
                     "Writing residue-residue statistics to {}".format(filename)
                 )
                 ps._table._ressep = 0
@@ -125,7 +125,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
 
             filename = path.join(outdir, "residue_stats.txt")
             with open(filename, mode="wb") as stat_file:
-                print(
+                click.echo(
                     "Writing individual residue statistics "
                     "to {}".format(filename)
                 )
@@ -145,7 +145,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             "_".join((tbltype.lower(), "table", "hist.txt"))
         )
         with open(filename, mode="wb") as stat_file:
-            print("Writing table histogram to {}".format(filename))
+            click.echo("Writing table histogram to {}".format(filename))
             info = ps.table_hist().to_csv(
                 index=True,
                 sep=native_str(" "),
@@ -157,7 +157,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_hist.txt")
             with open(filename, mode="wb") as stat_file:
-                print(
+                click.echo(
                     "Writing residue-residue histogram to {}".format(filename)
                 )
                 ps._table._ressep = 0
@@ -171,7 +171,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
 
             filename = path.join(outdir, "residue_hist.txt")
             with open(filename, mode="wb") as stat_file:
-                print(
+                click.echo(
                     "Writing individual residue histogram "
                     "to {}".format(filename)
                 )

@@ -73,15 +73,10 @@ from fluctmatch.analysis import (
 @click.option(
     "-r",
     "--ressep",
+    metavar="RESSEP",
     default=2,
     type=click.IntRange(0, None, clamp=True),
     help="Number of residues to exclude in I,I+r (default: 2)"
-)
-@click.option(
-    "-s",
-    "--subset",
-    type=(native_str, click.IntRange(1, None, clamp=True), click.IntRange(1, None, clamp=True)),
-    multiple=True, help="Subset of a system (SEGID FIRST LAST)"
 )
 @click.option(
     "-o",
@@ -103,7 +98,7 @@ from fluctmatch.analysis import (
     )
 )
 def calculate_scafluct(
-    ntrials, std, kpos, pcut, ressep, subset, output, filename
+    ntrials, std, kpos, pcut, ressep, output, filename
 ):
     # Load the table, separate by I,I+r, and if requested, create a subset.
     table = ParamTable(ressep=ressep)

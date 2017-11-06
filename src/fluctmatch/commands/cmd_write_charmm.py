@@ -74,7 +74,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "charmm_version",
     metavar="VERSION",
     default=41,
-    type=click.INT,
+    type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
 @click.option(
