@@ -137,7 +137,7 @@ _CONVERT = dict(
     "--system",
     metavar="NDXNUM",
     default=0,
-    type=click.INT,
+    type=click.IntRange(0, None, clamp=True),
     help="System selection based upon Gromacs index file",
 )
 @click.option(
@@ -145,7 +145,7 @@ _CONVERT = dict(
     "start",
     metavar="FRAME",
     default=1,
-    type=click.INT,
+    type=click.IntRange(1, None, clamp=True),
     help="Start time of trajectory",
 )
 @click.option(
@@ -153,7 +153,7 @@ _CONVERT = dict(
     "stop",
     metavar="FRAME",
     default=10000,
-    type=click.INT,
+    type=click.IntRange(1, None, clamp=True),
     help="Stop time of total trajectory",
 )
 @click.option(
@@ -161,7 +161,7 @@ _CONVERT = dict(
     "window_size",
     metavar="WINSIZE",
     default=10000,
-    type=click.INT,
+    type=click.IntRange(2, None, clamp=True),
     help="Size of each subtrajectory",
 )
 def cli(

@@ -41,7 +41,10 @@ _header = ["I", "J"]
 _index = ["segidI", "resI", "I", "segidJ", "resJ", "J"]
 
 
-def _create_table(directory, intcor="average.ic", parmfile="fluctmatch.dist.prm", tbltype="Kb", verbose=False):
+def _create_table(
+    directory, intcor="average.ic", parmfile="fluctmatch.dist.prm",
+    tbltype="Kb", verbose=False
+):
     if path.isdir(directory):
         if verbose:
             print("Reading directory {}".format(directory))
@@ -65,12 +68,10 @@ class ParamTable(object):
     """Create a parameter table time series for distance or coupling strength.
 
     """
-    def __init__(self, data_dir, prefix="fluctmatch", tbltype="Kb", ressep=3):
+    def __init__(self, prefix="fluctmatch", tbltype="Kb", ressep=3):
         """
         Parameters
         ----------
-        data_dir : str
-            Parent directory for parameter files
         prefix : str, optional
             Filename prefix for files
         tbltype : {"Kb", "b0"}, optional
@@ -78,7 +79,6 @@ class ParamTable(object):
         ressep : int, optional
             Number of residues to exclude from interactions.
         """
-        self._datadir = data_dir
         self._prefix = prefix
         self._tbltype = tbltype
         self._ressep = ressep
@@ -87,6 +87,18 @@ class ParamTable(object):
             intcor="fluct.ic",
             param=".".join((self._prefix, "dist", "prm")),
         )
+
+    def __add__(self, other):
+        return self.table.add(other.table, fill_value=0.0)
+
+    def __sub__(self, other):
+        return self.table.subtract(other.table, fill_value=0.0)
+
+    def __mul__(self, other):
+        return self.table.multiply(other.table, fill_value=0.0)
+
+    def __truediv__(self, other):
+        return self.table.divide(other.table, fill_value=0.0)
 
     def _separate(self, prm_table):
         index = prm_table.index.names

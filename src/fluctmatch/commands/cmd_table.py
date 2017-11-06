@@ -25,8 +25,9 @@ import os
 from os import path
 
 import click
+from future.builtins import open
 from future.utils import native_str
-from MDAnalysis.lib.util import (filename, openany)
+from MDAnalysis.lib.util import filename
 
 from fluctmatch.analysis import paramtable
 
@@ -79,8 +80,8 @@ from fluctmatch.analysis import paramtable
     "--ressep",
     metavar="RESSEP",
     default=3,
-    type=click.INT,
-    help="Separation between residues (I,I+n)"
+    type=click.IntRange(0, None, clamp=True),
+    help="Number of residues to exclude in I,I+r (default: 2)"
 )
 @click.option(
     "-v",
@@ -88,7 +89,7 @@ from fluctmatch.analysis import paramtable
     is_flag=True,
 )
 def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
-    pt = paramtable.ParamTable(data_dir, prefix=prefix, tbltype=tbltype, ressep=ressep)
+    pt = paramtable.ParamTable(prefix=prefix, tbltype=tbltype, ressep=ressep)
     pt.run(verbose=verbose)
 
     # Write the various tables to different files.
@@ -97,22 +98,23 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
 
     if tbltype == "Kb":
         fn = path.join(outdir, filename("perres", ext="txt"))
-        with openany(fn, "w") as table:
-            pt.per_residue.to_csv(
-                table,
+        with open(fn, mode="wb") as output:
+            table = pt.per_residue.to_csv(
                 header=True,
                 index=True,
                 sep=native_str(" "),
-                float_format="%.6f",
+                float_format=native_str("%.4f"),
                 encoding="utf-8",
             )
+            output.write(table.encode())
+
         fn = path.join(outdir, filename("interactions", ext="txt"))
-        with openany(fn, "w") as table:
-            pt.interactions.to_csv(
-                table,
+        with open(fn, mode="wb") as output:
+            table = pt.interactions.to_csv(
                 header=True,
                 index=True,
                 sep=native_str(" "),
-                float_format="%.6f",
+                float_format=native_str("%.4f"),
                 encoding="utf-8",
             )
+            output.write(table.encode())
