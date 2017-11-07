@@ -45,7 +45,7 @@ def read(*names, **kwargs):
 
 setup(
     name="fluctmatch",
-    version="3.0.5",
+    version="3.1.0",
     license="BSD license",
     description="Elastic network model using fluctuation matching.",
     long_description="%s\n%s" % (
@@ -88,7 +88,7 @@ setup(
     ],
     install_requires=[
         "click",
-        "MDAnalysis",
+        "MDAnalysis==0.17.0-dev",
         "numpy",
         "pandas",
         "scipy",
