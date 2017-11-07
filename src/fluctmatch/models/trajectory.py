@@ -177,6 +177,7 @@ class _Trajectory(base.ReaderBase):
         at_ts = self._t.next()
 
         self._fill_ts(at_ts)
+        return self.ts
 
     def _read_frame(self, frame):
         self._t._read_frame(frame)
