@@ -23,13 +23,13 @@ from __future__ import (
 from future.utils import PY2
 
 import copy
-import collections
 import os
 import subprocess
 import tempfile
 import textwrap
 from os import path
 
+import click
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
 import numpy as np
@@ -171,7 +171,7 @@ def write_charmm_files(
         crd_file=".".join((filename, "cor")),
         stream_file=".".join((filename, "stream")),
         topology_file=".".join((filename, "rtf")),
-        traj_file=".".join((filename, "xtc")),
+        traj_file=".".join((filename, "dcd")),
     )
 
     # Write required CHARMM input files.
@@ -195,16 +195,20 @@ def write_charmm_files(
 
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
-        kwargs["start"] = 1
-        kwargs["step"] = 1
         print("Writing the trajectory {}...".format(filenames["traj_file"]))
         print(
             "This may take a while depending upon the size and "
             "length of the trajectory."
         )
-        with mda.Writer(native_str(filenames["traj_file"]), universe.atoms.n_atoms, dt=1.0, **kwargs) as trj:
-            for ts in universe.trajectory:
-                trj.write(ts)
+        with mda.Writer(
+            native_str(filenames["traj_file"]),
+            universe.atoms.n_atoms,
+            remarks="Written by fluctmatch."
+        ) as trj:
+            universe.trajectory.rewind()
+            with click.progressbar(universe.trajectory) as bar:
+                for ts in bar:
+                    trj.write(ts)
 
     # Write an XPLOR version of the PSF
     atomtypes = topologyattrs.Atomtypes(universe.atoms.names)

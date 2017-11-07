@@ -22,6 +22,7 @@ from __future__ import (
 )
 
 import time
+from io import TextIOWrapper
 from os import environ
 
 import numpy as np
@@ -30,6 +31,7 @@ from MDAnalysis.lib import util
 from future.builtins import (
     dict,
     next,
+    open,
 )
 from future.utils import (
     native_str,
@@ -87,8 +89,10 @@ class IntcorReader(TopologyReaderBase):
             An internal coordinates table.
         """
         table = pd.DataFrame()
-        with util.openany(self.filename, "r") as icfile:
-            for line in icfile:
+        with open(
+            self.filename, "rb"
+        ) as icfile, TextIOWrapper(icfile, encoding="utf-8") as buf:
+            for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
                     continue       # ignore TITLE and empty lines
@@ -98,14 +102,17 @@ class IntcorReader(TopologyReaderBase):
             key += "_RESID" if line[1] == 2 else ""
             resid_a = line[1]
 
-            line = next(icfile).strip().split()
+            line = next(buf).strip().split()
             n_lines, resid_b = np.array(line, dtype=np.int)
             if resid_a != resid_b:
                 raise IOError("A mismatch has occurred on determining the IC format.")
 
             TableParser = util.FORTRANReader(self.fmt[key])
-            table = pd.DataFrame([TableParser.read(line) for line in icfile], dtype=np.object)
-            table = table[table != ":"].dropna(axis=1).apply(pd.to_numeric, errors="ignore")
+            table = pd.DataFrame(
+                [TableParser.read(line) for line in buf], dtype=np.object
+            )
+            table = table[table != ":"]
+            table = table.dropna(axis=1).apply(pd.to_numeric, errors="ignore")
             table.set_index(0, inplace=True)
             if n_lines != table.shape[0]:
                 raise IOError(
@@ -203,9 +210,12 @@ class IntcorWriter(TopologyWriterBase):
         rescol = ["resI", "resJ", "resK", "resL", ]
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
-        with util.openany(self.filename, "w") as icfile:
+        with open(
+            self.filename, "wb"
+        ) as icfile:
             for _ in self._title:
-                print (_, file=icfile)
+                icfile.write(_.encode())
+                icfile.write("\n".encode())
             line = np.zeros(20, dtype=np.int)
             line[0] = 30 if self._extended else 20
             line[1] = 2 if self._resid else 1

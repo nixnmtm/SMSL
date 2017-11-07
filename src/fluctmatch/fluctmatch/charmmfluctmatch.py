@@ -49,6 +49,8 @@ from MDAnalysis.lib import util
 from MDAnalysis.coordinates.core import reader
 from future.builtins import (
     dict,
+    open,
+    range,
     super,
 )
 from future.utils import (
@@ -62,6 +64,7 @@ from fluctmatch.fluctmatch import base as fmbase
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.fluctmatch.data import (
     charmm_nma,
+    charmm_thermo,
 )
 from fluctmatch.intcor import utils as icutils
 from fluctmatch.parameter import utils as prmutils
@@ -172,6 +175,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             charmm_input=path.join(self.outdir, ".".join((self.prefix, "inp"))),
             charmm_log=path.join(self.outdir, ".".join((self.prefix, "log"))),
             error_data=path.join(self.outdir, "error.dat"),
+            thermo_input=path.join(self.outdir, "thermo.inp"),
+            thermo_log=path.join(self.outdir, "thermo.log"),
+            thermo_data=path.join(self.outdir, "thermo.dat"),
         )
 
         # Boltzmann constant
@@ -326,10 +332,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 if version >= 36
                 else ""
             )
-            with util.openany(
-                self.filenames["charmm_input"],
-                mode="w"
-            ) as charmm_file:   # type: Optional[IO[str]]
+            with open(self.filenames["charmm_input"], mode="wb") as charmm_file:
                 charmm_inp = charmm_nma.nma.format(
                     temperature=self.temperature,
                     flex="flex" if version else "",
@@ -337,7 +340,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     dimension=dimension,
                     **self.filenames)
                 charmm_inp = textwrap.dedent(charmm_inp[1:])
-                print(charmm_inp, file=charmm_file)
+                charmm_file.write(charmm_inp.encode())
 
         # Set the indices for the parameter tables.
         self.target["BONDS"].set_index(self.bond_def, inplace=True)
@@ -346,7 +349,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Check for restart.
         try:
             if os.stat(self.filenames["error_data"]).st_size > 0:
-                with util.openany(self.filenames["error_data"], "r") as data:
+                with open(self.filenames["error_data"], "rb") as data:
                     error_info = pd.read_csv(
                         data,
                         header=0,
@@ -358,7 +361,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             else:
                 raise FileNotFoundError
         except (FileNotFoundError, OSError):
-            with util.openany(self.filenames["error_data"], "w") as data:
+            with open(self.filenames["error_data"], "wb") as data:
                 np.savetxt(
                     data,
                     [self.error_hdr,],
@@ -371,8 +374,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         print("Starting fluctuation matching")
         st = time.time()
 
-        while (self.error["step"] <= n_cycles).bool():
-            with util.openany(self.filenames["charmm_log"], "w") as log_file:
+        for i in range(n_cycles)
+            self.error["step"] = i
+            with open(self.filenames["charmm_log"], "w") as log_file:
                 subprocess.check_call(
                     [charmm_exec, "-i", self.filenames["charmm_input"]],
                     stdout=log_file,
@@ -434,7 +438,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 prm.write(self.dynamic_params)
 
             # Update the error values.
-            with util.openany(self.filenames["error_data"], "a") as error_file:
+            with open(self.filenames["error_data"], "ab") as error_file:
                 np.savetxt(
                     error_file,
                     self.error,
@@ -444,9 +448,94 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
             if (self.error[self.error.columns[1]] < tol).bool():
                 break
-            self.error["step"] += 1
 
         print(
             "Fluctuation matching completed in {:.6f}".format(time.time() - st)
         )
         self.target["BONDS"].reset_index(inplace=True)
+
+    def calculate_thermo(self, nma_exec=None):
+        """Calculate the thermodynamic properties of the trajectory.
+
+        Parameters
+        ----------
+        nma_exec : str
+            executable file for normal mode analysis
+        """
+        # Find CHARMM executable
+        charmm_exec = (
+            os.environ.get("CHARMMEXEC", util.which("charmm"))
+            if nma_exec is None
+            else nma_exec
+        )
+        if charmm_exec is None:
+            raise_with_traceback(
+                OSError(
+                    "Please set CHARMMEXEC with the location of your CHARMM "
+                    "executable file or add the charmm path to your PATH "
+                    "environment."
+                )
+            )
+
+        if not path.exists(self.filenames["thermo_input"]):
+            version = self.kwargs.get("charmm_version", 41)
+            dimension = (
+                "dimension chsize 500000 maxres 3000000"
+                if version >= 36
+                else ""
+            )
+            with open(
+                self.filenames["thermo_input"],
+                mode="wb") as charmm_file:
+                charmm_inp = charmm_thermo.thermodynamics.format(
+                    trajectory=path.join(self.outdir, self.args[-1]),
+                    temperature=self.temperature,
+                    flex="flex" if version else "",
+                    version=version,
+                    dimension=dimension,
+                    **self.filenames)
+                charmm_inp = textwrap.dedent(charmm_inp[1:])
+                charmm_file.write(charmm_inp.encode())
+
+        # Calculate thermodynamic properties of the trajectory.
+        with open(self.filenames["thermo_log"], "w") as log_file:
+            subprocess.check_call(
+                [charmm_exec, "-i", self.filenames["thermo_input"]],
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+            )
+
+        header = (
+            "SEGI  RESN  RESI     Entropy    Enthalpy     "
+            "Heatcap     Atm/res   Ign.frq"
+        )
+        columns = np.array(header.split())
+        columns[:3] = np.array(["segidI", "RESN", "resI"])
+        thermo = []
+
+        # Read log file
+        with open(self.filenames["thermo_log"], "rb") as log_file:
+            for line in log_file:
+                if line.find(header) < 0:
+                    continue
+                break
+            for line in log_file:
+                if len(line.strip().split()) == 0:
+                    break
+                thermo.append(line.strip().split())
+
+        # Create human-readable table
+        thermo = pd.DataFrame(thermo, columns=columns)
+        thermo.drop(["RESN", "Atm/res", "Ign.frq"], axis=1, inplace=True)
+        thermo.set_index(["segidI", "resI"], inplace=True)
+        thermo = thermo.astype(np.float)
+
+        # Write data to file
+        with open(self.filenames["thermo_data"], "wb") as data_file:
+            thermo = thermo.to_csv(
+                index=True,
+                sep=native_str(" "),
+                float_format=native_str("%.4f"),
+                encoding="utf-8"
+            )
+            data_file.write(thermo.encode())

@@ -26,33 +26,45 @@ from os import path
 
 import click
 from MDAnalysis.lib.util import which
-from fluctmatch.fluctmatch import charmmfluctmatch
+from fluctmatch.analysis import thermodynamics
 
 
-@click.command("run_fm", short_help="Run fluctuation matching.")
+@click.command("thermo", short_help="Calculate thermodynamic properties.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
-    default=path.join(os.getcwd(), "md.tpr"),
+    default="fluctmatch.xplor.psf",
     type=click.Path(
         exists=False,
         file_okay=True,
-        resolve_path=True
+        resolve_path=False,
     ),
-    help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
+    help="Topology file (e.g., tpr gro g96 pdb brk ent psf)",
 )
 @click.option(
     "-f",
     "trajectory",
     metavar="FILE",
-    default=path.join(os.getcwd(), "md.xtc"),
+    default="cg.dcd",
     type=click.Path(
         exists=False,
         file_okay=True,
-        resolve_path=True
+        resolve_path=False,
     ),
     help="Trajectory file (e.g. xtc trr dcd)",
+)
+@click.option(
+    "-d",
+    "datadir",
+    metavar="DIR",
+    default=path.join(os.getcwd(), "data"),
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        resolve_path=True
+    ),
+    help="Directory",
 )
 @click.option(
     "-o",
@@ -89,75 +101,29 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     help="Temperature of simulation",
 )
 @click.option(
-    "-n",
-    "--ncycles",
-    "n_cycles",
-    metavar="NCYCLES",
-    type=click.IntRange(1, None, clamp=True),,
-    default=250,
-    help="Number of simulation cycles",
-)
-@click.option(
-    "--tol",
-    metavar="TOL",
-    type=click.FLOAT,
-    default=1.e-4,
-    help="Tolerance level between simulations",
-)
-@click.option(
-    "-p",
-    "--prefix",
-    metavar="PREFIX",
-    default="fluctmatch",
-    type=click.STRING,
-    help="Prefix for filenames",
-)
-@click.option(
     "-c",
     "--charmm",
     "charmm_version",
     metavar="VERSION",
     default=41,
-    type=click.IntRange(, None, clamp=True),,
+    type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
-@click.option(
-    "--extended / --standard",
-    "extended",
-    default=True,
-    help="Output using the extended or standard columns",
-)
-@click.option(
-    "--nb / --no-nb",
-    "nonbonded",
-    default=True,
-    help="Include nonbonded section in CHARMM parameter file",
-)
-@click.option(
-    "--resid / --no-resid",
-    "resid",
-    default=True,
-    help="Include segment IDs in internal coordinate files",
-)
-@click.option(
-    "--restart",
-    is_flag=True,
-    help="Restart simulation",
-)
 def cli(
-    topology, trajectory, outdir, nma_exec, temperature,
-    n_cycles, tol, prefix, charmm_version,
-    extended, resid, nonbonded, restart,
+    datadir, outdir, topology, trajectory, nma_exec, temperature, charmm_version
 ):
-    kwargs = dict(
-        prefix=prefix,
-        outdir=outdir,
+    # Attempt to create the necessary subdirectory
+    try:
+        os.makedirs(outdir)
+    except OSError:
+        pass
+
+    thermodynamics.create_thermo_tables(
+        datadir,
+        outdir,
+        topology=topology,
+        trajectory=trajectory,
         temperature=temperature,
-        charmm_version=charmm_version,
-        extended=extended,
-        resid=resid,
-        nonbonded=nonbonded,
+        nma_exec=nma_exec,
+        charmm_version=charmm_version
     )
-    cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
-    cfm.initialize(restart=restart)
-    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles)

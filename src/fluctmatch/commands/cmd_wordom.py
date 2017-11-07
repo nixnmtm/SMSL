@@ -66,15 +66,14 @@ from fluctmatch.fluctmatch import utils as fmutils
     "start",
     metavar="FRAME",
     default=0,
-    type=click.INT,
+    type=click.IntRange(0, None, clamp=True),
     help="Start time of trajectory",
 )
 @click.option(
     "-e",
     "stop",
     metavar="FRAME",
-    default=-1,
-    type=click.INT,
+    type=click.IntRange(0, None, clamp=True),
     help="Stop time of total trajectory",
 )
 @click.option(
@@ -82,7 +81,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "step",
     metavar="STEP",
     default=1,
-    type=click.INT,
+    type=click.IntRange(1, None, clamp=True),
     help="Interval between frames"
 )
 @click.option(

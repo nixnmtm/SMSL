@@ -29,6 +29,7 @@ import itertools
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
+from future.builtins import super
 from future.utils import (
     viewitems,
     viewvalues,
@@ -76,9 +77,12 @@ class _Trajectory(base.ReaderBase):
 
         self.com = com
         self._auxs = self._t._auxs
+        try:
+            self._frame = self._t._frame
+        except AttributeError:
+            pass
 
         self.n_atoms = n_atoms
-        self.n_frames = self._t.n_frames
         self.format = self._t.format
         self.units.update(self._t.units)
         self.convert_units = MDAnalysis.core.flags["convert_lengths"]
@@ -97,26 +101,25 @@ class _Trajectory(base.ReaderBase):
             velocities=self._t.ts.has_velocities,
             forces=self._t.ts.has_forces
         )
-        self._frame = self._t.frame
-        self.ts.dt = self._t.ts.dt
-        self.ts.order = self._t.ts.order
-
         self._fill_ts(self._t.ts)
 
-    def _read_next_timestep(self, ts=None):
-        # Get the next TS from the atom trajectory
-        at_ts = self._t.next()
+    def __iter__(self):
+        self._reopen()
 
-        self._fill_ts(at_ts)
+        yield self.ts
+        while True:
+            try:
+                yield self._read_next_timestep()
+            except StopIteration:
+                self._reopen()
+                raise StopIteration
 
-        return self.ts
+    def __len__(self):
+        #         return self.n_frames
+        return len(self._u.trajectory)
 
-    def _read_frame(self, frame):
-        at_ts = self._t[frame]
-
-        self._fill_ts(at_ts)
-
-        return self.ts
+    def __repr__(self):
+        return "<CG Trajectory doing {:d} beads >".format(self.n_atoms)
 
     def _fill_ts(self, other_ts):
         """Rip information from atomistic TS into our ts
@@ -127,7 +130,12 @@ class _Trajectory(base.ReaderBase):
             Another timestep
         """
         self.ts.frame = other_ts.frame
+        self.ts.order = self._t.ts.order
         self.ts._unitcell = other_ts._unitcell
+        self.ts.time = other_ts.time
+        self.ts.dimensions = other_ts.dimensions
+        self.ts.dt = other_ts.dt
+
         residues = self._u.atoms.split("residue")
         if self.ts.has_positions:
             if self.com:
@@ -164,27 +172,43 @@ class _Trajectory(base.ReaderBase):
             except ValueError:
                 pass
 
+    def _read_next_timestep(self, ts=None):
+        # Get the next TS from the atom trajectory
+        at_ts = self._t.next()
+
+        self._fill_ts(at_ts)
+        return self.ts
+
+    def _read_frame(self, frame):
+        self._t._read_frame(frame)
+        self._fill_ts(self._t.ts)
+
+        return self.ts
+
     def _reopen(self):
         # Rewind my reference trajectory
-        self._t.rewind()
-
-    def __iter__(self):
-        self._reopen()
-        while True:
-            try:
-                yield self._read_next_timestep()
-            except StopIteration:
-                self.rewind()
-                raise StopIteration
-
-    def __len__(self):
-#         return self.n_frames
-        return len(self._u.trajectory)
-
-    def __repr__(self):
-        return "<CG Trajectory doing {:d} beads >".format(self.n_atoms)
+        self._read_frame(0)
 
     def close(self):
         """Close the trajectory file.
         """
         self._t.close()
+
+    def rewind(self):
+        """Position at beginning of trajectory"""
+        self._reopen()
+
+    @property
+    def dimensions(self):
+        """unitcell dimensions (*A*, *B*, *C*, *alpha*, *beta*, *gamma*)
+        """
+        return self.ts.dimensions
+
+    @property
+    def dt(self):
+        """timestep between frames"""
+        return self.ts.dt
+
+    @property
+    def n_frames(self):
+        return self._t.n_frames

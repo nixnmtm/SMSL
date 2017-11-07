@@ -41,7 +41,10 @@ _header = ["I", "J"]
 _index = ["segidI", "resI", "I", "segidJ", "resJ", "J"]
 
 
-def _create_table(directory, intcor="average.ic", parmfile="fluctmatch.dist.prm", tbltype="Kb", verbose=False):
+def _create_table(
+    directory, intcor="average.ic", parmfile="fluctmatch.dist.prm",
+    tbltype="Kb", verbose=False
+):
     if path.isdir(directory):
         if verbose:
             print("Reading directory {}".format(directory))
@@ -65,28 +68,42 @@ class ParamTable(object):
     """Create a parameter table time series for distance or coupling strength.
 
     """
-    def __init__(self, data_dir, prefix="fluctmatch", tbltype="Kb", ressep=3):
+    def __init__(
+        self, prefix="fluctmatch", tbltype="Kb", ressep=3, datadir=path.curdir
+    ):
         """
         Parameters
         ----------
-        data_dir : str
-            Parent directory for parameter files
         prefix : str, optional
             Filename prefix for files
         tbltype : {"Kb", "b0"}, optional
             Table to create (coupling strength or bond distance)
         ressep : int, optional
             Number of residues to exclude from interactions.
+        datadir : str, optional
+            Directory with data subdirectories
         """
-        self._datadir = data_dir
         self._prefix = prefix
         self._tbltype = tbltype
         self._ressep = ressep
+        self._datadir = datadir
         self.table = []
         self._filenames = dict(
             intcor="fluct.ic",
             param=".".join((self._prefix, "dist", "prm")),
         )
+
+    def __add__(self, other):
+        return self.table.add(other.table, fill_value=0.0)
+
+    def __sub__(self, other):
+        return self.table.subtract(other.table, fill_value=0.0)
+
+    def __mul__(self, other):
+        return self.table.multiply(other.table, fill_value=0.0)
+
+    def __truediv__(self, other):
+        return self.table.divide(other.table, fill_value=0.0)
 
     def _separate(self, prm_table):
         index = prm_table.index.names
@@ -101,6 +118,27 @@ class ParamTable(object):
         table.set_index(index, inplace=True)
         return table
 
+    def _complete_table(self):
+        """Create a full table by reversing I and J designations.
+
+        Returns
+        -------
+
+        """
+        revcol = ["segidJ", "resJ", "J", "segidI", "resI", "I"]
+
+        columns = np.concatenate((revcol, self.table.columns[len(revcol):]))
+        temp = self.table.copy(deep=True)
+        same = temp[
+            (temp["segidI"] == temp["segidJ"]) &
+            (temp["resI"] != temp["resJ"])
+        ]
+
+        diff = temp[temp["segidI"] != temp["segidJ"]]
+        temp = pd.concat([same, diff], axis=0)
+        temp.columns = columns
+        self.table = pd.concat([self.table, temp], axis=0)
+
     def run(self, verbose=False):
         """Create the time series.
 
@@ -109,8 +147,6 @@ class ParamTable(object):
         verbose : bool, optional
             Print each directory as it is being processed
         """
-        revcol = ["segidJ", "resJ", "J", "segidI", "resI", "I"]
-
         directories = glob.iglob(path.join(self._datadir, "*"))
         create_table = functools.partial(
             _create_table,
@@ -128,12 +164,9 @@ class ParamTable(object):
         self.table = pd.concat(tables.get(), axis=1)
         self.table.columns = self.table.columns.astype(np.int)
         self.table = self.table[np.sort(self.table.columns)]
-
-        tmp = self.table.copy(deep=True)
-        tmp.index.names = revcol
-        self.table = pd.concat([self.table, tmp], axis=0)
         self.table.reset_index(inplace=True)
-        self.table = self.table.drop_duplicates(subset=_index)
+
+        self._complete_table()
         self.table.set_index(_index, inplace=True)
         self.table.fillna(0., inplace=True)
         self.table.sort_index(kind="mergesort", inplace=True)
@@ -146,7 +179,7 @@ class ParamTable(object):
         filename : str or stream
             Filename of the parameter table.
         """
-        with openany(filename, mode="r") as table:
+        with open(filename, mode="rb") as table:
             self.table = pd.read_csv(
                 table,
                 skipinitialspace=True,
@@ -170,6 +203,7 @@ class ParamTable(object):
                 header=True,
                 index=True,
                 float_format="%.6f",
+                encoding="utf-8",
             )
 
     @property

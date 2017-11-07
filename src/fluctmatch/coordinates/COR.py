@@ -29,12 +29,14 @@ from __future__ import (
 
 import itertools
 import warnings
+from io import TextIOWrapper
 
 import numpy as np
 from MDAnalysis.coordinates import CRD
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysis.lib import util
 from future.builtins import (
+    open,
     range,
     str,
     super,
@@ -89,7 +91,7 @@ class CORWriter(CRD.CRDWriter):
             "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} "
             "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"
         ),
-        TITLE="* FRAME {frame} FROM {where}\n",
+        TITLE="* FRAME {frame} FROM {where}",
         NUMATOMS="{0:5d}\n",
     )
 
@@ -164,14 +166,18 @@ class CORWriter(CRD.CRDWriter):
                 "{miss}. These will be written with default values. "
                 "".format(miss=", ".join(missing_topology)))
 
-        with util.openany(self.filename, "w") as crd:
+        with open(
+            self.filename, "wb"
+        ) as crd:
             # Write Title
             crd.write(self.fmt["TITLE"].format(
-                frame=frame, where=u.trajectory.filename))
-            crd.write("*\n")
+                frame=frame, where=u.trajectory.filename
+            ).encode())
+            crd.write("\n".encode())
+            crd.write("*\n".encode())
 
             # Write NUMATOMS
-            crd.write(self.fmt["NUMATOMS_EXT"].format(n_atoms))
+            crd.write(self.fmt["NUMATOMS_EXT"].format(n_atoms).encode())
 
             # Write all atoms
 
@@ -188,8 +194,10 @@ class CORWriter(CRD.CRDWriter):
                 resid = int(str(resid)[-resid_len:])
                 current_resid = int(str(current_resid)[-totres_len:])
 
-                crd.write(at_fmt.format(
-                    serial=serial, totRes=current_resid, resname=resname,
-                    name=name, pos=pos, chainID=chainID,
-                    resSeq=resid, tempfactor=tempfactor)
+                crd.write(
+                    at_fmt.format(
+                        serial=serial, totRes=current_resid, resname=resname,
+                        name=name, pos=pos, chainID=chainID,
+                        resSeq=resid, tempfactor=tempfactor
+                    ).encode()
                 )

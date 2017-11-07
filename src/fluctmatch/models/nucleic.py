@@ -77,14 +77,14 @@ class Nucleic4(ModelBase):
     """A universe consisting of the phosphate, C4', C3', and base of the nucleic acid.
     """
     model = "NUCLEIC4"
-    describe = "Phosphate, C3', C4', and c.o.m./c.o.g. of C4/C5 of nucleic acid"
+    describe = "Phosphate, C2', C4', and c.o.m./c.o.g. of C4/C5 of nucleic acid"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._mapping["P"] = "nucleicphosphate"
         self._mapping["C4'"] = "sugarC4"
-        self._mapping["C3'"] = "sugarC3"
+        self._mapping["C2'"] = "sugarC2"
         self._mapping["C5"] = "nucleiccenter"
         _nucl = "hnucleicbase"
 
@@ -125,6 +125,79 @@ class Nucleic4(ModelBase):
             for s in self.segments
             for _ in zip(s.atoms.select_atoms("name C4'").ix,
                          s.atoms.select_atoms("name C5").ix)
+        ])
+        bonds.extend([
+            _
+            for s in self.segments
+            for _ in zip(s.atoms.select_atoms("name C3'").ix[:-1],
+                         s.atoms.select_atoms("name P").ix[1:])
+        ])
+        self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
+        self._generate_from_topology()
+
+
+class Nucleic6(ModelBase):
+    """A universe accounting for six sites involved with hydrogen bonding.
+    """
+    model = "NUCLEIC6"
+    describe = "Phosphate, C2', C4', and 3 sites on the nucleotide"
+    _mapping = OrderedDict()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._mapping["P"] = "name P or name H5T"
+        self._mapping["C4'"] = "name C4'"
+        self._mapping["C2'"] = "name C2'"
+        self._mapping["H1"] = (
+            "(resname ADE DA* RA* and name N6) or "
+            "(resname OXG GUA DG* RG* and name O6) or "
+            "(resname CYT DC* RC* and name N4) or "
+            "(resname THY URA DT* RU* and name O4)"
+        )
+        self._mapping["H2"] = (
+            "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
+            "(resname CYT DC* RC* THY URA DT* RU* and name N3)"
+        )
+        self._mapping["H3"] = (
+            "(resname ADE DA* RA* and name H2) or "
+            "(resname OXG GUA DG* RG* and name N2) or "
+            "(resname CYT DC* RC* THY URA DT* RU* and name O2)"
+        )
+
+        kwargs["mapping"] = self._mapping
+        self._initialize(*args, **kwargs)
+
+    def _add_bonds(self):
+        bonds = []
+        bonds.extend([
+            _
+            for s in self.segments
+            for _ in zip(s.atoms.select_atoms("name P").ix,
+                         s.atoms.select_atoms("name C4'").ix)
+        ])
+        bonds.extend([
+            _
+            for s in self.segments
+            for _ in zip(s.atoms.select_atoms("name C4'").ix,
+                         s.atoms.select_atoms("name C2'").ix)
+        ])
+        bonds.extend([
+            _
+            for s in self.segments
+            for _ in zip(s.atoms.select_atoms("name C4'").ix,
+                         s.atoms.select_atoms("name H1").ix)
+        ])
+        bonds.extend([
+            _
+            for s in self.segments
+            for _ in zip(s.atoms.select_atoms("name H1'").ix,
+                         s.atoms.select_atoms("name H2").ix)
+        ])
+        bonds.extend([
+            _
+            for s in self.segments
+            for _ in zip(s.atoms.select_atoms("name H2'").ix,
+                         s.atoms.select_atoms("name H3").ix)
         ])
         bonds.extend([
             _
