@@ -40,7 +40,6 @@ import os
 import subprocess
 import textwrap
 import time
-from io import TextIOWrapper
 from os import path
 
 import MDAnalysis as mda
@@ -51,6 +50,7 @@ from MDAnalysis.coordinates.core import reader
 from future.builtins import (
     dict,
     open,
+    range,
     super,
 )
 from future.utils import (
@@ -332,10 +332,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 if version >= 36
                 else ""
             )
-            with open(
-                self.filenames["charmm_input"],
-                mode="wb"
-            ) as charmm_file:
+            with open(self.filenames["charmm_input"], mode="wb") as charmm_file:
                 charmm_inp = charmm_nma.nma.format(
                     temperature=self.temperature,
                     flex="flex" if version else "",
@@ -352,8 +349,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Check for restart.
         try:
             if os.stat(self.filenames["error_data"]).st_size > 0:
-                with open(
-                    self.filenames["error_data"], "rb") as data:
+                with open(self.filenames["error_data"], "rb") as data:
                     error_info = pd.read_csv(
                         data,
                         header=0,
@@ -378,10 +374,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         print("Starting fluctuation matching")
         st = time.time()
 
-        while (self.error["step"] <= n_cycles).bool():
-            with open(
-                self.filenames["charmm_log"], "w"
-            ) as log_file:
+        for i in range(n_cycles)
+            self.error["step"] = i
+            with open(self.filenames["charmm_log"], "w") as log_file:
                 subprocess.check_call(
                     [charmm_exec, "-i", self.filenames["charmm_input"]],
                     stdout=log_file,
@@ -453,7 +448,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
             if (self.error[self.error.columns[1]] < tol).bool():
                 break
-            self.error["step"] += 1
 
         print(
             "Fluctuation matching completed in {:.6f}".format(time.time() - st)
@@ -492,10 +486,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             )
             with open(
                 self.filenames["thermo_input"],
-                mode="wb"
-            ) as charmm_file, TextIOWrapper(
-                charmm_file, encoding="utf-8"
-            ) as buf:
+                mode="wb") as charmm_file:
                 charmm_inp = charmm_thermo.thermodynamics.format(
                     trajectory=path.join(self.outdir, self.args[-1]),
                     temperature=self.temperature,
@@ -504,15 +495,13 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     dimension=dimension,
                     **self.filenames)
                 charmm_inp = textwrap.dedent(charmm_inp[1:])
-                print(charmm_inp, file=buf)
+                charmm_file.write(charmm_inp.encode())
 
         # Calculate thermodynamic properties of the trajectory.
-        with open(
-            self.filenames["thermo_log"], "wb"
-        ) as log_file, TextIOWrapper(log_file, encoding="utf-8") as buf:
+        with open(self.filenames["thermo_log"], "w") as log_file:
             subprocess.check_call(
                 [charmm_exec, "-i", self.filenames["thermo_input"]],
-                stdout=buf,
+                stdout=log_file,
                 stderr=subprocess.STDOUT,
             )
 
