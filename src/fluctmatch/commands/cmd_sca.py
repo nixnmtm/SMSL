@@ -87,7 +87,7 @@ from fluctmatch.analysis import (
     default=path.join(path.curdir, "scafluct.db"),
     type=click.Path(
         exists=False,
-        file_okay=False,
+        file_okay=True,
         resolve_path=True,
     ),
     help="Output filename (default: ./scafluct.db)"
@@ -194,8 +194,7 @@ def cli(
         sca=D_sca,
         sector=D_sector
     )
-    db_filename = path.join(output, "fluctsca.db")
-    with open(click.format_filename(db_filename), mode="wb") as dbf:
+    with open(click.format_filename(output), mode="wb") as dbf:
         click.echo(
             "Saving data to {}".format(click.format_filename(db_filename))
         )
