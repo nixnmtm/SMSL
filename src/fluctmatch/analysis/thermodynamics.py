@@ -36,8 +36,8 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 
 
 def calculate_thermo(subdir, **kwargs):
-    topology = path.join(subdir, kwargs.get("topology", "fluctmatch.xplor.psf"))
-    trajectory = path.join(subdir, kwargs.get("trajectory", "cg.xtc"))
+    topology = path.join(subdir, kwargs.pop("topology", "fluctmatch.xplor.psf"))
+    trajectory = path.join(subdir, kwargs.pop("trajectory", "cg.dcd"))
     window = path.basename(subdir)
 
     cfm = charmmfluctmatch.CharmmFluctMatch(
@@ -88,8 +88,9 @@ def create_thermo_tables(datadir, outdir, **kwargs):
         if path.isdir(_)
     )
 
+    calc_thermo = functools.partial(calculate_thermo, **kwargs)
     pool = mp.Pool(maxtasksperchild=2)
-    results = pool.map_async(calculate_thermo, subdirs)
+    results = pool.map_async(calc_thermo, subdirs)
     pool.close()
     pool.join()
     results.wait()
