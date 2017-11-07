@@ -120,32 +120,33 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     help="Output using the extended or standard columns",
 )
 @click.option(
-    "--nb / --no-nb",
+    "--no-nb",
     "nonbonded",
-    default=True,
+    is_flag=True,
     help="Include nonbonded section in CHARMM parameter file",
 )
 @click.option(
-    "--resid / --no-resid",
+    "--no-resid",
     "resid",
-    default=True,
+    is_flag=True,
     help="Include segment IDs in internal coordinate files",
 )
 @click.option(
-    "--cmap / --no-cmap",
+    "--no-cmap",
     "cmap",
-    default=True,
+    is_flag=True,
     help="Include CMAP section in CHARMM PSF file",
 )
 @click.option(
-    "--cheq / --no-cheq",
-    default=True,
+    "--no-cheq",
+    "cheq",
+    is_flag=True,
     help="Include charge equilibrium section in CHARMM PSF file",
 )
 @click.option(
-    "--write / --no-write",
+    "--write",
     "write_traj",
-    default=True,
+    is_flag=True,
     help="Convert the trajectory file",
 )
 @click.option(
@@ -171,10 +172,10 @@ def cli(
         rmax=rmax,
         charmm_version=charmm_version,
         extended=extended,
-        resid=resid,
-        cmap=cmap,
-        cheq=cheq,
-        nonbonded=nonbonded,
+        resid=not resid,
+        cmap=not cmap,
+        cheq=not cheq,
+        nonbonded=not nonbonded,
         write_traj=write_traj,
     )
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
