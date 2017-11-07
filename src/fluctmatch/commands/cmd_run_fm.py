@@ -118,7 +118,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "charmm_version",
     metavar="VERSION",
     default=41,
-    type=click.IntRange(, None, clamp=True),
+    type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
 @click.option(
