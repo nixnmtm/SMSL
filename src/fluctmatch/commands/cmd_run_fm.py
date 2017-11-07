@@ -93,7 +93,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "--ncycles",
     "n_cycles",
     metavar="NCYCLES",
-    type=click.IntRange(1, None, clamp=True),,
+    type=click.IntRange(1, None, clamp=True),
     default=250,
     help="Number of simulation cycles",
 )
@@ -118,7 +118,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "charmm_version",
     metavar="VERSION",
     default=41,
-    type=click.IntRange(, None, clamp=True),,
+    type=click.IntRange(, None, clamp=True),
     help="CHARMM version",
 )
 @click.option(
