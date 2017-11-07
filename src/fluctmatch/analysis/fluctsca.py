@@ -21,6 +21,7 @@ from __future__ import (
     unicode_literals,
 )
 
+import functools
 import multiprocessing as mp
 
 import numpy as np
@@ -28,6 +29,10 @@ import pandas as pd
 from future.builtins import range
 from scipy import linalg
 from scipy.stats import (scoreatpercentile, t)
+
+
+def _rand(avg_kb, std_kb, x):
+    return (x, np.random.normal(avg_kb, std_kb))
 
 
 def randomize(table, ntrials=100):
@@ -46,16 +51,16 @@ def randomize(table, ntrials=100):
     """
     _, Ntime = table.shape
     Lrand = []
-    rand = lambda x: (x, np.random.normal(avg_kb, std_kb))
 
     avg_kb = table.mean(axis=1)
     std_kb = table.std(axis=1)
 
+    rand = functools.partial(_rand, avg_kb, std_kb)
     for _ in range(ntrials):
         pool = mp.Pool(maxtasksperchild=2)
         values = pool.map_async(rand, range(Ntime))
-        pool.join()
         pool.close()
+        pool.join()
         kb_rand = pd.DataFrame.from_items(values.get())
         Lrand.append(linalg.svdvals(kb_rand))
     return np.array(Lrand)

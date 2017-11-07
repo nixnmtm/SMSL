@@ -69,7 +69,7 @@ class Entropy(object):
         """
         header = ["segidI", "resI"]
 
-        entropy = self._table._separate(self._table)
+        entropy = self._table._separate(self._table.table)
         entropy = entropy.groupby(level=header).apply(lambda x: x / x.sum())
         entropy = entropy.groupby(level=header).agg(stats.entropy)
         entropy.replace(-np.inf, 0., inplace=True)
@@ -84,8 +84,8 @@ class Entropy(object):
         Entropy of residue-residue interactions over time
         """
         # Transpose matrix because stats.entropy does row-wise calculation.
-        table = self._table.per_residue.T
-        entropy = stats.entropy(table)
+        table = self._table.per_residue
+        entropy = stats.entropy(table.T)
         return pd.DataFrame(entropy, index=table.index)
 
     def windiff_entropy(self, bins=100):
@@ -121,8 +121,9 @@ class Entropy(object):
         """
         # Calculate value of maximum probability and define penalty value.
         header = ["segidI", "resI"]
+        normalize = lambda x: x / x.sum()
 
-        table = self._table._separate(self._table)
+        table = self._table._separate(self._table.table)
         hist, edges = np.histogram(
             table, range=(1e-4, table.values.max()), bins=bins
         )

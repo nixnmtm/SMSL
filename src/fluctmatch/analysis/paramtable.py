@@ -68,7 +68,9 @@ class ParamTable(object):
     """Create a parameter table time series for distance or coupling strength.
 
     """
-    def __init__(self, prefix="fluctmatch", tbltype="Kb", ressep=3):
+    def __init__(
+        self, prefix="fluctmatch", tbltype="Kb", ressep=3, datadir=path.curdir
+    ):
         """
         Parameters
         ----------
@@ -78,10 +80,13 @@ class ParamTable(object):
             Table to create (coupling strength or bond distance)
         ressep : int, optional
             Number of residues to exclude from interactions.
+        datadir : str, optional
+            Directory with data subdirectories
         """
         self._prefix = prefix
         self._tbltype = tbltype
         self._ressep = ressep
+        self._datadir = datadir
         self.table = []
         self._filenames = dict(
             intcor="fluct.ic",
