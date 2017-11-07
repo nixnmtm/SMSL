@@ -46,7 +46,7 @@ from fluctmatch.analysis import thermodynamics
     "-f",
     "trajectory",
     metavar="FILE",
-    default="cg.xtc",
+    default="cg.dcd",
     type=click.Path(
         exists=False,
         file_okay=True,

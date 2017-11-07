@@ -46,19 +46,22 @@ from fluctmatch.analysis import (
 @click.option(
     "-n",
     "--ntrials",
+    metavar="NTRIALS",
     default=100,
     type=click.IntRange(0, None, clamp=True),
     help="Number of random iterations (default: 100)"
 )
 @click.option(
     "--std",
+    metavar="STDDEV",
     default=2,
-    type=np.int,
+    type=click.IntRange(0, None, clamp=True),
     help="Number of std. deviations for beyond second eigenmode (default: 2)"
 )
 @click.option(
     "-k",
     "--kpos",
+    metavar="KPOS",
     default=0,
     type=click.IntRange(0, None, clamp=True),
     help="Number of eigenmodes (default: auto)"
@@ -89,27 +92,42 @@ from fluctmatch.analysis import (
     ),
     help="Output filename (default: ./scafluct.db)"
 )
+@click.option(
+    "-s",
+    "--subset",
+    metavar="SEGID RES RES",
+    type=(
+        native_str,
+        click.IntRange(1, None, clamp=True),
+        click.IntRange(1, None, clamp=True)
+    ),
+    multiple=True,
+    help="Subset of a system (SEGID FIRST LAST)"
+)
 @click.argument(
     "filename",
     type=click.Path(
         exists=True,
-        file_okay=False,
+        file_okay=True,
         resolve_path=True,
     )
 )
-def calculate_scafluct(
-    ntrials, std, kpos, pcut, ressep, output, filename
+def cli(
+    ntrials, std, kpos, pcut, ressep, output, subset, filename
 ):
     # Load the table, separate by I,I+r, and if requested, create a subset.
     table = ParamTable(ressep=ressep)
     table.from_file(click.format_filename(filename))
     kb = table.interactions
-
     D_info = dict(
         kb=kb,
         ressep=ressep,
-        subset=subset
     )
+
+    if subset:
+        segid, start, stop = subset[0]
+        kb = kb.loc[segid].loc[start:stop]
+        D_info["subset"] = subset
 
     # Calculate eigenvalues and eigenvectors for the time series with sign correction.
     U, Lsca, Vt = linalg.svd(kb, full_matrices=False)
@@ -176,8 +194,11 @@ def calculate_scafluct(
         sca=D_sca,
         sector=D_sector
     )
-    with open(click.format_filename(output), mode="wb") as dbf:
-        click.echo("Saving data to {}".format(click.format_filename(output)))
+    db_filename = path.join(output, "fluctsca.db")
+    with open(click.format_filename(db_filename), mode="wb") as dbf:
+        click.echo(
+            "Saving data to {}".format(click.format_filename(db_filename))
+        )
         if PY3:
             click.echo(
                 "Note: The saved file will be incompatible with Python 2."

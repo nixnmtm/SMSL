@@ -65,21 +65,10 @@ from fluctmatch.analysis import paramtable
     ),
 )
 def cli(outdir, ressep, table):
-    """Calculate the differences between consecutive frames.
-
-    Parameters
-    ----------
-    outdir : str
-        Output directory for files
-    ressep : int
-        Separation between residues
-    table : str
-        Filename of table
-    """
     table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table)
 
-    d_table = table_1.diff(axis=1).dropna(axis=1)
+    d_table = table_1.table.diff(axis=1).dropna(axis=1)
     d_perres = table_1.per_residue.diff(axis=1).dropna(axis=1)
     d_interactions = table_1.interactions.diff(axis=1).dropna(axis=1)
 

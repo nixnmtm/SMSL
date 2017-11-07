@@ -32,8 +32,8 @@ from fluctmatch.analysis import entropy
 
 
 @click.command(
-    "framediff",
-    short_help="Calculate differences between consecutive frames."
+    "entropy",
+    short_help="Calculate the Shannon entropy of residues."
 )
 @click.option(
     "-o",
@@ -52,7 +52,7 @@ from fluctmatch.analysis import entropy
     "--ressep",
     metavar="RESSEP",
     default=3,
-    type=click.INT,
+    type=click.IntRange(0, None, clamp=True),
     help="Separation between residues (I,I+n)"
 )
 @click.argument(
@@ -65,22 +65,11 @@ from fluctmatch.analysis import entropy
     ),
 )
 def cli(outdir, ressep, table):
-    """Calculate the differences between consecutive frames.
-
-    Parameters
-    ----------
-    outdir : str
-        Output directory for files
-    ressep : int
-        Separation between residues
-    table : str
-        Filename of table
-    """
-    table = entropy.Entropy(table, ressep=ressep)
+    ent_table = entropy.Entropy(table, ressep=ressep)
 
     filename = path.join(outdir, "coupling.entropy.txt")
     with open(filename, mode="wb") as output:
-        ent = table.coupling_entropy().to_csv(
+        ent = ent_table.coupling_entropy().to_csv(
             index=True,
             header=True,
             sep=native_str(" "),
@@ -91,7 +80,7 @@ def cli(outdir, ressep, table):
 
     filename = path.join(outdir, "relative.entropy.txt")
     with open(filename, mode="wb") as output:
-        ent = table.relative_entropy().to_csv(
+        ent = ent_table.relative_entropy().to_csv(
             index=True,
             header=True,
             sep=native_str(" "),
@@ -102,7 +91,7 @@ def cli(outdir, ressep, table):
 
     filename = path.join(outdir, "windiff.entropy.txt")
     with open(filename, mode="wb") as output:
-        ent = table.windiff_entropy().to_csv(
+        ent = ent_table.windiff_entropy().to_csv(
             index=True,
             header=True,
             sep=native_str(" "),

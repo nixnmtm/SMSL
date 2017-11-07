@@ -121,7 +121,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     float_format=native_str("%.4f"),
                     encoding="utf-8",
                 )
-            stat_file.write(info.encode())
+                stat_file.write(info.encode())
 
             filename = path.join(outdir, "residue_stats.txt")
             with open(filename, mode="wb") as stat_file:

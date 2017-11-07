@@ -74,19 +74,6 @@ from fluctmatch.analysis import paramtable
     ),
 )
 def cli(outdir, ressep, table1, table2):
-    """Calculate the differences between two coupling strength tables.
-
-    Parameters
-    ----------
-    outdir : str
-        Output directory for files
-    ressep : int, optional
-        Separation between residues
-    table1 : str
-        Filename of table
-    table2 : str
-        Filename of table
-    """
     table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table1)
 
