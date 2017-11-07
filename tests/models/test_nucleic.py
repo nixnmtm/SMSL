@@ -84,7 +84,7 @@ def test_nucleic4_creation():
     n_atoms = (
         aa_universe.select_atoms("nucleicphosphate").residues.n_residues +
         aa_universe.select_atoms("sugarC4").residues.n_residues +
-        aa_universe.select_atoms("sugarC3").residues.n_residues +
+        aa_universe.select_atoms("sugarC2").residues.n_residues +
         aa_universe.select_atoms("nucleiccenter").residues.n_residues
     )
     cg_universe = nucleic.Nucleic4(PDB_dna)
@@ -106,7 +106,7 @@ def test_nucleic4_positions():
             _.atoms.select_atoms("nucleicphosphate").center_of_mass()
         )
         positions.append(_.atoms.select_atoms("sugarC4").center_of_mass())
-        positions.append(_.atoms.select_atoms("sugarC3").center_of_mass())
+        positions.append(_.atoms.select_atoms("sugarC2").center_of_mass())
         positions.append(_.atoms.select_atoms("nucleiccenter").center_of_mass())
     testing.assert_allclose(
         np.array(positions),
@@ -122,5 +122,40 @@ def test_nucleic4_trajectory():
         cg_universe.trajectory.n_frames,
         aa_universe.trajectory.n_frames,
         err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        verbose=True,
+    )
+
+def test_nucleic6_creation():
+    h1 = (
+        "(resname ADE DA* RA* and name N6) or "
+        "(resname OXG GUA DG* RG* and name O6) or "
+        "(resname CYT DC* RC* and name N4) or "
+        "(resname THY URA DT* RU* and name O4)"
+    )
+    h2 = (
+        "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
+        "(resname CYT DC* RC* THY URA DT* RU* and name N3)"
+    )
+    h3 = (
+        "(resname ADE DA* RA* and name H2) or "
+        "(resname OXG GUA DG* RG* and name N2) or "
+        "(resname CYT DC* RC* THY URA DT* RU* and name O2)"
+    )
+
+    aa_universe = mda.Universe(PDB_dna)
+    n_atoms = (
+        aa_universe.select_atoms("name P or name H5T").residues.n_residues +
+        aa_universe.select_atoms("name C4'").residues.n_residues +
+        aa_universe.select_atoms("name C2'").residues.n_residues +
+        aa_universe.select_atoms(h1).residues.n_residues +
+        aa_universe.select_atoms(h2).residues.n_residues +
+        aa_universe.select_atoms(h3).residues.n_residues
+    )
+    cg_universe = nucleic.Nucleic6(PDB_dna)
+
+    testing.assert_equal(
+        cg_universe.atoms.n_atoms,
+        n_atoms,
+        err_msg=native_str("Number of sites do not match."),
         verbose=True,
     )

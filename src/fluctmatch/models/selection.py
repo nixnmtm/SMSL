@@ -256,13 +256,14 @@ class NucleicPhosphateSelection(AdditionalNucleicSelection):
         return group[mask].unique
 
 
-class NucleicC3Selection(AdditionalNucleicSelection):
+class NucleicC2Selection(AdditionalNucleicSelection):
     """Contains the definition for the C3' region.
     """
-    token = "sugarC3"
+    token = "sugarC2"
     c3_atoms = np.array([
-        "C3'", "O3'", "H3'", "H3T",
-        "C2'", "H2'", "O2'", "H2''"])
+        "C1'", "H1'",
+        "C2'", "O2'", "H2'", "H2''",
+    ])
 
     def apply(self, group):
         mask = np.in1d(group.names, self.c3_atoms)
@@ -274,7 +275,10 @@ class NucleicC4Selection(AdditionalNucleicSelection):
     """Contains the definition for the C4' region.
     """
     token = "sugarC4"
-    c3_atoms = np.array(["C4'", "O4'", "H4'", "C1'", "H1'"])
+    c3_atoms = np.array([
+        "C3'", "O3'", "H3'", "H3T",
+        "C4'", "O4'", "H4'",
+    ])
 
     def apply(self, group):
         mask = np.in1d(group.names, self.c3_atoms)

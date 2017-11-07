@@ -77,7 +77,10 @@ class _Trajectory(base.ReaderBase):
 
         self.com = com
         self._auxs = self._t._auxs
-        self._frame = self._t._frame
+        try:
+            self._frame = self._t._frame
+        except AttributeError:
+            pass
 
         self.n_atoms = n_atoms
         self.format = self._t.format
@@ -171,14 +174,9 @@ class _Trajectory(base.ReaderBase):
 
     def _read_next_timestep(self, ts=None):
         # Get the next TS from the atom trajectory
-        if self._frame == self.n_frames - 1:
-            raise StopIteration
-        elif self._frame > self.n_frames - 1:
-            raise RuntimeError("Attempting to go beyond the last frame.")
+        at_ts = self._t.next()
 
-        self._frame += 1
-        self._read_frame(self._frame)
-        return self.ts
+        self._fill_ts(at_ts)
 
     def _read_frame(self, frame):
         self._t._read_frame(frame)
