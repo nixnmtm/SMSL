@@ -23,13 +23,13 @@ from __future__ import (
 from future.utils import PY2
 
 import copy
-import collections
 import os
 import subprocess
 import tempfile
 import textwrap
 from os import path
 
+import click
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
 import numpy as np
@@ -201,11 +201,14 @@ def write_charmm_files(
             "length of the trajectory."
         )
         with mda.Writer(
-            native_str(filenames["traj_file"]), universe.atoms.n_atoms
+            native_str(filenames["traj_file"]),
+            universe.atoms.n_atoms,
+            remarks="Written by fluctmatch."
         ) as trj:
             universe.trajectory.rewind()
-            for ts in universe.trajectory:
-                trj.write(ts)
+            with click.progressbar(universe.trajectory) as bar:
+                for ts in bar:
+                    trj.write(ts)
 
     # Write an XPLOR version of the PSF
     atomtypes = topologyattrs.Atomtypes(universe.atoms.names)
