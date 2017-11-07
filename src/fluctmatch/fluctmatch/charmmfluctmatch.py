@@ -374,7 +374,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         print("Starting fluctuation matching")
         st = time.time()
 
-        for i in range(n_cycles)
+        for i in range(n_cycles):
             self.error["step"] = i
             with open(self.filenames["charmm_log"], "w") as log_file:
                 subprocess.check_call(
