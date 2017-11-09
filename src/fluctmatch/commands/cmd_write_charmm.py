@@ -84,40 +84,48 @@ from fluctmatch.fluctmatch import utils as fmutils
     help="Output using the extended or standard columns",
 )
 @click.option(
-    "--nb / --no-nb",
+    "--no-nb",
     "nonbonded",
-    default=True,
+    is_flag=True,
     help="Include nonbonded section in CHARMM parameter file",
 )
 @click.option(
-    "--cmap / --no-cmap",
+    "--no-cmap",
     "cmap",
-    default=True,
+    is_flag=True,
     help="Include CMAP section in CHARMM PSF file",
 )
 @click.option(
-    "--cheq / --no-cheq",
-    default=True,
+    "--no-cheq",
+    "cheq",
+    is_flag=True,
     help="Include charge equilibrium section in CHARMM PSF file",
 )
 @click.option(
-    "--write / --no-write",
+    "--write",
     "write_traj",
-    default=True,
+    is_flag=True,
     help="Convert the trajectory file",
+)
+@click.option(
+    "-l",
+    "--list",
+    "model_list",
+    is_flag=True,
+    help="List available models with their descriptions"
 )
 def cli(
     topology, trajectory, outdir, prefix, charmm_version,
     extended, cmap, cheq, nonbonded, write_traj,
 ):
     kwargs = dict(
-        prefix=prefix,
         outdir=outdir,
+        prefix=prefix,
         charmm_version=charmm_version,
         extended=extended,
-        cmap=cmap,
-        cheq=cheq,
-        nonbonded=nonbonded,
+        cmap=not cmap,
+        cheq=not cheq,
+        nonbonded=not nonbonded,
         write_traj=write_traj,
     )
     universe = mda.Universe(topology, trajectory)
