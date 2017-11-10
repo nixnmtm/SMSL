@@ -86,7 +86,6 @@ def test_merge_topology():
     solvions = ions.SolventIons(IONS)
 
     cg_universe = Merge(prot, water, solvions)
-    print(dir(cg_universe))
     assert cg_universe.bonds == prot.universe.bonds
     assert cg_universe.angles == prot.universe.angles
     assert cg_universe.dihedrals == prot.universe.dihedrals
