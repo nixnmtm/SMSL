@@ -29,7 +29,6 @@ import itertools
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
-from future.builtins import super
 from future.utils import (
     viewitems,
     viewvalues,
@@ -68,12 +67,23 @@ class _Trajectory(base.ReaderBase):
         self._u = universe
         self._t = universe.trajectory
         self._mapping = mapping
-        residue_selection = itertools.product(self._u.residues, viewvalues(self._mapping))
-        self._beads = [
-            res.atoms.select_atoms(selection)
-            for res, selection in residue_selection
-            if res.atoms.select_atoms(selection)
-        ]
+        residue_selection = itertools.product(
+            self._u.residues, viewitems(self._mapping)
+        )
+
+        self._beads = []
+        for res, (key, selection) in residue_selection:
+            if key != "CB":
+                self._beads.append(res.atoms.select_atoms(selection))
+            elif key == "CB":
+                if isinstance(selection, dict):
+                    value = selection.get(
+                        res.resname, "hsidechain and not name H*"
+                    )
+                    self._beads.append(res.atoms.select_atoms(value))
+                else:
+                    self._beads.append(res.atoms.select_atoms(selection))
+            self._beads = [_ for _ in self._beads if _]
 
         self.com = com
         self._auxs = self._t._auxs
@@ -133,7 +143,11 @@ class _Trajectory(base.ReaderBase):
         self.ts.order = self._t.ts.order
         self.ts._unitcell = other_ts._unitcell
         self.ts.time = other_ts.time
-        self.ts.dimensions = other_ts.dimensions
+        try:
+            self.ts.dimensions = other_ts.dimensions
+        except ValueError:
+            dim = other_ts.dimensions.size
+            self.ts.dimensions[:dim] = other_ts.dimensions
         self.ts.dt = other_ts.dt
 
         residues = self._u.atoms.split("residue")
