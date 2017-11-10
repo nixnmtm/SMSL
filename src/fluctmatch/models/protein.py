@@ -96,14 +96,13 @@ class Caside(ModelBase):
         self._mapping["CA"] = "calpha"
         self._mapping["CB"] = "hsidechain and not name H*"
         self._mapping["ions"] = "bioion"
-        _back = "hbackbone"
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
 
         # Update the masses and charges
-        ca_atu = self.atu.select_atoms(_back).split("residue")
-        cb_atu = self.atu.select_atoms(self._mapping["CB"]).split("residue")
+        ca_atu = self.atu.select_atoms("hbackbone").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
         self.atoms.select_atoms("calpha").masses = np.array([
             _.total_mass()
             for _ in ca_atu
@@ -171,12 +170,35 @@ class Ncsc(ModelBase):
         self._initialize(*args, **kwargs)
 
         # Update the masses and charges
+        n_atu = self.atu.select_atoms("amine").split("residue")
+        o_atu = self.atu.select_atoms("carboxyl").split("residue")
+        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+
+        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
+        self.atoms.select_atoms("name N").masses = np.array([
+            _.total_mass()
+            for _ in n_atu
+        ]) + ca_masses
         self.atoms.select_atoms("cbeta").masses = np.array([
             _.total_mass()
             for _ in cb_atu
         ])
+        self.atoms.select_atoms("name O").masses = np.array([
+            _.total_mass()
+            for _ in o_atu
+        ]) + ca_masses
+
         try:
+            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
+            self.atoms.select_atoms("name N").charges = np.array([
+                _.total_mass()
+                for _ in n_atu
+            ]) + ca_charges
+            self.atoms.select_atoms("name O").charges = np.array([
+                _.total_charge()
+                for _ in o_atu
+            ]) + ca_charges
             self.atoms.select_atoms("cbeta").charges = np.array([
                 _.total_charge()
                 for _ in cb_atu
@@ -269,12 +291,35 @@ class Polar(ModelBase):
         self._initialize(*args, **kwargs)
 
         # Update the masses and charges
+        n_atu = self.atu.select_atoms("amine").split("residue")
+        o_atu = self.atu.select_atoms("carboxyl").split("residue")
+        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+
+        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
+        self.atoms.select_atoms("name N").masses = np.array([
+            _.total_mass()
+            for _ in n_atu
+        ]) + ca_masses
         self.atoms.select_atoms("cbeta").masses = np.array([
             _.total_mass()
             for _ in cb_atu
         ])
+        self.atoms.select_atoms("name O").masses = np.array([
+            _.total_mass()
+            for _ in o_atu
+        ]) + ca_masses
+
         try:
+            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
+            self.atoms.select_atoms("name N").charges = np.array([
+                _.total_mass()
+                for _ in n_atu
+            ]) + ca_charges
+            self.atoms.select_atoms("name O").charges = np.array([
+                _.total_charge()
+                for _ in o_atu
+            ]) + ca_charges
             self.atoms.select_atoms("cbeta").charges = np.array([
                 _.total_charge()
                 for _ in cb_atu
