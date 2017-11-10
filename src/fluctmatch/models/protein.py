@@ -164,7 +164,7 @@ class Ncsc(ModelBase):
         super().__init__(*args, **kwargs)
         self._mapping["N"] = "protein and name N"
         self._mapping["CB"] = "hsidechain and not name H*"
-        self._mapping["O"] = "protein and name O OT1"
+        self._mapping["O"] = "protein and name O OT1 OT2 OXT"
         self._mapping["ions"] = "bioion"
 
         kwargs["mapping"] = self._mapping
@@ -262,7 +262,7 @@ class Polar(ModelBase):
             TYR="name CG CD* CE* CZ OH",
             VAL="name CG1 CG2",
         )
-        self._mapping["O"] = "protein and name O OT1"
+        self._mapping["O"] = "protein and name O OT1 OT2 OXT"
         self._mapping["ions"] = "bioion"
 
         kwargs["mapping"] = self._mapping
