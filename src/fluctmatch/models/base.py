@@ -39,7 +39,6 @@ from MDAnalysis.topology import base as topbase
 from MDAnalysis.topology import guessers
 from future.builtins import (
     super,
-    zip,
 )
 from future.builtins import zip
 from future.utils import (
