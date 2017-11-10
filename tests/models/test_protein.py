@@ -150,7 +150,7 @@ def test_ncsc_positions():
             positions.append(
                 _.atoms.select_atoms(cbeta).center_of_mass()
             )
-        positions.append(_.atoms.select_atoms("name O OT1").center_of_mass())
+        positions.append(_.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
     testing.assert_allclose(
@@ -201,7 +201,7 @@ def test_polar_positions():
             positions.append(
                 _.atoms.select_atoms(cbeta).center_of_mass()
             )
-        positions.append(_.atoms.select_atoms("name O OT1").center_of_mass())
+        positions.append(_.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
     testing.assert_allclose(
