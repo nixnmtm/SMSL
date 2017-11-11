@@ -242,7 +242,7 @@ class Ncsc(ModelBase):
             _
             for s in self.segments
             for _ in zip(
-                s.atoms.select_atoms("name C").ix,
+                s.atoms.select_atoms("name O").ix,
                 s.atoms.select_atoms("name N").ix[1:]
             )
         ])
@@ -453,7 +453,7 @@ class Polar(ModelBase):
             _
             for s in self.segments
             for _ in zip(
-                s.atoms.select_atoms("name C").ix,
+                s.atoms.select_atoms("name O").ix,
                 s.atoms.select_atoms("name N").ix[1:]
             )
         ])
