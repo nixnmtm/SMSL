@@ -192,7 +192,7 @@ class Ncsc(ModelBase):
         try:
             ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
             self.atoms.select_atoms("name N").charges = np.array([
-                _.total_mass()
+                _.total_charge()
                 for _ in n_atu
             ]) + ca_charges
             self.atoms.select_atoms("name O").charges = np.array([
@@ -313,7 +313,7 @@ class Polar(ModelBase):
         try:
             ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
             self.atoms.select_atoms("name N").charges = np.array([
-                _.total_mass()
+                _.total_charge()
                 for _ in n_atu
             ]) + ca_charges
             self.atoms.select_atoms("name O").charges = np.array([
