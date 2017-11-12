@@ -328,6 +328,12 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         except AttributeError:
             pass
 
+    def _set_masses(self):
+        pass
+
+    def _set_chargess(self):
+        pass
+
     @property
     def cguniverse(self):
         """Convert a :class:`~MDAnalysis.AtomGroup` to a :class:`~MDAnalysis.Universe`.
