@@ -23,7 +23,7 @@ from __future__ import (
 
 from future.builtins import dict
 
-__version__ = "3.2.3"
+__version__ = "3.2.4"
 
 _MODELS = dict()
 _DESCRIBE = dict()
