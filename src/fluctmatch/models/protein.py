@@ -54,21 +54,11 @@ class Calpha(ModelBase):
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
+        self._set_masses()
+        self._set_chargess()
 
         # Update the masses and charges
-        ca_atu = self.atu.select_atoms("protein").split("residue")
-        self.atoms.select_atoms("calpha").masses = np.array([
-            _.total_mass()
-            for _ in ca_atu
-        ])
 
-        try:
-            self.atoms.select_atoms("calpha").charges = np.array([
-                _.total_charge()
-                for _ in ca_atu
-            ])
-        except AttributeError:
-            pass
 
     def _add_bonds(self):
         bonds = []
@@ -82,6 +72,23 @@ class Calpha(ModelBase):
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
+
+    def _set_masses(self):
+        ca_atu = self.atu.select_atoms("protein").split("residue")
+        self.atoms.select_atoms("calpha").masses = np.array([
+            _.total_mass()
+            for _ in ca_atu
+        ])
+
+    def _set_chargess(self):
+        ca_atu = self.atu.select_atoms("protein").split("residue")
+        try:
+            self.atoms.select_atoms("calpha").charges = np.array([
+                _.total_charge()
+                for _ in ca_atu
+            ])
+        except AttributeError:
+            pass
 
 
 class Caside(ModelBase):
@@ -99,33 +106,8 @@ class Caside(ModelBase):
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-
-        # Update the masses and charges
-        ca_atu = self.atu.select_atoms("hbackbone").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-        self.atoms.select_atoms("calpha").masses = np.array([
-            _.total_mass()
-            for _ in ca_atu
-        ])
-        self.atoms.select_atoms("cbeta").masses = np.array([
-            _.total_mass()
-            for _ in cb_atu
-        ])
-
-        try:
-            self.atoms.select_atoms("calpha").charges = np.array([
-                _.total_charge()
-                for _ in ca_atu
-            ])
-        except AttributeError:
-            pass
-        try:
-            self.atoms.select_atoms("cbeta").charges = np.array([
-                _.total_charge()
-                for _ in cb_atu
-            ])
-        except AttributeError:
-            pass
+        self._set_masses()
+        self._set_chargess()
 
     def _add_bonds(self):
         bonds = []
@@ -151,6 +133,35 @@ class Caside(ModelBase):
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
+    def _set_masses(self):
+        ca_atu = self.atu.select_atoms("hbackbone").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+        self.atoms.select_atoms("calpha").masses = np.array([
+            _.total_mass()
+            for _ in ca_atu
+        ])
+        self.atoms.select_atoms("cbeta").masses = np.array([
+            _.total_mass()
+            for _ in cb_atu
+        ])
+
+    def _set_chargess(self):
+        ca_atu = self.atu.select_atoms("hbackbone").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+        try:
+            self.atoms.select_atoms("calpha").charges = np.array([
+                _.total_charge()
+                for _ in ca_atu
+            ])
+        except AttributeError:
+            pass
+        try:
+            self.atoms.select_atoms("cbeta").charges = np.array([
+                _.total_charge()
+                for _ in cb_atu
+            ])
+        except AttributeError:
+            pass
 
 class Ncsc(ModelBase):
     """Create a universe consisting of the amine, carboxyl, and sidechain regions.
@@ -168,43 +179,8 @@ class Ncsc(ModelBase):
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-
-        # Update the masses and charges
-        n_atu = self.atu.select_atoms("amine").split("residue")
-        o_atu = self.atu.select_atoms("carboxyl").split("residue")
-        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-
-        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("name N").masses = np.array([
-            _.total_mass()
-            for _ in n_atu
-        ]) + ca_masses
-        self.atoms.select_atoms("cbeta").masses = np.array([
-            _.total_mass()
-            for _ in cb_atu
-        ])
-        self.atoms.select_atoms("name O").masses = np.array([
-            _.total_mass()
-            for _ in o_atu
-        ]) + ca_masses
-
-        try:
-            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
-            self.atoms.select_atoms("name N").charges = np.array([
-                _.total_charge()
-                for _ in n_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("name O").charges = np.array([
-                _.total_charge()
-                for _ in o_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("cbeta").charges = np.array([
-                _.total_charge()
-                for _ in cb_atu
-            ])
-        except AttributeError:
-            pass
+        self._set_masses()
+        self._set_chargess()
 
     def _add_bonds(self):
         bonds = []
@@ -249,6 +225,49 @@ class Ncsc(ModelBase):
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
+    def _set_masses(self):
+        n_atu = self.atu.select_atoms("amine").split("residue")
+        o_atu = self.atu.select_atoms("carboxyl").split("residue")
+        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+
+        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
+        self.atoms.select_atoms("name N").masses = np.array([
+            _.total_mass()
+            for _ in n_atu
+        ]) + ca_masses
+        self.atoms.select_atoms("cbeta").masses = np.array([
+            _.total_mass()
+            for _ in cb_atu
+        ])
+        self.atoms.select_atoms("name O").masses = np.array([
+            _.total_mass()
+            for _ in o_atu
+        ]) + ca_masses
+
+    def _set_chargess(self):
+        n_atu = self.atu.select_atoms("amine").split("residue")
+        o_atu = self.atu.select_atoms("carboxyl").split("residue")
+        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+
+        try:
+            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
+            self.atoms.select_atoms("name N").charges = np.array([
+                _.total_charge()
+                for _ in n_atu
+            ]) + ca_charges
+            self.atoms.select_atoms("name O").charges = np.array([
+                _.total_charge()
+                for _ in o_atu
+            ]) + ca_charges
+            self.atoms.select_atoms("cbeta").charges = np.array([
+                _.total_charge()
+                for _ in cb_atu
+            ])
+        except AttributeError:
+            pass
+
 
 class Polar(ModelBase):
     """Create a universe consisting of the amine, carboxyl, and polar regions.
@@ -289,43 +308,8 @@ class Polar(ModelBase):
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-
-        # Update the masses and charges
-        n_atu = self.atu.select_atoms("amine").split("residue")
-        o_atu = self.atu.select_atoms("carboxyl").split("residue")
-        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-
-        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("name N").masses = np.array([
-            _.total_mass()
-            for _ in n_atu
-        ]) + ca_masses
-        self.atoms.select_atoms("cbeta").masses = np.array([
-            _.total_mass()
-            for _ in cb_atu
-        ])
-        self.atoms.select_atoms("name O").masses = np.array([
-            _.total_mass()
-            for _ in o_atu
-        ]) + ca_masses
-
-        try:
-            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
-            self.atoms.select_atoms("name N").charges = np.array([
-                _.total_charge()
-                for _ in n_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("name O").charges = np.array([
-                _.total_charge()
-                for _ in o_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("cbeta").charges = np.array([
-                _.total_charge()
-                for _ in cb_atu
-            ])
-        except AttributeError:
-            pass
+        self._set_masses()
+        self._set_chargess()
 
     def _apply_map(self, mapping):
         """Apply the mapping scheme to the beads.
@@ -459,3 +443,46 @@ class Polar(ModelBase):
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
+
+    def _set_masses(self):
+        n_atu = self.atu.select_atoms("amine").split("residue")
+        o_atu = self.atu.select_atoms("carboxyl").split("residue")
+        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+
+        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
+        self.atoms.select_atoms("name N").masses = np.array([
+            _.total_mass()
+            for _ in n_atu
+        ]) + ca_masses
+        self.atoms.select_atoms("cbeta").masses = np.array([
+            _.total_mass()
+            for _ in cb_atu
+        ])
+        self.atoms.select_atoms("name O").masses = np.array([
+            _.total_mass()
+            for _ in o_atu
+        ]) + ca_masses
+
+    def _set_chargess(self):
+        n_atu = self.atu.select_atoms("amine").split("residue")
+        o_atu = self.atu.select_atoms("carboxyl").split("residue")
+        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
+        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+
+        try:
+            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
+            self.atoms.select_atoms("name N").charges = np.array([
+                _.total_charge()
+                for _ in n_atu
+            ]) + ca_charges
+            self.atoms.select_atoms("name O").charges = np.array([
+                _.total_charge()
+                for _ in o_atu
+            ]) + ca_charges
+            self.atoms.select_atoms("cbeta").charges = np.array([
+                _.total_charge()
+                for _ in cb_atu
+            ])
+        except AttributeError:
+            pass
