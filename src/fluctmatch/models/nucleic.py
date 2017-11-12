@@ -42,12 +42,14 @@ class Nucleic3(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "nucleicphosphate"
-        self._mapping["C4'"] = "hnucleicsugar"
-        self._mapping["C5"] = "hnucleicbase"
+        self._mapping["P"] = "nucleicphosphate and not name H*"
+        self._mapping["C4'"] = "hnucleicsugar and not name H*"
+        self._mapping["C5"] = "hnucleicbase and not name H*"
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
+        self._set_masses()
+        self._set_chargess()
 
     def _add_bonds(self):
         bonds = []
@@ -72,6 +74,44 @@ class Nucleic3(ModelBase):
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
+    def _set_masses(self):
+        p_atu = self.atu.select_atoms("nucleicphosphate").split("residue")
+        sugar_atu = self.atu.select_atoms("hnucleicsugar").split("residue")
+        nucl_atu = self.atu.select_atoms("hnucleicbase").split("residue")
+
+        self.atoms.select_atoms("name P").masses = np.array([
+            _.total_mass()
+            for _ in p_atu
+        ])
+        self.atoms.select_atoms("name C4'").masses = np.array([
+            _.total_mass()
+            for _ in sugar_atu
+        ])
+        self.atoms.select_atoms("name C5").masses = np.array([
+            _.total_mass()
+            for _ in nucl_atu
+        ])
+
+    def _set_chargess(self):
+        p_atu = self.atu.select_atoms("nucleicphosphate").split("residue")
+        sugar_atu = self.atu.select_atoms("hnucleicsugar").split("residue")
+        nucl_atu = self.atu.select_atoms("hnucleicbase").split("residue")
+
+        try:
+            self.atoms.select_atoms("name P").charges = np.array([
+                _.total_charge()
+                for _ in p_atu
+            ])
+            self.atoms.select_atoms("name C4'").charges = np.array([
+                _.total_charge()
+                for _ in sugar_atu
+            ])
+            self.atoms.select_atoms("name C5").charges = np.array([
+                _.total_charge()
+                for _ in nucl_atu
+            ])
+        except AttributeError:
+            pass
 
 class Nucleic4(ModelBase):
     """A universe consisting of the phosphate, C4', C3', and base of the nucleic acid.
@@ -82,29 +122,15 @@ class Nucleic4(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "nucleicphosphate"
-        self._mapping["C4'"] = "sugarC4"
-        self._mapping["C2'"] = "sugarC2"
-        self._mapping["C5"] = "nucleiccenter"
-        _nucl = "hnucleicbase"
+        self._mapping["P"] = "nucleicphosphate and not name H*"
+        self._mapping["C4'"] = "sugarC4 and not name H*"
+        self._mapping["C2'"] = "sugarC2 and not name H*"
+        self._mapping["C5"] = "nucleiccenter and not name H*"
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
-
-        # Update the masses and charges
-        nucl_base = self.atu.select_atoms(_nucl).split("residue")
-        self.atoms.select_atoms("name C5").masses = np.array([
-            _.total_mass()
-            for _ in nucl_base
-        ])
-
-        try:
-            self.atoms.select_atoms("name C5").charges = np.array([
-                _.total_charge()
-                for _ in nucl_base
-            ])
-        except AttributeError:
-            pass
+        self._set_masses()
+        self._set_chargess()
 
     def _add_bonds(self):
         bonds = []
@@ -135,6 +161,54 @@ class Nucleic4(ModelBase):
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
+    def _set_masses(self):
+        p_atu = self.atu.select_atoms("nucleicphosphate").split("residue")
+        sugar_atu = self.atu.select_atoms("sugarC4").split("residue")
+        sugar2_atu = self.atu.select_atoms("sugarC2").split("residue")
+        nucl_atu = self.atu.select_atoms("hnucleicbase").split("residue")
+
+        self.atoms.select_atoms("name P").masses = np.array([
+            _.total_mass()
+            for _ in p_atu
+        ])
+        self.atoms.select_atoms("name C4'").masses = np.array([
+            _.total_mass()
+            for _ in sugar_atu
+        ])
+        self.atoms.select_atoms("name C2'").masses = np.array([
+            _.total_mass()
+            for _ in sugar2_atu
+        ])
+        self.atoms.select_atoms("name C5").masses = np.array([
+            _.total_mass()
+            for _ in nucl_atu
+        ])
+
+    def _set_chargess(self):
+        p_atu = self.atu.select_atoms("nucleicphosphate").split("residue")
+        sugar_atu = self.atu.select_atoms("sugarC4").split("residue")
+        sugar2_atu = self.atu.select_atoms("sugarC2").split("residue")
+        nucl_atu = self.atu.select_atoms("hnucleicbase").split("residue")
+
+        try:
+            self.atoms.select_atoms("name P").charges = np.array([
+                _.total_charge()
+                for _ in p_atu
+            ])
+            self.atoms.select_atoms("name C4'").charges = np.array([
+                _.total_charge()
+                for _ in sugar_atu
+            ])
+            self.atoms.select_atoms("name C2'").charges = np.array([
+                _.total_charge()
+                for _ in sugar2_atu
+            ])
+            self.atoms.select_atoms("name C5").charges = np.array([
+                _.total_charge()
+                for _ in nucl_atu
+            ])
+        except AttributeError:
+            pass
 
 class Nucleic6(ModelBase):
     """A universe accounting for six sites involved with hydrogen bonding.
@@ -145,7 +219,7 @@ class Nucleic6(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "name P or name H5T"
+        self._mapping["P"] = "name P H5T"
         self._mapping["C4'"] = "name C4'"
         self._mapping["C2'"] = "name C2'"
         self._mapping["H1"] = (
