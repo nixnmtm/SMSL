@@ -187,6 +187,7 @@ class ParamTable(object):
                 header=0,
                 index_col=_index,
             )
+            self.table.columns = self.table.columns.astype(np.int)
 
     def write(self, filename):
         """Write the parameter table to file.
