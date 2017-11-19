@@ -86,7 +86,7 @@ from fluctmatch.analysis import paramtable
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r (default: 2)"
+    help="Number of residues to exclude in I,I+r"
 )
 @click.option(
     "-v",
