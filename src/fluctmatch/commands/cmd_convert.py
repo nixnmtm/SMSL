@@ -31,7 +31,10 @@ from fluctmatch.models.core import modeller
 from fluctmatch.fluctmatch.utils import write_charmm_files
 
 
-@click.command("convert", short_help="Convert from all-atom to coarse-grain model.")
+@click.command(
+    "convert",
+    short_help="Convert from all-atom to coarse-grain model."
+)
 @click.option(
     "-s",
     "topology",

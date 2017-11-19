@@ -29,7 +29,10 @@ from MDAnalysis.lib.util import which
 from fluctmatch.analysis import thermodynamics
 
 
-@click.command("thermo", short_help="Calculate thermodynamic properties.")
+@click.command(
+    "thermo",
+    short_help="Calculate thermodynamic properties."
+)
 @click.option(
     "-s",
     "topology",

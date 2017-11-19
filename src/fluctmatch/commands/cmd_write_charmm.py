@@ -26,7 +26,10 @@ import MDAnalysis as mda
 from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command("write_charmm", short_help="Write various CHARMM files.")
+@click.command(
+    "write_charmm",
+    short_help="Write various CHARMM files."
+)
 @click.option(
     "-s",
     "topology",

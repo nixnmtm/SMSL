@@ -32,7 +32,10 @@ from MDAnalysis.lib.util import filename
 from fluctmatch.analysis import paramtable
 
 
-@click.command("table", short_help="Create a table from individual parameter files.")
+@click.command(
+    "table",
+    short_help="Create a table from individual parameter files."
+)
 @click.option(
     "-d",
     "--datadir",

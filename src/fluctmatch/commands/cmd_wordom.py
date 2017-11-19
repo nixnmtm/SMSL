@@ -27,7 +27,10 @@ from fluctmatch.cli import pass_context
 from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command("write-charmm", short_help="Write various CHARMM files.")
+@click.command(
+    "wordom",
+    short_help="Convert between coordinate file types."
+)
 @click.option(
     "-s",
     "topology",

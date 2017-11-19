@@ -41,7 +41,10 @@ _CONVERT = dict(
     CHARMM=utils.split_charmm,
 )
 
-@click.command("splittraj", short_help="Split a trajectory using Gromacs or CHARMM.")
+@click.command(
+    "splittraj",
+    short_help="Split a trajectory using Gromacs or CHARMM."
+)
 @click.option(
     "--type",
     "program",

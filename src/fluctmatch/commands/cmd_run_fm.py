@@ -29,7 +29,10 @@ from MDAnalysis.lib.util import which
 from fluctmatch.fluctmatch import charmmfluctmatch
 
 
-@click.command("run_fm", short_help="Run fluctuation matching.")
+@click.command(
+    "run_fm",
+    short_help="Run fluctuation matching."
+)
 @click.option(
     "-s",
     "topology",
