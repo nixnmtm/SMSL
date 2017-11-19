@@ -122,7 +122,7 @@ def cli(
     # Load the table, separate by I,I+r, and if requested, create a subset.
     table = ParamTable(ressep=ressep)
     table.from_file(click.format_filename(filename))
-    kb = table.interactions
+    kb = table.per_residue
     D_info = dict(
         kb=kb,
         ressep=ressep,
