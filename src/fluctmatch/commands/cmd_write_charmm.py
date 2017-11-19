@@ -65,6 +65,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "--prefix",
     metavar="PREFIX",
     default="cg",
+    show_default=True,
     type=click.STRING,
     help="Prefix for filenames",
 )
@@ -74,6 +75,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "charmm_version",
     metavar="VERSION",
     default=41,
+    show_default=True,
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )

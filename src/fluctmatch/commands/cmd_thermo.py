@@ -35,6 +35,7 @@ from fluctmatch.analysis import thermodynamics
     "topology",
     metavar="FILE",
     default="fluctmatch.xplor.psf",
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -47,6 +48,7 @@ from fluctmatch.analysis import thermodynamics
     "trajectory",
     metavar="FILE",
     default="cg.dcd",
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -59,6 +61,7 @@ from fluctmatch.analysis import thermodynamics
     "datadir",
     metavar="DIR",
     default=path.join(os.getcwd(), "data"),
+    show_default=True,
     type=click.Path(
         exists=True,
         file_okay=False,
@@ -71,6 +74,7 @@ from fluctmatch.analysis import thermodynamics
     "outdir",
     metavar="DIR",
     default=os.getcwd(),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=False,
@@ -85,6 +89,7 @@ from fluctmatch.analysis import thermodynamics
     metavar="FILE",
     envvar="CHARMMEXEC",
     default=which("charmm"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -98,6 +103,7 @@ from fluctmatch.analysis import thermodynamics
     metavar="TEMP",
     type=click.FLOAT,
     default=300.0,
+    show_default=True,
     help="Temperature of simulation",
 )
 @click.option(
@@ -106,6 +112,7 @@ from fluctmatch.analysis import thermodynamics
     "charmm_version",
     metavar="VERSION",
     default=41,
+    show_default=True,
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )

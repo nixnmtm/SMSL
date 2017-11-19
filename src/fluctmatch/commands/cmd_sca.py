@@ -48,6 +48,7 @@ from fluctmatch.analysis import (
     "--ntrials",
     metavar="NTRIALS",
     default=100,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Number of random iterations (default: 100)"
 )
@@ -55,6 +56,7 @@ from fluctmatch.analysis import (
     "--std",
     metavar="STDDEV",
     default=2,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Number of std. deviations for beyond second eigenmode (default: 2)"
 )
@@ -70,6 +72,7 @@ from fluctmatch.analysis import (
     "-p",
     "--pcut",
     default=0.95,
+    show_default=True,
     type=np.float,
     help="Cutoff value for sector selection"
 )
@@ -78,6 +81,7 @@ from fluctmatch.analysis import (
     "--ressep",
     metavar="RESSEP",
     default=2,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Number of residues to exclude in I,I+r (default: 2)"
 )
@@ -85,6 +89,7 @@ from fluctmatch.analysis import (
     "-o",
     "--output",
     default=path.join(path.curdir, "scafluct.db"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,

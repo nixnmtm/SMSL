@@ -66,6 +66,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "start",
     metavar="FRAME",
     default=0,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Start time of trajectory",
 )
@@ -81,6 +82,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "step",
     metavar="STEP",
     default=1,
+    show_default=True,
     type=click.IntRange(1, None, clamp=True),
     help="Interval between frames"
 )

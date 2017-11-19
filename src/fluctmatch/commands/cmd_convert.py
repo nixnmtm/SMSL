@@ -37,6 +37,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -49,6 +50,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "trajectory",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -60,6 +62,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "-o",
     "--outdir",
     metavar="DIR",
+    show_default=True,
     default=os.getcwd(),
     type=click.Path(
         exists=False,
@@ -73,6 +76,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "--prefix",
     metavar="PREFIX",
     default="cg",
+    show_default=True,
     type=click.STRING,
     help="Prefix for filenames",
 )
@@ -81,6 +85,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     metavar="DIST",
     type=click.FLOAT,
     default=0.0,
+    show_default=True,
     help="Minimum distance between bonds",
 )
 @click.option(
@@ -88,6 +93,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     metavar="DIST",
     type=click.FLOAT,
     default=10.0,
+    show_default=True,
     help="Maximum distance between bonds",
 )
 @click.option(
@@ -104,6 +110,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "charmm_version",
     metavar="VERSION",
     default=41,
+    show_default=True,
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
@@ -111,6 +118,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "--com / --cog",
     "com",
     default=True,
+    show_default=True,
     help="Use either center of mass or center of geometry",
 )
 @click.option(
