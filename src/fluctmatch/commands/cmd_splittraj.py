@@ -41,7 +41,10 @@ _CONVERT = dict(
     CHARMM=utils.split_charmm,
 )
 
-@click.command("splittraj", short_help="Split a trajectory using Gromacs or CHARMM.")
+@click.command(
+    "splittraj",
+    short_help="Split a trajectory using Gromacs or CHARMM."
+)
 @click.option(
     "--type",
     "program",
@@ -125,6 +128,7 @@ _CONVERT = dict(
     "logfile",
     metavar="FILE",
     default="split.log",
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -137,6 +141,7 @@ _CONVERT = dict(
     "--system",
     metavar="NDXNUM",
     default=0,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="System selection based upon Gromacs index file",
 )
@@ -145,6 +150,7 @@ _CONVERT = dict(
     "start",
     metavar="FRAME",
     default=1,
+    show_default=True,
     type=click.IntRange(1, None, clamp=True),
     help="Start time of trajectory",
 )
@@ -153,6 +159,7 @@ _CONVERT = dict(
     "stop",
     metavar="FRAME",
     default=10000,
+    show_default=True,
     type=click.IntRange(1, None, clamp=True),
     help="Stop time of total trajectory",
 )
@@ -161,6 +168,7 @@ _CONVERT = dict(
     "window_size",
     metavar="WINSIZE",
     default=10000,
+    show_default=True,
     type=click.IntRange(2, None, clamp=True),
     help="Size of each subtrajectory",
 )

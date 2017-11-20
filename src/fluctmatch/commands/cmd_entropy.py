@@ -40,6 +40,7 @@ from fluctmatch.analysis import entropy
     "--outdir",
     metavar="OUTDIR",
     default=os.getcwd(),
+    show_default=True,
     type=click.Path(
         exists=True,
         file_okay=False,
@@ -52,6 +53,7 @@ from fluctmatch.analysis import entropy
     "--ressep",
     metavar="RESSEP",
     default=3,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Separation between residues (I,I+n)"
 )

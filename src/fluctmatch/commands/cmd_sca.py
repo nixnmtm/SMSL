@@ -35,7 +35,6 @@ from sklearn.utils import extmath
 from fluctmatch.analysis.paramtable import ParamTable
 from fluctmatch.analysis import (
     fluctsca,
-    scaTools,
 )
 
 
@@ -48,15 +47,17 @@ from fluctmatch.analysis import (
     "--ntrials",
     metavar="NTRIALS",
     default=100,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of random iterations (default: 100)"
+    help="Number of random iterations"
 )
 @click.option(
     "--std",
     metavar="STDDEV",
     default=2,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of std. deviations for beyond second eigenmode (default: 2)"
+    help="Number of std. deviations for beyond second eigenmode"
 )
 @click.option(
     "-k",
@@ -64,12 +65,13 @@ from fluctmatch.analysis import (
     metavar="KPOS",
     default=0,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of eigenmodes (default: auto)"
+    help="Number of eigenmodes [default: auto]"
 )
 @click.option(
     "-p",
     "--pcut",
     default=0.95,
+    show_default=True,
     type=np.float,
     help="Cutoff value for sector selection"
 )
@@ -78,19 +80,21 @@ from fluctmatch.analysis import (
     "--ressep",
     metavar="RESSEP",
     default=2,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r (default: 2)"
+    help="Number of residues to exclude in I,I+r"
 )
 @click.option(
     "-o",
     "--output",
     default=path.join(path.curdir, "scafluct.db"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
         resolve_path=True,
     ),
-    help="Output filename (default: ./scafluct.db)"
+    help="Output filename"
 )
 @click.option(
     "-s",
@@ -118,7 +122,7 @@ def cli(
     # Load the table, separate by I,I+r, and if requested, create a subset.
     table = ParamTable(ressep=ressep)
     table.from_file(click.format_filename(filename))
-    kb = table.interactions
+    kb = table.per_residue
     D_info = dict(
         kb=kb,
         ressep=ressep,
@@ -127,7 +131,8 @@ def cli(
     if subset:
         segid, start, stop = subset[0]
         kb = kb.loc[segid].loc[start:stop]
-        D_info["subset"] = subset
+        D_info["kb"] = kb.copy(deep=True)
+        D_info["subset"] = subset[0]
 
     # Calculate eigenvalues and eigenvectors for the time series with sign correction.
     U, Lsca, Vt = linalg.svd(kb, full_matrices=False)
@@ -154,14 +159,14 @@ def cli(
     Vcorr = fluctsca.correlate(Vt.T, Lsca, kmax=_kpos)
 
     # Calculate IC sectors
-    Uica, Wres = scaTools.rotICA(U, kmax=_kpos)
-    Uics, Uicsize, Usortedpos, Ucutoff, Uscaled_pd, Upd = scaTools.icList(
+    Uica, Wres = fluctsca.rotICA(U, kmax=_kpos)
+    Uics, Uicsize, Usortedpos, Ucutoff, Uscaled_pd, Upd = fluctsca.icList(
         Uica, _kpos, Ucorrel, p_cut=pcut
     )
-    Vica, Wtime = scaTools.rotICA(Vt.T, kmax=_kpos)
+    Vica, Wtime = fluctsca.rotICA(Vt.T, kmax=_kpos)
     Utica = Wtime.dot(U[:,:_kpos].T).T
     Vrica = Wres.dot(Vt[:_kpos]).T
-    Vics, Vicsize, Vsortedpos, Vcutoff, Vscaled_pd, Vpd = scaTools.icList(
+    Vics, Vicsize, Vsortedpos, Vcutoff, Vscaled_pd, Vpd = fluctsca.icList(
         Vica, _kpos, Vcorrel, p_cut=pcut
     )
     D_sector = dict(
@@ -196,7 +201,7 @@ def cli(
     )
     with open(click.format_filename(output), mode="wb") as dbf:
         click.echo(
-            "Saving data to {}".format(click.format_filename(db_filename))
+            "Saving data to {}".format(click.format_filename(output))
         )
         if PY3:
             click.echo(

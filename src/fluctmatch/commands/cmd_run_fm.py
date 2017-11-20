@@ -29,12 +29,16 @@ from MDAnalysis.lib.util import which
 from fluctmatch.fluctmatch import charmmfluctmatch
 
 
-@click.command("run_fm", short_help="Run fluctuation matching.")
+@click.command(
+    "run_fm",
+    short_help="Run fluctuation matching."
+)
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -47,6 +51,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "trajectory",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -59,6 +64,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "outdir",
     metavar="DIR",
     default=os.getcwd(),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=False,
@@ -73,6 +79,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="FILE",
     envvar="CHARMMEXEC",
     default=which("charmm"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=True,
@@ -86,6 +93,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="TEMP",
     type=click.FLOAT,
     default=300.0,
+    show_default=True,
     help="Temperature of simulation",
 )
 @click.option(
@@ -95,6 +103,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="NCYCLES",
     type=click.IntRange(1, None, clamp=True),
     default=250,
+    show_default=True,
     help="Number of simulation cycles",
 )
 @click.option(
@@ -102,6 +111,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="TOL",
     type=click.FLOAT,
     default=1.e-4,
+    show_default=True,
     help="Tolerance level between simulations",
 )
 @click.option(
@@ -109,6 +119,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "--prefix",
     metavar="PREFIX",
     default="fluctmatch",
+    show_default=True,
     type=click.STRING,
     help="Prefix for filenames",
 )
@@ -118,6 +129,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "charmm_version",
     metavar="VERSION",
     default=41,
+    show_default=True,
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )

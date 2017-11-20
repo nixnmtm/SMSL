@@ -32,13 +32,17 @@ from MDAnalysis.lib.util import filename
 from fluctmatch.analysis import paramtable
 
 
-@click.command("table", short_help="Create a table from individual parameter files.")
+@click.command(
+    "table",
+    short_help="Create a table from individual parameter files."
+)
 @click.option(
     "-d",
     "--datadir",
     "data_dir",
     metavar="DIR",
     default=path.join(os.getcwd(), "data"),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=False,
@@ -51,6 +55,7 @@ from fluctmatch.analysis import paramtable
     "--outdir",
     metavar="OUTDIR",
     default=os.getcwd(),
+    show_default=True,
     type=click.Path(
         exists=False,
         file_okay=False,
@@ -63,6 +68,7 @@ from fluctmatch.analysis import paramtable
     "--prefix",
     metavar="PREFIX",
     default="cg",
+    show_default=True,
     type=click.STRING,
     help="Prefix for filenames",
 )
@@ -72,6 +78,7 @@ from fluctmatch.analysis import paramtable
     "tbltype",
     metavar="TYPE",
     default="Kb",
+    show_default=True,
     type=click.Choice(["Kb", "b0"]),
     help="Force constant or equilibrium distance",
 )
@@ -80,8 +87,9 @@ from fluctmatch.analysis import paramtable
     "--ressep",
     metavar="RESSEP",
     default=3,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r (default: 2)"
+    help="Number of residues to exclude in I,I+r"
 )
 @click.option(
     "-v",

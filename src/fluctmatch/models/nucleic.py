@@ -123,8 +123,8 @@ class Nucleic4(ModelBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._mapping["P"] = "nucleicphosphate and not name H*"
-        self._mapping["C4'"] = "sugarC4 and not name H*"
-        self._mapping["C2'"] = "sugarC2 and not name H*"
+        self._mapping["C4'"] = "name C4'"
+        self._mapping["C2'"] = "name C2'"
         self._mapping["C5"] = "nucleiccenter and not name H*"
 
         kwargs["mapping"] = self._mapping
