@@ -27,7 +27,10 @@ from fluctmatch.cli import pass_context
 from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command("write-charmm", short_help="Write various CHARMM files.")
+@click.command(
+    "wordom",
+    short_help="Convert between coordinate file types."
+)
 @click.option(
     "-s",
     "topology",
@@ -66,6 +69,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "start",
     metavar="FRAME",
     default=0,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Start time of trajectory",
 )
@@ -81,6 +85,7 @@ from fluctmatch.fluctmatch import utils as fmutils
     "step",
     metavar="STEP",
     default=1,
+    show_default=True,
     type=click.IntRange(1, None, clamp=True),
     help="Interval between frames"
 )

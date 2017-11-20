@@ -40,6 +40,7 @@ from fluctmatch.analysis import paramtable
     "--outdir",
     metavar="OUTDIR",
     default=os.getcwd(),
+    show_default=True,
     type=click.Path(
         exists=True,
         file_okay=False,
@@ -52,8 +53,9 @@ from fluctmatch.analysis import paramtable
     "--ressep",
     metavar="RESSEP",
     default=3,
+    show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r (default: 2)"
+    help="Number of residues to exclude in I,I+r"
 )
 @click.argument(
     "table",
