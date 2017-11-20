@@ -131,7 +131,8 @@ def cli(
     if subset:
         segid, start, stop = subset[0]
         kb = kb.loc[segid].loc[start:stop]
-        D_info["subset"] = subset
+        D_info["kb"] = kb.copy(deep=True)
+        D_info["subset"] = subset[0]
 
     # Calculate eigenvalues and eigenvectors for the time series with sign correction.
     U, Lsca, Vt = linalg.svd(kb, full_matrices=False)
