@@ -21,8 +21,11 @@ from __future__ import (
     unicode_literals
 )
 
+import itertools
+import multiprocessing as mp
 import warnings
 
+from future.builtins import zip
 from future.utils import (
     viewkeys,
     raise_with_traceback,
@@ -32,6 +35,10 @@ from fluctmatch import _MODELS
 from fluctmatch.models import *
 from fluctmatch.models.base import Merge
 
+
+def _map_model(model, *args):
+    filenames, kwargs = args
+    return _MODELS[model](*filenames, **kwargs)
 
 def modeller(*args, **kwargs):
     """Create coarse-grain model from universe selection.
@@ -52,10 +59,17 @@ def modeller(*args, **kwargs):
         universe = _MODELS["ENM"](*args, **kwargs)
         return universe
 
-    universe = []
+    # universe = []
     try:
-        for model in models:
-            universe.append(_MODELS[model](*args, **kwargs))
+        p = mp.Pool(maxtasksperchild=2)
+        model = p.imap(
+            _map_model,
+            zip(models, itertools.repeat(args), itertools.repeat(kwargs))
+        )
+        universe = [_ for _ in model]
+        p.close()
+        # for model in models:
+        #     universe.append(_MODELS[model](*args, **kwargs))
     except KeyError:
         msg = (
             "{0} is not an available model. "

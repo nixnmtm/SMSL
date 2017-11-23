@@ -357,8 +357,8 @@ def Merge(*args):
     :class:`~MDAnalysis.Universe`
         A merged universe.
     """
+    import multiprocessing as mp
     from MDAnalysis.coordinates.memory import MemoryReader
-    from MDAnalysis.analysis.base import AnalysisFromFunction
 
     print("This might take a while depending upon the number of "
           "trajectory frames.")
@@ -372,10 +372,12 @@ def Merge(*args):
 
     # TODO Create trajectory class to follow merged trajectories
     if args[0].universe.trajectory.n_frames > 1:
+        p = mp.Pool(maxtasksperchild=2)
         coordinates = [
-            AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results
-            for u in ag
+            _
+            for _ in p.imap(get_coordinates, ag)
         ]
+        p.close()
         coordinates = np.concatenate(coordinates, axis=1)
         if universe.atoms.n_atoms != coordinates.shape[1]:
             raise RuntimeError(
@@ -391,6 +393,11 @@ def Merge(*args):
               "implemented by MDAnalysis.")
         universe.trajectory.ts._unitcell = unit_cell
     return universe
+
+
+def get_coordinates(u):
+    from MDAnalysis.analysis.base import AnalysisFromFunction
+    return AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results
 
 
 def rename_universe(universe):
