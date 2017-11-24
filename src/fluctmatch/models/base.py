@@ -370,7 +370,6 @@ def Merge(*args):
     unit_cell = np.mean([_._unitcell for _ in args[0].trajectory], axis=0)
     universe = mda.Merge(*ag)
 
-    # TODO Create trajectory class to follow merged trajectories
     if args[0].universe.trajectory.n_frames > 1:
         traj = (_.trajectory for _ in args)
         coordinates = [
@@ -385,18 +384,13 @@ def Merge(*args):
         print("The new universe has {1} beads in {0} frames.".format(
             *coordinates.shape
         ))
-        universe.load_new(coordinates, format=MemoryReader)
 
+        universe.load_new(coordinates, format=MemoryReader)
         print("The new trajectory will is assigned an average unit cell "
               "for the entire trajectory. This is currently a limitation "
               "implemented by MDAnalysis.")
         universe.trajectory.ts._unitcell = unit_cell
     return universe
-
-
-def get_coordinates(u):
-    from MDAnalysis.analysis.base import AnalysisFromFunction
-    return AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results
 
 
 def rename_universe(universe):
