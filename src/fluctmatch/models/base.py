@@ -373,19 +373,11 @@ def Merge(*args):
     # TODO Create trajectory class to follow merged trajectories
     if args[0].universe.trajectory.n_frames > 1:
         traj = (_.trajectory for _ in args)
-        coordinates = []
-        for ts in zip(*traj):
-            coordinates.append(
-                np.concatenate([_.positions for _ in ts], axis=0)
-            )
+        coordinates = [
+            np.concatenate([_.positions for _ in ts], axis=0)
+            for ts in zip(*traj)
+        ]
         coordinates = np.array(coordinates)
-        # p = mp.Pool(maxtasksperchild=2)
-        # coordinates = [
-        #     _
-        #     for _ in p.imap(get_coordinates, ag)
-        # ]
-        # p.close()
-        # coordinates = np.concatenate(coordinates, axis=1)
         if universe.atoms.n_atoms != coordinates.shape[1]:
             raise RuntimeError(
                 "The number of sites does not match the number of coordinates."
