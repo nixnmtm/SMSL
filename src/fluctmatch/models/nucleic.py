@@ -144,7 +144,7 @@ class Nucleic4(ModelBase):
             _
             for s in self.segments
             for _ in zip(s.atoms.select_atoms("name C4'").ix,
-                         s.atoms.select_atoms("name C3'").ix)
+                         s.atoms.select_atoms("name C2'").ix)
         ])
         bonds.extend([
             _
@@ -155,7 +155,7 @@ class Nucleic4(ModelBase):
         bonds.extend([
             _
             for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name C3'").ix[:-1],
+            for _ in zip(s.atoms.select_atoms("name C4'").ix[:-1],
                          s.atoms.select_atoms("name P").ix[1:])
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
@@ -240,6 +240,8 @@ class Nucleic6(ModelBase):
 
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
+        self._set_chargess()
+        self._set_masses()
 
     def _add_bonds(self):
         bonds = []
@@ -258,26 +260,32 @@ class Nucleic6(ModelBase):
         bonds.extend([
             _
             for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name C4'").ix,
+            for _ in zip(s.atoms.select_atoms("name C2'").ix,
                          s.atoms.select_atoms("name H1").ix)
         ])
         bonds.extend([
             _
             for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name H1'").ix,
+            for _ in zip(s.atoms.select_atoms("name H1").ix,
                          s.atoms.select_atoms("name H2").ix)
         ])
         bonds.extend([
             _
             for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name H2'").ix,
+            for _ in zip(s.atoms.select_atoms("name H2").ix,
                          s.atoms.select_atoms("name H3").ix)
         ])
         bonds.extend([
             _
             for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name C3'").ix[:-1],
+            for _ in zip(s.atoms.select_atoms("name C4'").ix[:-1],
                          s.atoms.select_atoms("name P").ix[1:])
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
+
+    def _set_chargess(self):
+        self.atoms.charges = 0.
+
+    def _set_masses(self):
+        self.atoms.masses = self.atu.select_atoms("name C4'")[0].mass

@@ -21,6 +21,7 @@ from __future__ import (
     unicode_literals
 )
 
+import itertools
 import warnings
 
 from future.utils import (
@@ -52,10 +53,8 @@ def modeller(*args, **kwargs):
         universe = _MODELS["ENM"](*args, **kwargs)
         return universe
 
-    universe = []
     try:
-        for model in models:
-            universe.append(_MODELS[model](*args, **kwargs))
+        universe = [_MODELS[model](*args, **kwargs) for model in models]
     except KeyError:
         msg = (
             "{0} is not an available model. "

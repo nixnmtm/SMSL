@@ -89,7 +89,7 @@ class ComplexCLI(click.MultiCommand):
         """
         rv = []
         for filename in os.listdir(cmd_folder):
-            if (filename.endswith('.py') and filename.startswith('cmd_')):
+            if (filename.endswith(".py") and filename.startswith("cmd_")):
                 rv.append(filename[4:-3])
         rv.sort()
         return rv
@@ -110,12 +110,12 @@ class ComplexCLI(click.MultiCommand):
         """
         try:
             if sys.version_info[0] == 2:
-                name = name.encode('ascii', 'replace')
+                name = name.encode("ascii", "replace")
             mod = __import__(
-                'fluctmatch.commands.cmd_' + name,
+                "fluctmatch.commands.cmd_" + name,
                 None,
                 None,
-                ['cli']
+                ["cli"]
             )
         except ImportError:
             return

@@ -149,6 +149,11 @@ class RTFWriter(topbase.TopologyWriterBase):
                     np.isin(bonds[idx], atoms, invert=True),
                     "+", ""
                 ).astype(np.object)
+                if pos_names.size == 0:
+                    raise RuntimeError(
+                        "Please check that all bond definitions are valid. "
+                        "You may have some missing or broken bonds."
+                    )
                 names[idx] = pos_names + names[idx]
                 names = names.astype(np.unicode)
 

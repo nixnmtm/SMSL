@@ -357,8 +357,8 @@ def Merge(*args):
     :class:`~MDAnalysis.Universe`
         A merged universe.
     """
+    import multiprocessing as mp
     from MDAnalysis.coordinates.memory import MemoryReader
-    from MDAnalysis.analysis.base import AnalysisFromFunction
 
     print("This might take a while depending upon the number of "
           "trajectory frames.")
@@ -370,13 +370,13 @@ def Merge(*args):
     unit_cell = np.mean([_._unitcell for _ in args[0].trajectory], axis=0)
     universe = mda.Merge(*ag)
 
-    # TODO Create trajectory class to follow merged trajectories
     if args[0].universe.trajectory.n_frames > 1:
+        traj = (_.trajectory for _ in args)
         coordinates = [
-            AnalysisFromFunction(lambda u: u.positions.copy(), u).run().results
-            for u in ag
+            np.concatenate([_.positions for _ in ts], axis=0)
+            for ts in zip(*traj)
         ]
-        coordinates = np.concatenate(coordinates, axis=1)
+        coordinates = np.array(coordinates)
         if universe.atoms.n_atoms != coordinates.shape[1]:
             raise RuntimeError(
                 "The number of sites does not match the number of coordinates."
@@ -384,8 +384,8 @@ def Merge(*args):
         print("The new universe has {1} beads in {0} frames.".format(
             *coordinates.shape
         ))
-        universe.load_new(coordinates, format=MemoryReader)
 
+        universe.load_new(coordinates, format=MemoryReader)
         print("The new trajectory will is assigned an average unit cell "
               "for the entire trajectory. This is currently a limitation "
               "implemented by MDAnalysis.")
