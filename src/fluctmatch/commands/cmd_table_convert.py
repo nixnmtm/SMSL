@@ -26,6 +26,7 @@ from os import path
 
 import click
 import MDAnalysis as mda
+import pandas as pd
 from future.builtins import (dict, open, zip)
 
 
@@ -115,6 +116,7 @@ def cli(top1, top2, coord1, coord2, table, outfile):
     cg = mda.Universe(top1, coord1)
     fluctmatch = mda.Universe(top2, coord2)
     convert = dict(zip(fluctmatch.atoms.names, cg.atoms.names))
+    resnames = dict(zip(cg.residue.resnums, cg.residues.resnames))
 
     with open(table, "rb") as tbl:
         constants = pd.read_csv(
@@ -124,6 +126,7 @@ def cli(top1, top2, coord1, coord2, table, outfile):
             delim_whitespace=True,
         )
 
+    # Transform assigned bead names to an all-atom designation.
     constants["I"] = constants["I"].apply(
         lambda x: convert[x]
     )
@@ -131,10 +134,19 @@ def cli(top1, top2, coord1, coord2, table, outfile):
         lambda x: convert[x]
     )
 
+    # Create lists of corresponding residues
+    resnI = constants["resI"].apply(lambda x: resnames[x]).to_frame()
+    resnJ = constants["resJ"].apply(lambda x: resnames[x]).to_frame()
+
+    # Concatenate the columns
+    cols = ["segidI", "resI", "resnI", "I", "segidJ", "resJ", "resnJ", "J"]
+    constants = pd.concat([constants, resnI, resnJ], axis=1)
+    constants.set_index(cols, inplace=True)
+
     with open(outfile, "wb") as output:
         constants = constants.to_csv(
             header=True,
-            index=False,
+            index=True,
             sep=" ",
             float_format="%.4f",
         )
