@@ -329,7 +329,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         if not path.exists(self.filenames["charmm_input"]):
             version = self.kwargs.get("charmm_version", 41)
             dimension = (
-                "dimension chsize 500000 maxres 3000000"
+                "dimension chsize 1000000 maxres 1000000"
                 if version >= 36
                 else ""
             )
