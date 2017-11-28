@@ -44,9 +44,9 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/fluctmatch
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/tclick/python-fluctmatch/v3.2.9.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/tclick/python-fluctmatch/v3.2.10.svg
     :alt: Commits since latest release
-    :target: https://github.com/tclick/python-fluctmatch/compare/v3.2.9...master
+    :target: https://github.com/tclick/python-fluctmatch/compare/v3.2.10...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/fluctmatch.svg
     :alt: PyPI Wheel
