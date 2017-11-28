@@ -19,12 +19,13 @@
 Notes
 ------
 For CHARMM to work with the fluctuation matching code, it must be
-recompiled with some modifications to the source code. `ATBMX` and
-`MAXCB` (located in dimens.fcm [c35] or dimens_ltm.src [c41]) must
+recompiled with some modifications to the source code. `ATBMX`, `MAXATC`,
+`MAXCB` (located in dimens.fcm [c35] or dimens_ltm.src [c39]) must
 be increased. `ATBMX` determines the number of bonds allowed per
-atom and `MAXCB` determines the maximum number of bond parameters
-in the CHARMM parameter file. Additionally, `CHSIZE` may need to
-be increased if using an earlier version (< c36).
+atom, `MAXATC` describes the maximum number of atom types, and `MAXCB`
+determines the maximum number of bond parameters in the CHARMM parameter
+file. Additionally, `CHSIZE` may need to be increased if using an earlier
+version (< c36).
 
 """
 
