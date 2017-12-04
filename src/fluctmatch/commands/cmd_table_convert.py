@@ -49,7 +49,7 @@ from future.builtins import (dict, open, zip)
 )
 @click.option(
     "-s2",
-    "top1",
+    "top2",
     metavar="FILE",
     default=path.join(os.getcwd(), "fluctmatch.xplor.psf"),
     show_default=True,
@@ -61,23 +61,10 @@ from future.builtins import (dict, open, zip)
     help="Topology file",
 )
 @click.option(
-    "-f1",
-    "coord1",
+    "-f",
+    "coord",
     metavar="FILE",
-    default=path.join(os.getcwd(), "cg.cor"),
-    show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
-    help="Coordinate file",
-)
-@click.option(
-    "-f2",
-    "coord2",
-    metavar="FILE",
-    default=path.join(os.getcwd(), "fluctmatch.cor"),
+    default=path.join(os.getcwd(), "cg.dcd"),
     show_default=True,
     type=click.Path(
         exists=True,
@@ -112,11 +99,11 @@ from future.builtins import (dict, open, zip)
     ),
     help="Table file",
 )
-def cli(top1, top2, coord1, coord2, table, outfile):
-    cg = mda.Universe(top1, coord1)
-    fluctmatch = mda.Universe(top2, coord2)
+def cli(top1, top2, coord, table, outfile):
+    cg = mda.Universe(top1, coord)
+    fluctmatch = mda.Universe(top2, coord)
     convert = dict(zip(fluctmatch.atoms.names, cg.atoms.names))
-    resnames = dict(zip(cg.residue.resnums, cg.residues.resnames))
+    resnames = dict(zip(cg.residues.resnums, cg.residues.resnames))
 
     with open(table, "rb") as tbl:
         constants = pd.read_csv(
@@ -135,12 +122,11 @@ def cli(top1, top2, coord1, coord2, table, outfile):
     )
 
     # Create lists of corresponding residues
-    resnI = constants["resI"].apply(lambda x: resnames[x]).to_frame()
-    resnJ = constants["resJ"].apply(lambda x: resnames[x]).to_frame()
+    constants["resnI"] = constants["resI"].apply(lambda x: resnames[x]).to_frame()
+    constants["resnJ"] = constants["resJ"].apply(lambda x: resnames[x]).to_frame()
 
     # Concatenate the columns
     cols = ["segidI", "resI", "resnI", "I", "segidJ", "resJ", "resnJ", "J"]
-    constants = pd.concat([constants, resnI, resnJ], axis=1)
     constants.set_index(cols, inplace=True)
 
     with open(outfile, "wb") as output:
