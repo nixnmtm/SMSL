@@ -31,6 +31,7 @@ import pandas as pd
 from future.builtins import range
 from scipy import linalg
 from scipy.stats import (scoreatpercentile, t)
+from sklearn.utils import extmath
 
 
 def _rand(avg_kb, std_kb, x):
@@ -66,6 +67,31 @@ def randomize(table, ntrials=100):
         kb_rand = pd.DataFrame.from_items(values.get())
         Lrand.append(linalg.svdvals(kb_rand))
     return np.array(Lrand)
+
+
+def svd(kb):
+    """Calculate the singular value decomposition with an appropriate sign flip.
+
+    Parameters
+    ----------
+    a : (M, N) array_like
+        Matrix to decompose.
+
+    Returns
+    -------
+    U : ndarray
+        Unitary matrix having left singular vectors as columns.
+        Of shape ``(M, M)`` or ``(M, K)``, depending on `full_matrices`.
+    s : ndarray
+        The singular values, sorted in non-increasing order.
+        Of shape (K,), with ``K = min(M, N)``.
+    Vh : ndarray
+        Unitary matrix having right singular vectors as rows.
+        Of shape ``(N, N)`` or ``(K, N)`` depending on `full_matrices`.
+    """
+    U, W, Vt = linalg.svd(kb, full_matrices=False)
+    U, Vt = extmath.svd_flip(U, Vt, u_based_decision=True)
+    return U, W, Vt
 
 
 def correlate(Usca, Lsca, kmax=6):

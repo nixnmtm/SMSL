@@ -135,8 +135,7 @@ def cli(
         D_info["subset"] = subset[0]
 
     # Calculate eigenvalues and eigenvectors for the time series with sign correction.
-    U, Lsca, Vt = linalg.svd(kb, full_matrices=False)
-    U, Vt = extmath.svd_flip(U, Vt, u_based_decision=True)
+    U, Lsca, Vt = fluctsca.svd(kb)
 
     # Sign correction similar to that in SCA
     Lrand = fluctsca.randomize(kb, ntrials=ntrials)
