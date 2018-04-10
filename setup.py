@@ -88,7 +88,7 @@ setup(
     ],
     install_requires=[
         "click",
-        "MDAnalysis==0.17.0-dev",
+        "MDAnalysis>=0.17.0",
         "numpy",
         "pandas",
         "scipy",
