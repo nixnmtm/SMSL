@@ -38,7 +38,10 @@ import numpy as np
 import pandas as pd
 
 _header = ["I", "J"]
-_index = ["segidI", "resI", "I", "segidJ", "resJ", "J"]
+_index = dict(
+    general=["segidI", "resI", "I", "segidJ", "resJ", "J"],
+    complete=["segidI", "resI", "resnI", "I", "segidJ", "resJ", "resnJ", "J"],
+)
 
 
 def _create_table(
@@ -59,7 +62,7 @@ def _create_table(
             prm_table = prm_file.read()["BONDS"].set_index(_header)
         table = pd.concat([ic_table, prm_table], axis=1)
         table.reset_index(inplace=True)
-        table = table.set_index(_index)[tbltype].to_frame()
+        table = table.set_index(_index["general"])[tbltype].to_frame()
         table.columns = [path.basename(directory), ]
         return table
 
@@ -167,7 +170,7 @@ class ParamTable(object):
         self.table.reset_index(inplace=True)
 
         self._complete_table()
-        self.table.set_index(_index, inplace=True)
+        self.table.set_index(_index["general"], inplace=True)
         self.table.fillna(0., inplace=True)
         self.table.sort_index(kind="mergesort", inplace=True)
 
@@ -185,8 +188,11 @@ class ParamTable(object):
                 skipinitialspace=True,
                 delim_whitespace=True,
                 header=0,
-                index_col=_index,
             )
+            if "resnI" in self.table.columns:
+                self.table.set_index(_index["complete"], inplace=True)
+            else:
+                self.table.set_index(_index["general"], inplace=True)
             self.table.columns = self.table.columns.astype(np.int)
 
     def write(self, filename):
