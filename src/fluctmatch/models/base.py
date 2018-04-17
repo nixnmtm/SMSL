@@ -37,9 +37,7 @@ from MDAnalysis.core import (
 from MDAnalysis.lib.util import asiterable
 from MDAnalysis.topology import base as topbase
 from MDAnalysis.topology import guessers
-from future.builtins import (
-    super,
-)
+import future.builtins
 from future.builtins import zip
 from future.utils import (
     raise_with_traceback,
@@ -166,7 +164,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         """
         # Coarse grained Universe
         # Make a blank Universe for myself.
-        super().__init__()
+        future.builtins.super().__init__()
 
         self._com = kwargs.pop("com", True)
 
