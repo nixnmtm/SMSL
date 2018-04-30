@@ -28,9 +28,8 @@ from future.builtins import open
 
 import click
 import numpy as np
-from scipy import linalg
+import pandas as pd
 from six.moves import cPickle
-from sklearn.utils import extmath
 
 from fluctmatch.analysis.paramtable import ParamTable
 from fluctmatch.analysis import (
@@ -79,7 +78,7 @@ from fluctmatch.analysis import (
     "-r",
     "--ressep",
     metavar="RESSEP",
-    default=2,
+    default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="Number of residues to exclude in I,I+r"
@@ -108,6 +107,27 @@ from fluctmatch.analysis import (
     multiple=True,
     help="Subset of a system (SEGID FIRST LAST)"
 )
+@click.option(
+    "--all",
+    "transformation",
+    flag_value="all",
+    default=True,
+)
+@click.option(
+    "--bb",
+    "transformation",
+    flag_value="backbone",
+)
+@click.option(
+    "--sc",
+    "transformation",
+    flag_value="sidechain",
+)
+@click.option(
+    "--bbsc",
+    "transformation",
+    flag_value="bbsc",
+)
 @click.argument(
     "filename",
     type=click.Path(
@@ -117,12 +137,29 @@ from fluctmatch.analysis import (
     )
 )
 def cli(
-    ntrials, std, kpos, pcut, ressep, output, subset, filename
+    ntrials, std, kpos, pcut, ressep, output, subset, transformation, filename
 ):
     # Load the table, separate by I,I+r, and if requested, create a subset.
     table = ParamTable(ressep=ressep)
     table.from_file(click.format_filename(filename))
+    kb = table._separate(table.table)
+    _index = kb.index.names
+    if transformation == "backbone":
+        kb.reset_index(inplace=True)
+        kb = kb[(kb["I"] == "N") | (kb["I"] == "CA") | (kb["I"] == "O")]
+        kb = kb[(kb["J"] == "N") | (kb["J"] == "CA") | (kb["J"] == "O")]
+        table.table = kb.set_index(_index)
+    elif transformation == "sidechain":
+        kb.reset_index(inplace=True)
+        kb = kb[(kb["I"] == "CB") & (kb["J"] == "CB")]
+        table.table = kb.set_index(_index)
+    elif transformation == "bbsc":
+        kb.reset_index(inplace=True)
+        tmp1 = kb[(kb["I"] == "CB") & ((kb["J"] == "N") | (kb["J"] == "O"))]
+        tmp2 = kb[(kb["J"] == "CB") & ((kb["I"] == "N") | (kb["I"] == "O"))]
+        table.table = pd.concat([tmp1, tmp2], axis=0).set_index(_index)
     kb = table.per_residue
+
     D_info = dict(
         kb=kb,
         ressep=ressep,
