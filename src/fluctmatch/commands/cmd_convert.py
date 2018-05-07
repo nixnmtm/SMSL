@@ -155,6 +155,12 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     help="Include charge equilibrium section in CHARMM PSF file",
 )
 @click.option(
+    "--uniform",
+    "mass",
+    is_flag=True,
+    help="Set uniform mass of beads to 1.0",
+)
+@click.option(
     "--write",
     "write_traj",
     is_flag=True,
@@ -169,7 +175,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
 )
 def cli(
     topology, trajectory, outdir, prefix, rmin, rmax, model, charmm_version,
-    com, extended, resid, cmap, cheq, nonbonded, write_traj, model_list,
+    com, extended, resid, cmap, cheq, nonbonded, mass, write_traj, model_list,
 ):
     if model_list:
         for k, v in iteritems(_DESCRIBE):
@@ -190,4 +196,6 @@ def cli(
         write_traj=write_traj,
     )
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
+    if mass:
+        universe.atoms.mass = 1.0
     write_charmm_files(universe, **kwargs)
