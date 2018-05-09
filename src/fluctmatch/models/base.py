@@ -163,7 +163,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         """
         # Coarse grained Universe
         # Make a blank Universe for myself.
-        future.builtins.super().__init__()
+        super().__init__()
 
         self._com = kwargs.pop("com", True)
 
