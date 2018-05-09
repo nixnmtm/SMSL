@@ -113,7 +113,7 @@ class RTFWriter(topbase.TopologyWriterBase):
         key = "ATOM"
         atoms = residue.atoms
         lines = ((atoms.names, atoms.types, atoms.charges)
-                 if not np.issubdtype(atoms.types.dtype, np.int) else
+                 if not np.issubdtype(atoms.types.dtype, np.signedinteger) else
                  (atoms.names, atoms.names, atoms.charges))
         lines = pd.concat([pd.Series(_) for _ in lines], axis=1)
         np.savetxt(self.rtffile, lines, fmt=native_str(self.fmt[key]))

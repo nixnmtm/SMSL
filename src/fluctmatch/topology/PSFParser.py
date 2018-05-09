@@ -359,7 +359,7 @@ class PSFWriter(base.TopologyWriterBase):
             definitions.
         """
         self._universe = universe
-        xplor = not np.issubdtype(universe.atoms.types.dtype, np.int)
+        xplor = not np.issubdtype(universe.atoms.types.dtype, np.signedinteger)
 
         header = "PSF"
         if self._extended:
