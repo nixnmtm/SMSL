@@ -25,15 +25,14 @@ import abc
 import os
 
 from future.builtins import (
-    dict,
-)
+    dict, )
 from future.utils import (
-    with_metaclass,
-)
+    with_metaclass, )
 
 
 class FluctMatch(with_metaclass(abc.ABCMeta, object)):
     """Base class for fluctuation matching."""
+
     def __init__(self, *args, **kwargs):
         """Initialization of fluctuation matching.
 

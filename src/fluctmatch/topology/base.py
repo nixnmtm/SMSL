@@ -23,8 +23,7 @@ from __future__ import (
 
 from MDAnalysis.coordinates.base import (_Readermeta, _Writermeta, IOBase)
 from future.utils import (
-    with_metaclass,
-)
+    with_metaclass, )
 
 
 class TopologyReaderBase(with_metaclass(_Readermeta, IOBase)):

@@ -21,9 +21,7 @@ from __future__ import (
     unicode_literals,
 )
 
-
-thermodynamics = (
-    """
+thermodynamics = ("""
     * Calculate thermodynamic qunatities for an ENM structure.
     *
     
@@ -73,5 +71,4 @@ thermodynamics = (
     close unit @fileu
     
     stop
-    """
-)
+    """)

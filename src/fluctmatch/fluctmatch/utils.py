@@ -48,6 +48,7 @@ if PY2:
 class AverageStructure(analysis.AnalysisBase):
     """Calculate the average structure of a trajectory.
     """
+
     def __init__(self, atomgroup, **kwargs):
         """
         Parameters
@@ -80,6 +81,7 @@ class BondStats(analysis.AnalysisBase):
     """Calculate either the average bond length or the fluctuation in bond lengths.
 
     """
+
     def __init__(self, atomgroup, func="mean", **kwargs):
         """
         Parameters
@@ -100,9 +102,9 @@ class BondStats(analysis.AnalysisBase):
         super().__init__(atomgroup.universe.trajectory, **kwargs)
         self._ag = atomgroup
         if func == "mean":
-            self._func = (np.mean,)
+            self._func = (np.mean, )
         elif func == "std":
-            self._func = (np.std,)
+            self._func = (np.std, )
         elif func == "both":
             self._func = (np.mean, np.std)
         else:
@@ -116,23 +118,25 @@ class BondStats(analysis.AnalysisBase):
 
     def _conclude(self):
         self.result = [func(self.result, axis=0) for func in self._func]
-        bonds = [pd.concat([
-            pd.Series(self._ag.bonds.atom1.names),
-            pd.Series(self._ag.bonds.atom2.names),
-            pd.Series(_),
-        ], axis=1) for _ in self.result]
+        bonds = [
+            pd.concat(
+                [
+                    pd.Series(self._ag.bonds.atom1.names),
+                    pd.Series(self._ag.bonds.atom2.names),
+                    pd.Series(_),
+                ],
+                axis=1) for _ in self.result
+        ]
         for _ in bonds:
             _.columns = ["I", "J", "r_IJ"]
         self.result = copy.deepcopy(bonds)
 
 
-def write_charmm_files(
-    universe,
-    outdir=os.getcwd(),
-    prefix="cg",
-    write_traj=True,
-    **kwargs
-):
+def write_charmm_files(universe,
+                       outdir=os.getcwd(),
+                       prefix="cg",
+                       write_traj=True,
+                       **kwargs):
     """Write CHARMM coordinate, topology PSF, stream, and topology RTF files.
 
     Parameters
@@ -156,7 +160,8 @@ def write_charmm_files(
     title
         Title lines at the beginning of the file.
     """
-    from MDAnalysis.core import (topologyattrs,)
+    from MDAnalysis.core import (
+        topologyattrs, )
 
     # Attempt to create the necessary subdirectory
     try:
@@ -176,35 +181,24 @@ def write_charmm_files(
 
     # Write required CHARMM input files.
     print("Writing {}...".format(filenames["topology_file"]))
-    with mda.Writer(
-        native_str(filenames["topology_file"]),
-        **kwargs
-    ) as rtf:
+    with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
         rtf.write(universe)
     print("Writing {}...".format(filenames["stream_file"]))
-    with mda.Writer(
-        native_str(filenames["stream_file"]),
-        **kwargs
-    ) as stream:
+    with mda.Writer(native_str(filenames["stream_file"]), **kwargs) as stream:
         stream.write(universe)
     print("Writing {}...".format(filenames["psf_file"]))
-    with mda.Writer(
-        native_str(filenames["psf_file"]), **kwargs
-    ) as psf:
+    with mda.Writer(native_str(filenames["psf_file"]), **kwargs) as psf:
         psf.write(universe)
 
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
         print("Writing the trajectory {}...".format(filenames["traj_file"]))
-        print(
-            "This may take a while depending upon the size and "
-            "length of the trajectory."
-        )
+        print("This may take a while depending upon the size and "
+              "length of the trajectory.")
         with mda.Writer(
-            native_str(filenames["traj_file"]),
-            universe.atoms.n_atoms,
-            remarks="Written by fluctmatch."
-        ) as trj:
+                native_str(filenames["traj_file"]),
+                universe.atoms.n_atoms,
+                remarks="Written by fluctmatch.") as trj:
             universe.trajectory.rewind()
             with click.progressbar(universe.trajectory) as bar:
                 for ts in bar:
@@ -222,31 +216,23 @@ def write_charmm_files(
     # fluctuations of bond lengths from the trajectory.
     if universe.trajectory.n_frames > 1:
         print("Determining the average structure of the trajectory. ")
-        print(
-            "Note: This could take a while depending upon the "
-            "size of your trajectory."
-        )
+        print("Note: This could take a while depending upon the "
+              "size of your trajectory.")
         positions = AverageStructure(universe.atoms).run()
         avg_universe = mda.Universe(
-            filenames["psf_file"],
-            [positions.result, ],
+            filenames["psf_file"], [
+                positions.result,
+            ],
             format=memory.MemoryReader,
-            order="fac"
-        )
+            order="fac")
         print("Writing {}...".format(filenames["crd_file"]))
         with mda.Writer(
-            native_str(filenames["crd_file"]),
-            dt=1.0,
-            **kwargs
-        ) as crd:
+                native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
             crd.write(avg_universe.atoms)
     else:
         print("Writing {}...".format(filenames["crd_file"]))
         with mda.Writer(
-            native_str(filenames["crd_file"]),
-            dt=1.0,
-            **kwargs
-        ) as crd:
+                native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
             crd.write(universe.atoms)
 
 
@@ -274,10 +260,8 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         Atom selection from Gromacs index file (0 = System, 1 = Protein)
     """
     if mdutil.which("gmx") is None:
-        raise OSError(
-            "Gromacs 5.0+ is required. "
-            "If installed, please ensure that it is in your path."
-        )
+        raise OSError("Gromacs 5.0+ is required. "
+                      "If installed, please ensure that it is in your path.")
 
     # Trajectory splitting information
     subdir, start, stop = info
@@ -299,21 +283,33 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     if index is not None:
         command = [
             "gmx",
-            "-s", topology,
-            "-f", trajectory,
-            "-n", index,
-            "-o", path.join(subdir, outfile),
-            "-b", "{:d}".format(start),
-            "-e", "{:d}".format(stop),
+            "-s",
+            topology,
+            "-f",
+            trajectory,
+            "-n",
+            index,
+            "-o",
+            path.join(subdir, outfile),
+            "-b",
+            "{:d}".format(start),
+            "-e",
+            "{:d}".format(stop),
         ]
     else:
         command = [
-            "gmx", "trjconv",
-            "-s", topology,
-            "-f", trajectory,
-            "-o", path.join(subdir, outfile),
-            "-b", "{:d}".format(start),
-            "-e", "{:d}".format(stop),
+            "gmx",
+            "trjconv",
+            "-s",
+            topology,
+            "-f",
+            trajectory,
+            "-o",
+            path.join(subdir, outfile),
+            "-b",
+            "{:d}".format(start),
+            "-e",
+            "{:d}".format(stop),
         ]
     fd, fpath = tempfile.mkstemp(text=True)
     with mdutil.openany(fpath, "w") as temp:
@@ -321,11 +317,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     with mdutil.openany(fpath, "r") as temp, \
         mdutil.openany(path.join(subdir, logfile), mode="w") as log:
         subprocess.check_call(
-            command,
-            stdin=temp,
-            stdout=log,
-            stderr=subprocess.STDOUT
-        )
+            command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)
 
 
@@ -351,10 +343,8 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         Version of CHARMM
     """
     if mdutil.which("charmm") is None:
-        raise OSError(
-            "CHARMM is required. If installed, "
-            "please ensure that it is in your path."
-        )
+        raise OSError("CHARMM is required. If installed, "
+                      "please ensure that it is in your path.")
 
     # Trajectory splitting information
     subdir, start, stop = info
@@ -368,10 +358,8 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
 
     # Various filenames
     version = kwargs.get("charmm_version", 41)
-    toppar = kwargs.get(
-        "toppar",
-        "/opt/local/charmm/c{:d}b1/toppar".format(version)
-    )
+    toppar = kwargs.get("toppar",
+                        "/opt/local/charmm/c{:d}b1/toppar".format(version))
     trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.dcd"))
     outfile = path.join(subdir, kwargs.get("outfile", "aa.dcd"))
     logfile = kwargs.get("logfile", "split.log")
@@ -390,7 +378,9 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         print(charmm_inp, file=charmm_input)
     command = [
         "charmm",
-        "-i", inpfile,
-        "-o", path.join(subdir, logfile),
+        "-i",
+        inpfile,
+        "-o",
+        path.join(subdir, logfile),
     ]
     subprocess.check_call(command)

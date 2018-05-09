@@ -36,13 +36,13 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 
 
 def calculate_thermo(subdir, **kwargs):
-    topology = path.join(subdir, kwargs.pop("topology", "fluctmatch.xplor.psf"))
+    topology = path.join(subdir, kwargs.pop("topology",
+                                            "fluctmatch.xplor.psf"))
     trajectory = path.join(subdir, kwargs.pop("trajectory", "cg.dcd"))
     window = path.basename(subdir)
 
     cfm = charmmfluctmatch.CharmmFluctMatch(
-        topology, trajectory, outdir=subdir, **kwargs
-    )
+        topology, trajectory, outdir=subdir, **kwargs)
     cfm.calculate_thermo(nma_exec=kwargs.get("nma_exec"))
 
     with open(cfm.filenames["thermo_data"], "rb") as data_file:
@@ -50,8 +50,8 @@ def calculate_thermo(subdir, **kwargs):
             data_file,
             header=0,
             index_col=["segidI", "resI"],
-            skipinitialspace=True, delim_whitespace=True
-        )
+            skipinitialspace=True,
+            delim_whitespace=True)
 
     return (window, table)
 
@@ -82,11 +82,7 @@ def create_thermo_tables(datadir, outdir, **kwargs):
     charmm_version : int, optional
         CHARMM version
     """
-    subdirs = (
-        _
-        for _ in glob.iglob(path.join(datadir, "*"))
-        if path.isdir(_)
-    )
+    subdirs = (_ for _ in glob.iglob(path.join(datadir, "*")) if path.isdir(_))
 
     calc_thermo = functools.partial(calculate_thermo, **kwargs)
     pool = mp.Pool(maxtasksperchild=2)
@@ -101,23 +97,19 @@ def create_thermo_tables(datadir, outdir, **kwargs):
 
     for window, result in results.get():
         entropy = pd.concat(
-            [entropy, pd.DataFrame(result["Entropy"], columns=window)],
-            axis=1
-        )
+            [entropy, pd.DataFrame(result["Entropy"], columns=window)], axis=1)
         entropy.columns = entropy.columns.astype(np.int)
         entropy = entropy[np.sort(entropy.columns)]
 
         enthalpy = pd.concat(
-            [enthalpy, pd.DataFrame(result["Enthalpy"], columns=window)],
-            axis=1
-        )
+            [enthalpy,
+             pd.DataFrame(result["Enthalpy"], columns=window)],
+            axis=1)
         enthalpy.columns = enthalpy.columns.astype(np.int)
         enthalpy = enthalpy[np.sort(enthalpy.columns)]
 
         heat = pd.concat(
-            [heat, pd.DataFrame(result["Heatcap"], columns=window)],
-            axis=1
-        )
+            [heat, pd.DataFrame(result["Heatcap"], columns=window)], axis=1)
         heat.columns = heat.columns.astype(np.int)
         heat = heat[np.sort(heat.columns)]
 

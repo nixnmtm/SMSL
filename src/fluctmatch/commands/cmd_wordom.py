@@ -27,41 +27,26 @@ from fluctmatch.cli import pass_context
 from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command(
-    "wordom",
-    short_help="Convert between coordinate file types."
-)
+@click.command("wordom", short_help="Convert between coordinate file types.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
     "-f",
     "trajectory",
     metavar="FILE",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
     "-o",
     "outfile",
     metavar="FILE",
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -87,26 +72,20 @@ from fluctmatch.fluctmatch import utils as fmutils
     default=1,
     show_default=True,
     type=click.IntRange(1, None, clamp=True),
-    help="Interval between frames"
-)
-@click.option(
-    "-v",
-    "--verbose",
-    is_flag=True,
-    help="Show progress of output"
-)
+    help="Interval between frames")
+@click.option("-v", "--verbose", is_flag=True, help="Show progress of output")
 def cli(topology, trajectory, outfile, start, stop, step, verbose):
     universe = mda.Universe(topology, trajectory)
     trajectory = universe.trajectory
-    with mda.Writer(outfile, n_atoms=universe.atoms.n_atoms, dt=trajectory.dt) as trj:
+    with mda.Writer(
+            outfile, n_atoms=universe.atoms.n_atoms, dt=trajectory.dt) as trj:
         if verbose:
             with click.progressbar(
-                length=trajectory.n_frames,
-                label="Trajectory frames written"
-            ) as bar:
-                    for ts in trajectory[start:stop:step]:
-                        trj.write(ts)
-                        bar.update(ts.frame)
+                    length=trajectory.n_frames,
+                    label="Trajectory frames written") as bar:
+                for ts in trajectory[start:stop:step]:
+                    trj.write(ts)
+                    bar.update(ts.frame)
         else:
             for ts in trajectory[start:stop:step]:
                 trj.write(ts)

@@ -59,34 +59,26 @@ class Calpha(ModelBase):
 
         # Update the masses and charges
 
-
     def _add_bonds(self):
         bonds = []
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("calpha").ix,
-                s.atoms.select_atoms("calpha").ix[1:]
-            )
+                s.atoms.select_atoms("calpha").ix[1:])
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
     def _set_masses(self):
         ca_atu = self.atu.select_atoms("protein").split("residue")
-        self.atoms.select_atoms("calpha").masses = np.array([
-            _.total_mass()
-            for _ in ca_atu
-        ])
+        self.atoms.select_atoms("calpha").masses = np.array(
+            [_.total_mass() for _ in ca_atu])
 
     def _set_chargess(self):
         ca_atu = self.atu.select_atoms("protein").split("residue")
         try:
-            self.atoms.select_atoms("calpha").charges = np.array([
-                _.total_charge()
-                for _ in ca_atu
-            ])
+            self.atoms.select_atoms("calpha").charges = np.array(
+                [_.total_charge() for _ in ca_atu])
         except AttributeError:
             pass
 
@@ -112,56 +104,40 @@ class Caside(ModelBase):
     def _add_bonds(self):
         bonds = []
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("calpha").ix,
-                s.atoms.select_atoms("calpha").ix[1:]
-            )
+                s.atoms.select_atoms("calpha").ix[1:])
         ])
-        bonds.extend([
-            (
-                r.atoms.select_atoms("calpha").ix[0],
-                r.atoms.select_atoms("cbeta").ix[0]
-            )
-            for r in self.residues
-            if (
-                r.resname != "GLY" and
-                r.resname in selection.ProteinSelection.prot_res
-            )
-        ])
+        bonds.extend(
+            [(r.atoms.select_atoms("calpha").ix[0],
+              r.atoms.select_atoms("cbeta").ix[0]) for r in self.residues
+             if (r.resname != "GLY"
+                 and r.resname in selection.ProteinSelection.prot_res)])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
     def _set_masses(self):
         ca_atu = self.atu.select_atoms("hbackbone").split("residue")
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-        self.atoms.select_atoms("calpha").masses = np.array([
-            _.total_mass()
-            for _ in ca_atu
-        ])
-        self.atoms.select_atoms("cbeta").masses = np.array([
-            _.total_mass()
-            for _ in cb_atu
-        ])
+        self.atoms.select_atoms("calpha").masses = np.array(
+            [_.total_mass() for _ in ca_atu])
+        self.atoms.select_atoms("cbeta").masses = np.array(
+            [_.total_mass() for _ in cb_atu])
 
     def _set_chargess(self):
         ca_atu = self.atu.select_atoms("hbackbone").split("residue")
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
         try:
-            self.atoms.select_atoms("calpha").charges = np.array([
-                _.total_charge()
-                for _ in ca_atu
-            ])
+            self.atoms.select_atoms("calpha").charges = np.array(
+                [_.total_charge() for _ in ca_atu])
         except AttributeError:
             pass
         try:
-            self.atoms.select_atoms("cbeta").charges = np.array([
-                _.total_charge()
-                for _ in cb_atu
-            ])
+            self.atoms.select_atoms("cbeta").charges = np.array(
+                [_.total_charge() for _ in cb_atu])
         except AttributeError:
             pass
+
 
 class Ncsc(ModelBase):
     """Create a universe consisting of the amine, carboxyl, and sidechain regions.
@@ -185,42 +161,24 @@ class Ncsc(ModelBase):
     def _add_bonds(self):
         bonds = []
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name N").ix,
-                s.atoms.select_atoms("name O").ix
-            )
+                s.atoms.select_atoms("name O").ix)
         ])
+        bonds.extend(
+            [(r.atoms.select_atoms("name N").ix[0],
+              r.atoms.select_atoms("cbeta").ix[0]) for r in self.residues
+             if (r.resname != "GLY"
+                 and r.resname in selection.ProteinSelection.prot_res)])
+        bonds.extend(
+            [(r.atoms.select_atoms("cbeta").ix[0],
+              r.atoms.select_atoms("name O").ix[0]) for r in self.residues
+             if (r.resname != "GLY"
+                 and r.resname in selection.ProteinSelection.prot_res)])
         bonds.extend([
-            (
-                r.atoms.select_atoms("name N").ix[0],
-                r.atoms.select_atoms("cbeta").ix[0]
-            )
-            for r in self.residues
-            if (
-                r.resname != "GLY" and
-                r.resname in selection.ProteinSelection.prot_res
-            )
-        ])
-        bonds.extend([
-            (
-                r.atoms.select_atoms("cbeta").ix[0],
-                r.atoms.select_atoms("name O").ix[0]
-            )
-            for r in self.residues
-            if (
-                r.resname != "GLY" and
-                r.resname in selection.ProteinSelection.prot_res
-            )
-        ])
-        bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name O").ix,
-                s.atoms.select_atoms("name N").ix[1:]
-            )
+                s.atoms.select_atoms("name N").ix[1:])
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
@@ -232,18 +190,12 @@ class Ncsc(ModelBase):
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
 
         ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("name N").masses = np.array([
-            _.total_mass()
-            for _ in n_atu
-        ]) + ca_masses
-        self.atoms.select_atoms("cbeta").masses = np.array([
-            _.total_mass()
-            for _ in cb_atu
-        ])
-        self.atoms.select_atoms("name O").masses = np.array([
-            _.total_mass()
-            for _ in o_atu
-        ]) + ca_masses
+        self.atoms.select_atoms("name N").masses = np.array(
+            [_.total_mass() for _ in n_atu]) + ca_masses
+        self.atoms.select_atoms("cbeta").masses = np.array(
+            [_.total_mass() for _ in cb_atu])
+        self.atoms.select_atoms("name O").masses = np.array(
+            [_.total_mass() for _ in o_atu]) + ca_masses
 
     def _set_chargess(self):
         n_atu = self.atu.select_atoms("amine").split("residue")
@@ -253,18 +205,12 @@ class Ncsc(ModelBase):
 
         try:
             ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
-            self.atoms.select_atoms("name N").charges = np.array([
-                _.total_charge()
-                for _ in n_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("name O").charges = np.array([
-                _.total_charge()
-                for _ in o_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("cbeta").charges = np.array([
-                _.total_charge()
-                for _ in cb_atu
-            ])
+            self.atoms.select_atoms("name N").charges = np.array(
+                [_.total_charge() for _ in n_atu]) + ca_charges
+            self.atoms.select_atoms("name O").charges = np.array(
+                [_.total_charge() for _ in o_atu]) + ca_charges
+            self.atoms.select_atoms("cbeta").charges = np.array(
+                [_.total_charge() for _ in cb_atu])
         except AttributeError:
             pass
 
@@ -335,15 +281,13 @@ class Polar(ModelBase):
 
         residues = self.atu.atoms.split("residue")
         select_residues = enumerate(
-            itertools.product(residues, viewitems(mapping))
-        )
+            itertools.product(residues, viewitems(mapping)))
         for i, (res, (name, selection)) in select_residues:
             if name != "CB":
                 bead = res.select_atoms(selection)
             else:
                 bead = res.select_atoms(
-                    selection.get(res, "hsidechain and not name H*")
-                )
+                    selection.get(res, "hsidechain and not name H*"))
             if bead:
                 _beads.append(bead)
                 atomnames.append(name)
@@ -366,9 +310,9 @@ class Polar(ModelBase):
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
         atomnames = topologyattrs.Atomnames(
-            np.asarray(atomnames, dtype=np.object)
-        )
-        atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms)+100))
+            np.asarray(atomnames, dtype=np.object))
+        atomtypes = topologyattrs.Atomtypes(
+            np.asarray(np.arange(n_atoms) + 100))
         charges = topologyattrs.Charges(np.asarray(charges))
         masses = topologyattrs.Masses(np.asarray(masses))
 
@@ -378,8 +322,7 @@ class Polar(ModelBase):
         resids = np.asarray(resids)
         resnames = np.asarray(resnames, dtype=np.object)
         residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids,), (resids, resnames, segids)
-        )
+            (resids, ), (resids, resnames, segids))
 
         # transform from atom:Rid to atom:Rix
         residueids = topologyattrs.Resids(new_resids)
@@ -387,59 +330,44 @@ class Polar(ModelBase):
         residuenames = topologyattrs.Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids,) = topbase.change_squash(
-            (new_segids,), (new_segids,)
-        )
+        segidx, (perseg_segids, ) = topbase.change_squash((new_segids, ),
+                                                          (new_segids, ))
         segids = topologyattrs.Segids(perseg_segids)
 
         # Setup topology
-        top = topology.Topology(len(atomids), len(new_resids), len(segids),
-                                attrs=[_beads, atomids, atomnames, atomtypes,
-                                       charges, masses, vdwradii, residueids,
-                                       residuenums, residuenames, segids],
-                                atom_resindex=residx,
-                                residue_segindex=segidx)
+        top = topology.Topology(
+            len(atomids),
+            len(new_resids),
+            len(segids),
+            attrs=[
+                _beads, atomids, atomnames, atomtypes, charges, masses,
+                vdwradii, residueids, residuenums, residuenames, segids
+            ],
+            atom_resindex=residx,
+            residue_segindex=segidx)
         return top
 
     def _add_bonds(self):
         bonds = []
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name N").ix,
-                s.atoms.select_atoms("name O").ix
-            )
+                s.atoms.select_atoms("name O").ix)
         ])
+        bonds.extend(
+            [(r.atoms.select_atoms("name N").ix[0],
+              r.atoms.select_atoms("cbeta").ix[0]) for r in self.residues
+             if (r.resname != "GLY"
+                 and r.resname in selection.ProteinSelection.prot_res)])
+        bonds.extend(
+            [(r.atoms.select_atoms("cbeta").ix[0],
+              r.atoms.select_atoms("name O").ix[0]) for r in self.residues
+             if (r.resname != "GLY"
+                 and r.resname in selection.ProteinSelection.prot_res)])
         bonds.extend([
-            (
-                r.atoms.select_atoms("name N").ix[0],
-                r.atoms.select_atoms("cbeta").ix[0]
-            )
-            for r in self.residues
-            if (
-                r.resname != "GLY" and
-                r.resname in selection.ProteinSelection.prot_res
-            )
-        ])
-        bonds.extend([
-            (
-                r.atoms.select_atoms("cbeta").ix[0],
-                r.atoms.select_atoms("name O").ix[0]
-            )
-            for r in self.residues
-            if (
-                r.resname != "GLY" and
-                r.resname in selection.ProteinSelection.prot_res
-            )
-        ])
-        bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name O").ix,
-                s.atoms.select_atoms("name N").ix[1:]
-            )
+                s.atoms.select_atoms("name N").ix[1:])
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
@@ -451,18 +379,12 @@ class Polar(ModelBase):
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
 
         ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("name N").masses = np.array([
-            _.total_mass()
-            for _ in n_atu
-        ]) + ca_masses
-        self.atoms.select_atoms("cbeta").masses = np.array([
-            _.total_mass()
-            for _ in cb_atu
-        ])
-        self.atoms.select_atoms("name O").masses = np.array([
-            _.total_mass()
-            for _ in o_atu
-        ]) + ca_masses
+        self.atoms.select_atoms("name N").masses = np.array(
+            [_.total_mass() for _ in n_atu]) + ca_masses
+        self.atoms.select_atoms("cbeta").masses = np.array(
+            [_.total_mass() for _ in cb_atu])
+        self.atoms.select_atoms("name O").masses = np.array(
+            [_.total_mass() for _ in o_atu]) + ca_masses
 
     def _set_chargess(self):
         n_atu = self.atu.select_atoms("amine").split("residue")
@@ -472,17 +394,11 @@ class Polar(ModelBase):
 
         try:
             ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
-            self.atoms.select_atoms("name N").charges = np.array([
-                _.total_charge()
-                for _ in n_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("name O").charges = np.array([
-                _.total_charge()
-                for _ in o_atu
-            ]) + ca_charges
-            self.atoms.select_atoms("cbeta").charges = np.array([
-                _.total_charge()
-                for _ in cb_atu
-            ])
+            self.atoms.select_atoms("name N").charges = np.array(
+                [_.total_charge() for _ in n_atu]) + ca_charges
+            self.atoms.select_atoms("name O").charges = np.array(
+                [_.total_charge() for _ in o_atu]) + ca_charges
+            self.atoms.select_atoms("cbeta").charges = np.array(
+                [_.total_charge() for _ in cb_atu])
         except AttributeError:
             pass

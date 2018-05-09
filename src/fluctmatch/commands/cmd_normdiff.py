@@ -33,9 +33,7 @@ from fluctmatch.analysis import paramtable
 
 
 @click.command(
-    "normdiff",
-    short_help="Normalize the differences between t and t - dt/2."
-)
+    "normdiff", short_help="Normalize the differences between t and t - dt/2.")
 @click.option(
     "-o",
     "--outdir",
@@ -56,8 +54,7 @@ from fluctmatch.analysis import paramtable
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r"
-)
+    help="Number of residues to exclude in I,I+r")
 @click.argument(
     "kb",
     metavar="kb_table",
@@ -88,10 +85,8 @@ def cli(outdir, ressep, kb, b0):
     b0_table = b0_table.table.copy(deep=True)
 
     idx = (kb_table == 0.0)
-    maxkb = np.maximum(
-        kb_table[kb_table.columns[1:].values],
-        kb_table[kb_table.columns[:-1]].values
-    )
+    maxkb = np.maximum(kb_table[kb_table.columns[1:].values],
+                       kb_table[kb_table.columns[:-1]].values)
 
     maxkb[maxkb == 0.0] = np.NaN
     kb_table = kb_table.diff(axis=1).dropna(axis=1) / maxkb

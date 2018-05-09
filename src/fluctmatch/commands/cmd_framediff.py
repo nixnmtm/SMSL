@@ -33,8 +33,7 @@ from fluctmatch.analysis import paramtable
 
 @click.command(
     "framediff",
-    short_help="Calculate differences between consecutive frames."
-)
+    short_help="Calculate differences between consecutive frames.")
 @click.option(
     "-o",
     "--outdir",
@@ -55,8 +54,7 @@ from fluctmatch.analysis import paramtable
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r"
-)
+    help="Number of residues to exclude in I,I+r")
 @click.argument(
     "table",
     metavar="TABLE",
@@ -88,7 +86,8 @@ def cli(outdir, ressep, table):
 
     filename = path.join(outdir, "dframe_perres.txt")
     with open(filename, mode="wb") as output:
-        click.echo("Writing per residue frame differences to {}".format(filename))
+        click.echo(
+            "Writing per residue frame differences to {}".format(filename))
         d_perres = d_perres.to_csv(
             header=True,
             index=True,
@@ -101,8 +100,7 @@ def cli(outdir, ressep, table):
     filename = path.join(outdir, "dframe_interactions.txt")
     with open(filename, mode="wb") as output:
         click.echo(
-            "Writing residue-residue frame differences to {}".format(filename)
-        )
+            "Writing residue-residue frame differences to {}".format(filename))
         d_interactions = d_interactions.to_csv(
             header=True,
             index=True,

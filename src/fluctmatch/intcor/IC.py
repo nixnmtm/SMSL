@@ -34,13 +34,9 @@ from future.builtins import (
     open,
 )
 from future.utils import (
-    native_str,
-)
+    native_str, )
 
-from fluctmatch.topology.base import (
-    TopologyReaderBase,
-    TopologyWriterBase
-)
+from fluctmatch.topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 
 class IntcorReader(TopologyReaderBase):
@@ -55,26 +51,21 @@ class IntcorReader(TopologyReaderBase):
 
     fmt = dict(
         # fortran_format = "(I5,1X,4(I3,1X,A4),F9.4,3F8.2,F9.4)"
-        STANDARD = (
-            "I5,1X,I3,1X,A4,I3,1X,A4,I3,1X,A4,I3,1X,A4,F9.4,3F8.2,F9.4"
-        ),
+        STANDARD=("I5,1X,I3,1X,A4,I3,1X,A4,I3,1X,A4,I3,1X,A4,F9.4,3F8.2,F9.4"),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
-        EXTENDED = (
-            "I9,1X,I5,1X,A8,I5,1X,A8,I5,1X,A8,I5,1X,A8,F9.4,3F8.2,F9.4"
-        ),
+        EXTENDED=("I9,1X,I5,1X,A8,I5,1X,A8,I5,1X,A8,I5,1X,A8,F9.4,3F8.2,F9.4"),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        STANDARD_RESID = (
-            "I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"
-        ),
+        STANDARD_RESID=
+        ("I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"
+         ),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        EXTENDED_RESID = (
-            "I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,F12.6,3F12.4,F12.6"
-        ),
+        EXTENDED_RESID=
+        ("I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,F12.6,3F12.4,F12.6"
+         ),
     )
     cols = np.asarray([
-        "segidI", "resI", "I", "segidJ", "resJ", "J",
-        "segidK", "resK", "K", "segidL", "resL", "L",
-        "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
+        "segidI", "resI", "I", "segidJ", "resJ", "J", "segidK", "resK", "K",
+        "segidL", "resL", "L", "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
     ])
 
     def __init__(self, filename):
@@ -89,13 +80,12 @@ class IntcorReader(TopologyReaderBase):
             An internal coordinates table.
         """
         table = pd.DataFrame()
-        with open(
-            self.filename, "rb"
-        ) as icfile, TextIOWrapper(icfile, encoding="utf-8") as buf:
+        with open(self.filename, "rb") as icfile, TextIOWrapper(
+                icfile, encoding="utf-8") as buf:
             for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
-                    continue       # ignore TITLE and empty lines
+                    continue  # ignore TITLE and empty lines
                 break
             line = np.fromiter(line.strip().split(), dtype=np.int)
             key = "EXTENDED" if line[0] == 30 else "STANDARD"
@@ -105,27 +95,25 @@ class IntcorReader(TopologyReaderBase):
             line = next(buf).strip().split()
             n_lines, resid_b = np.array(line, dtype=np.int)
             if resid_a != resid_b:
-                raise IOError("A mismatch has occurred on determining the IC format.")
+                raise IOError(
+                    "A mismatch has occurred on determining the IC format.")
 
             TableParser = util.FORTRANReader(self.fmt[key])
             table = pd.DataFrame(
-                [TableParser.read(line) for line in buf], dtype=np.object
-            )
+                [TableParser.read(line) for line in buf], dtype=np.object)
             table = table[table != ":"]
             table = table.dropna(axis=1).apply(pd.to_numeric, errors="ignore")
             table.set_index(0, inplace=True)
             if n_lines != table.shape[0]:
-                raise IOError(
-                    "A mismatch has occurred between the number "
-                    "of lines expected and the number of lines "
-                    "read. ({:d} != {:d})".format(n_lines, len(table))
-                )
+                raise IOError("A mismatch has occurred between the number "
+                              "of lines expected and the number of lines "
+                              "read. ({:d} != {:d})".format(
+                                  n_lines, len(table)))
 
             if key == "STANDARD":
                 idx = np.where(
                     (self.cols != "segidI") & (self.cols != "segidJ") &
-                    (self.cols != "segidK") & (self.cols != "segidL")
-                )
+                    (self.cols != "segidK") & (self.cols != "segidL"))
                 columns = self.cols[idx]
             else:
                 columns = self.cols
@@ -156,22 +144,16 @@ class IntcorWriter(TopologyWriterBase):
     fmt = dict(
         # fortran_format = "(I5,1X,4(I3,1X,A4),F9.4,3F8.2,F9.4)"
         STANDARD=(
-            "%5d %3s %-4s%3s %-4%3s %-4%3s %-4%9.4f%8.2f%8.2f%8.2f%9.4f"
-        ),
+            "%5d %3s %-4s%3s %-4%3s %-4%3s %-4%9.4f%8.2f%8.2f%8.2f%9.4f"),
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
         EXTENDED=(
-            "%10d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f"
-        ),
+            "%10d %5s %-8s%5s %-8s%5s %-8s%5s %-8s%9.4f%8.2f%8.2f%8.2f%9.4f"),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        STANDARD_RESID=(
-            "%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s: "
-            "%-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"
-        ),
+        STANDARD_RESID=("%5d %-4s %-4s %-4s: %-4s %-4s %-4s: %-4s %-4s %-4s: "
+                        "%-4s %-4s %-4s:%12.6f%12.4f%12.4f%12.4f%12.6f"),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        EXTENDED_RESID=(
-            "%10d %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s: "
-            "%-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
-        ),
+        EXTENDED_RESID=("%10d %-8s %-8s %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s: "
+                        "%-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"),
     )
 
     def __init__(self, filename, **kwargs):
@@ -185,12 +167,10 @@ class IntcorWriter(TopologyWriterBase):
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
         self._title = kwargs.get(
-            "title",
-            (
+            "title", (
                 "* Created by fluctmatch on {date}".format(date=date),
                 "* User: {user}".format(user=user),
-            )
-        )
+            ))
         if not util.iterable(self._title):
             self._title = util.asiterable(self._title)
 
@@ -207,12 +187,15 @@ class IntcorWriter(TopologyWriterBase):
         # Increment index.
         if ictable.index[0] == 0:
             ictable.index += 1
-        rescol = ["resI", "resJ", "resK", "resL", ]
+        rescol = [
+            "resI",
+            "resJ",
+            "resK",
+            "resL",
+        ]
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
-        with open(
-            self.filename, "wb"
-        ) as icfile:
+        with open(self.filename, "wb") as icfile:
             for _ in self._title:
                 icfile.write(_.encode())
                 icfile.write("\n".encode())
@@ -223,8 +206,7 @@ class IntcorWriter(TopologyWriterBase):
                 icfile,
                 line[np.newaxis, :],
                 fmt=native_str("%4d"),
-                delimiter=native_str("")
-            )
+                delimiter=native_str(""))
             line = np.zeros(2, dtype=np.int)
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
@@ -232,10 +214,8 @@ class IntcorWriter(TopologyWriterBase):
                 icfile,
                 line[np.newaxis, :],
                 fmt=native_str("%5d"),
-                delimiter=native_str("")
-            )
+                delimiter=native_str(""))
             np.savetxt(
                 icfile,
                 ictable.reset_index(),
-                fmt=native_str(self.fmt[self.key])
-            )
+                fmt=native_str(self.fmt[self.key]))

@@ -33,9 +33,7 @@ from fluctmatch.analysis import paramtable
 
 
 @click.command(
-    "table",
-    short_help="Create a table from individual parameter files."
-)
+    "table", short_help="Create a table from individual parameter files.")
 @click.option(
     "-d",
     "--datadir",
@@ -43,11 +41,7 @@ from fluctmatch.analysis import paramtable
     metavar="DIR",
     default=path.join(os.getcwd(), "data"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Data directory",
 )
 @click.option(
@@ -56,11 +50,7 @@ from fluctmatch.analysis import paramtable
     metavar="OUTDIR",
     default=os.getcwd(),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -89,8 +79,7 @@ from fluctmatch.analysis import paramtable
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r"
-)
+    help="Number of residues to exclude in I,I+r")
 @click.option(
     "-v",
     "--verbose",
@@ -98,7 +87,10 @@ from fluctmatch.analysis import paramtable
 )
 def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
     pt = paramtable.ParamTable(
-        prefix=prefix, tbltype=tbltype, ressep=ressep, datadir=data_dir,
+        prefix=prefix,
+        tbltype=tbltype,
+        ressep=ressep,
+        datadir=data_dir,
     )
     pt.run(verbose=verbose)
 

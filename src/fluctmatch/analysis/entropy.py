@@ -31,6 +31,7 @@ from fluctmatch.analysis.paramtable import ParamTable
 class Entropy(object):
     """Calculate various entropic contributions from the coupling strengths.
     """
+
     def __init__(self, filename, ressep=3):
         """
         Parameters
@@ -125,8 +126,7 @@ class Entropy(object):
 
         table = self._table._separate(self._table.table)
         hist, edges = np.histogram(
-            table, range=(1e-4, table.values.max()), bins=bins
-        )
+            table, range=(1e-4, table.values.max()), bins=bins)
         hist = (hist / table.size).astype(dtype=np.float)
         xaxis = (edges[:-1] + edges[1:]) / 2
         try:
@@ -150,8 +150,7 @@ class Entropy(object):
         S_P.fillna(0., inplace=True)
         S_Q.fillna(0., inplace=True)
         entropy = -(
-            S_P.groupby(level=header).sum() + S_Q.groupby(level=header).sum()
-        )
+            S_P.groupby(level=header).sum() + S_Q.groupby(level=header).sum())
         entropy[entropy == -0.0] = entropy[entropy == -0.0].abs()
 
         return entropy

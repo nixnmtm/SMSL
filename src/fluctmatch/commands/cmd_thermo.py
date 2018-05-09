@@ -29,10 +29,7 @@ from MDAnalysis.lib.util import which
 from fluctmatch.analysis import thermodynamics
 
 
-@click.command(
-    "thermo",
-    short_help="Calculate thermodynamic properties."
-)
+@click.command("thermo", short_help="Calculate thermodynamic properties.")
 @click.option(
     "-s",
     "topology",
@@ -65,11 +62,7 @@ from fluctmatch.analysis import thermodynamics
     metavar="DIR",
     default=path.join(os.getcwd(), "data"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -78,11 +71,7 @@ from fluctmatch.analysis import thermodynamics
     metavar="DIR",
     default=os.getcwd(),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -93,11 +82,7 @@ from fluctmatch.analysis import thermodynamics
     envvar="CHARMMEXEC",
     default=which("charmm"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="CHARMM executable file",
 )
 @click.option(
@@ -119,9 +104,8 @@ from fluctmatch.analysis import thermodynamics
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
-def cli(
-    datadir, outdir, topology, trajectory, nma_exec, temperature, charmm_version
-):
+def cli(datadir, outdir, topology, trajectory, nma_exec, temperature,
+        charmm_version):
     # Attempt to create the necessary subdirectory
     try:
         os.makedirs(outdir)
@@ -135,5 +119,4 @@ def cli(
         trajectory=trajectory,
         temperature=temperature,
         nma_exec=nma_exec,
-        charmm_version=charmm_version
-    )
+        charmm_version=charmm_version)

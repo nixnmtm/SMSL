@@ -32,19 +32,14 @@ from future.builtins import (dict, open, zip)
 
 @click.command(
     "table_convert",
-    short_help="Transform an ENM IC table name to corresponding atoms."
-)
+    short_help="Transform an ENM IC table name to corresponding atoms.")
 @click.option(
     "-s1",
     "top1",
     metavar="FILE",
     default=path.join(os.getcwd(), "cg.xplor.psf"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Topology file",
 )
 @click.option(
@@ -53,11 +48,7 @@ from future.builtins import (dict, open, zip)
     metavar="FILE",
     default=path.join(os.getcwd(), "fluctmatch.xplor.psf"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Topology file",
 )
 @click.option(
@@ -66,11 +57,7 @@ from future.builtins import (dict, open, zip)
     metavar="FILE",
     default=path.join(os.getcwd(), "cg.dcd"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Coordinate file",
 )
 @click.option(
@@ -79,11 +66,7 @@ from future.builtins import (dict, open, zip)
     metavar="FILE",
     default=path.join(os.getcwd(), "kb.txt"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Coordinate file",
 )
 @click.option(
@@ -92,11 +75,7 @@ from future.builtins import (dict, open, zip)
     metavar="OUTFILE",
     default=path.join(os.getcwd(), "kb_aa.txt"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Table file",
 )
 def cli(top1, top2, coord, table, outfile):
@@ -114,16 +93,14 @@ def cli(top1, top2, coord, table, outfile):
         )
 
     # Transform assigned bead names to an all-atom designation.
-    constants["I"] = constants["I"].apply(
-        lambda x: convert[x]
-    )
-    constants["J"] = constants["J"].apply(
-        lambda x: convert[x]
-    )
+    constants["I"] = constants["I"].apply(lambda x: convert[x])
+    constants["J"] = constants["J"].apply(lambda x: convert[x])
 
     # Create lists of corresponding residues
-    constants["resnI"] = constants["resI"].apply(lambda x: resnames[x]).to_frame()
-    constants["resnJ"] = constants["resJ"].apply(lambda x: resnames[x]).to_frame()
+    constants["resnI"] = constants["resI"].apply(
+        lambda x: resnames[x]).to_frame()
+    constants["resnJ"] = constants["resJ"].apply(
+        lambda x: resnames[x]).to_frame()
 
     # Concatenate the columns
     cols = ["segidI", "resI", "resnI", "I", "segidJ", "resJ", "resnJ", "J"]

@@ -29,21 +29,14 @@ from MDAnalysis.lib.util import which
 from fluctmatch.fluctmatch import charmmfluctmatch
 
 
-@click.command(
-    "run_fm",
-    short_help="Run fluctuation matching."
-)
+@click.command("run_fm", short_help="Run fluctuation matching.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
@@ -52,11 +45,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -65,11 +54,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="DIR",
     default=os.getcwd(),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -80,11 +65,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     envvar="CHARMMEXEC",
     default=which("charmm"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="CHARMM executable file",
 )
 @click.option(
@@ -157,9 +138,19 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     help="Restart simulation",
 )
 def cli(
-    topology, trajectory, outdir, nma_exec, temperature,
-    n_cycles, tol, prefix, charmm_version,
-    extended, resid, nonbonded, restart,
+        topology,
+        trajectory,
+        outdir,
+        nma_exec,
+        temperature,
+        n_cycles,
+        tol,
+        prefix,
+        charmm_version,
+        extended,
+        resid,
+        nonbonded,
+        restart,
 ):
     kwargs = dict(
         prefix=prefix,

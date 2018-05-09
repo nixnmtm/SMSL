@@ -56,8 +56,7 @@ class Enm(ModelBase):
         message = "<CG Universe with {} beads".format(self.atoms.n_atoms)
         try:
             message += " and {:d} bonds".format(
-                len(self._topology.bonds.values)
-            )
+                len(self._topology.bonds.values))
         except AttributeError as exc:
             pass
         finally:
@@ -71,9 +70,8 @@ class Enm(ModelBase):
         charges = kwargs.get("charges", False)
         if not charges:
             self.atoms.charges = 0.
-        self._topology.add_TopologyAttr(topologyattrs.Atomtypes(
-            np.arange(self.atoms.n_atoms) + 1)
-        )
+        self._topology.add_TopologyAttr(
+            topologyattrs.Atomtypes(np.arange(self.atoms.n_atoms) + 1))
         self._topology.add_TopologyAttr(topologyattrs.Angles([]))
         self._topology.add_TopologyAttr(topologyattrs.Dihedrals([]))
         self._topology.add_TopologyAttr(topologyattrs.Impropers([]))
@@ -92,11 +90,8 @@ class Enm(ModelBase):
             a0, a1 = np.where((dm >= self._rmin) & (dm <= self._rmax))
         else:
             a0, a1 = np.where((dm > self._rmin) & (dm <= self._rmax))
-        bonds = topologyattrs.Bonds(set([
-            (x, y)
-            for x, y in zip(a0, a1)
-            if y > x
-        ]))
+        bonds = topologyattrs.Bonds(
+            set([(x, y) for x, y in zip(a0, a1) if y > x]))
         self._topology.add_TopologyAttr(bonds)
         self._generate_from_topology()
 

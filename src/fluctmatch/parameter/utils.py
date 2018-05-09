@@ -25,8 +25,7 @@ import MDAnalysis as mda
 import numpy as np
 import pandas as pd
 from future.builtins import (
-    dict,
-)
+    dict, )
 
 
 def create_empty_parameters(universe, **kwargs):
@@ -62,11 +61,9 @@ def create_empty_parameters(universe, **kwargs):
     )
 
     # Atoms
-    types = (
-        universe.atoms.types
-        if np.issubdtype(universe.atoms.types.dtype, np.int)
-        else np.arange(universe.atoms.n_atoms) + 1
-    )
+    types = (universe.atoms.types
+             if np.issubdtype(universe.atoms.types.dtype, np.int) else
+             np.arange(universe.atoms.n_atoms) + 1)
     atoms = [types, universe.atoms.names, universe.atoms.masses]
     parameters["ATOMS"] = pd.concat([pd.DataFrame(_) for _ in atoms], axis=1)
     parameters["ATOMS"].columns = param_columns["ATOMS"]
@@ -80,10 +77,8 @@ def create_empty_parameters(universe, **kwargs):
             universe.bonds.atom2.names,
             np.zeros((universe.bonds.atom1.names.size, 2), dtype=np.float),
         ]
-        parameters["BONDS"] = pd.concat([
-            pd.DataFrame(_)
-            for _ in bonds
-        ], axis=1)
+        parameters["BONDS"] = pd.concat(
+            [pd.DataFrame(_) for _ in bonds], axis=1)
         parameters["BONDS"].columns = param_columns["BONDS"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass
@@ -96,10 +91,8 @@ def create_empty_parameters(universe, **kwargs):
             universe.angles.atom3.names,
             np.zeros((universe.angles.atom1.names.size, 2), dtype=np.float),
         ]
-        parameters["ANGLES"] = pd.concat([
-            pd.DataFrame(_)
-            for _ in angles
-        ], axis=1)
+        parameters["ANGLES"] = pd.concat(
+            [pd.DataFrame(_) for _ in angles], axis=1)
         parameters["ANGLES"].columns = param_columns["ANGLES"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass
@@ -115,10 +108,8 @@ def create_empty_parameters(universe, **kwargs):
             np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.int),
             np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.float),
         ]
-        parameters["DIHEDRALS"] = pd.concat([
-            pd.DataFrame(_)
-            for _ in dihedrals
-        ], axis=1)
+        parameters["DIHEDRALS"] = pd.concat(
+            [pd.DataFrame(_) for _ in dihedrals], axis=1)
         parameters["DIHEDRALS"].columns = param_columns["DIHEDRALS"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass
@@ -134,10 +125,8 @@ def create_empty_parameters(universe, **kwargs):
             np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.int),
             np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.float),
         ]
-        parameters["IMPROPER"] = pd.concat([
-            pd.DataFrame(_)
-            for _ in impropers
-        ], axis=1)
+        parameters["IMPROPER"] = pd.concat(
+            [pd.DataFrame(_) for _ in impropers], axis=1)
         parameters["IMPROPER"].columns = param_columns["DIHEDRALS"]
     except (mda.NoDataError, AttributeError, IndexError):
         pass

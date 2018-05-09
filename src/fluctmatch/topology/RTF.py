@@ -33,8 +33,7 @@ from future.builtins import (
     open,
 )
 from future.utils import (
-    native_str,
-)
+    native_str, )
 
 from fluctmatch.topology import base as topbase
 
@@ -62,7 +61,8 @@ class RTFWriter(topbase.TopologyWriterBase):
         DECL="DECL +%s\nDECL -%s",
         RES="RESI {:<4s} {:>12.4f}\nGROUP\n",
         ATOM="ATOM %-6s %-6s %7.4f",
-        IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",)
+        IC="IC %-4s %-4s %-4s %-4s %7.4f %8.4f %9.4f %8.4f %7.4f",
+    )
     bonds = (
         ("BOND", ("bonds", 8)),
         ("IMPH", ("impropers", 8)),
@@ -76,12 +76,10 @@ class RTFWriter(topbase.TopologyWriterBase):
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
         self._title = kwargs.get(
-            "title",
-            (
+            "title", (
                 "* Created by fluctmatch on {date}".format(date=date),
                 "* User: {user}".format(user=user),
-            )
-        )
+            ))
         if not util.iterable(self._title):
             self._title = util.asiterable(self._title)
 
@@ -101,8 +99,7 @@ class RTFWriter(topbase.TopologyWriterBase):
             self.rtffile,
             columns,
             fmt=native_str(self.fmt["MASS"]),
-            delimiter=native_str("")
-        )
+            delimiter=native_str(""))
 
     def _write_decl(self):
         names = np.unique(self._atoms.names)[:, np.newaxis]
@@ -111,18 +108,15 @@ class RTFWriter(topbase.TopologyWriterBase):
         self.rtffile.write("\n".encode())
 
     def _write_residues(self, residue):
-        self.rtffile.write(
-            self.fmt["RES"].format(residue.resname, residue.charge).encode()
-        )
+        self.rtffile.write(self.fmt["RES"].format(residue.resname,
+                                                  residue.charge).encode())
 
         # Write the atom lines with site name, type, and charge.
         key = "ATOM"
         atoms = residue.atoms
-        lines = (
-            (atoms.names, atoms.types, atoms.charges)
-            if not np.issubdtype(atoms.types.dtype, np.int)
-            else (atoms.names, atoms.names, atoms.charges)
-        )
+        lines = ((atoms.names, atoms.types, atoms.charges)
+                 if not np.issubdtype(atoms.types.dtype, np.int) else
+                 (atoms.names, atoms.names, atoms.charges))
         lines = pd.concat([pd.Series(_) for _ in lines], axis=1)
         np.savetxt(self.rtffile, lines, fmt=native_str(self.fmt[key]))
 
@@ -137,34 +131,27 @@ class RTFWriter(topbase.TopologyWriterBase):
 
                 # Create list of atom names and include "+" for atoms not
                 # within the residue.
-                names = np.concatenate([
-                    _.atoms.names[np.newaxis, :]
-                    for _ in bonds
-                ], axis=0).astype(np.object)
-                idx = np.any([
-                    np.isin(_.atoms, atoms, invert=True)
-                    for _ in bonds
-                ], axis=1)
+                names = np.concatenate(
+                    [_.atoms.names[np.newaxis, :] for _ in bonds],
+                    axis=0).astype(np.object)
+                idx = np.any(
+                    [np.isin(_.atoms, atoms, invert=True) for _ in bonds],
+                    axis=1)
                 pos_names = np.where(
-                    np.isin(bonds[idx], atoms, invert=True),
-                    "+", ""
-                ).astype(np.object)
+                    np.isin(bonds[idx], atoms, invert=True), "+", "").astype(
+                        np.object)
                 if pos_names.size == 0:
                     raise RuntimeError(
                         "Please check that all bond definitions are valid. "
-                        "You may have some missing or broken bonds."
-                    )
+                        "You may have some missing or broken bonds.")
                 names[idx] = pos_names + names[idx]
                 names = names.astype(np.unicode)
 
                 # Eliminate redundancies.
                 # Code courtesy of Daniel F on
                 # https://stackoverflow.com/questions/45005477/eliminating-redundant-numpy-rows/45006131?noredirect=1#comment76988894_45006131
-                b = np.ascontiguousarray(
-                    np.sort(names, -1)
-                ).view(
-                    np.dtype((np.void, names.dtype.itemsize * names.shape[1]))
-                )
+                b = np.ascontiguousarray(np.sort(names, -1)).view(
+                    np.dtype((np.void, names.dtype.itemsize * names.shape[1])))
                 _, idx = np.unique(b, return_index=True)
                 names = names[idx]
 
@@ -177,7 +164,7 @@ class RTFWriter(topbase.TopologyWriterBase):
                     names = np.concatenate((names, extras), axis=0)
                 names = names.reshape((names.shape[0] // n_values, n_perline))
                 np.savetxt(self.rtffile, names, fmt=native_str(fmt))
-            except (AttributeError,):
+            except (AttributeError, ):
                 continue
         self.rtffile.write("\n".encode())
 
@@ -191,9 +178,7 @@ class RTFWriter(topbase.TopologyWriterBase):
             definitions.
         """
         self._atoms = universe.atoms
-        with open(
-            self.filename, "wb"
-        ) as self.rtffile:
+        with open(self.filename, "wb") as self.rtffile:
             # Write the title and header information.
             for _ in self._title:
                 self.rtffile.write(_.encode())
@@ -209,7 +194,8 @@ class RTFWriter(topbase.TopologyWriterBase):
             self.rtffile.write("AUTOGENERATE ANGLES DIHEDRAL\n\n".encode())
 
             # Write out the residue information
-            _, idx = np.unique(self._atoms.residues.resnames, return_index=True)
+            _, idx = np.unique(
+                self._atoms.residues.resnames, return_index=True)
             for residue in self._atoms.residues[idx]:
                 self._write_residues(residue)
             self.rtffile.write("END\n".encode())

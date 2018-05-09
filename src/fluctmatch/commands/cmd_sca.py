@@ -33,14 +33,12 @@ from six.moves import cPickle
 
 from fluctmatch.analysis.paramtable import ParamTable
 from fluctmatch.analysis import (
-    fluctsca,
-)
+    fluctsca, )
 
 
 @click.command(
     "sca",
-    short_help="Statistical coupling analysis (SCA) on coupling strength"
-)
+    short_help="Statistical coupling analysis (SCA) on coupling strength")
 @click.option(
     "-n",
     "--ntrials",
@@ -48,32 +46,28 @@ from fluctmatch.analysis import (
     default=100,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of random iterations"
-)
+    help="Number of random iterations")
 @click.option(
     "--std",
     metavar="STDDEV",
     default=2,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of std. deviations for beyond second eigenmode"
-)
+    help="Number of std. deviations for beyond second eigenmode")
 @click.option(
     "-k",
     "--kpos",
     metavar="KPOS",
     default=0,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of eigenmodes [default: auto]"
-)
+    help="Number of eigenmodes [default: auto]")
 @click.option(
     "-p",
     "--pcut",
     default=0.95,
     show_default=True,
     type=np.float,
-    help="Cutoff value for sector selection"
-)
+    help="Cutoff value for sector selection")
 @click.option(
     "-r",
     "--ressep",
@@ -81,8 +75,7 @@ from fluctmatch.analysis import (
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r"
-)
+    help="Number of residues to exclude in I,I+r")
 @click.option(
     "-o",
     "--output",
@@ -93,20 +86,15 @@ from fluctmatch.analysis import (
         file_okay=True,
         resolve_path=True,
     ),
-    help="Output filename"
-)
+    help="Output filename")
 @click.option(
     "-s",
     "--subset",
     metavar="SEGID RES RES",
-    type=(
-        native_str,
-        click.IntRange(1, None, clamp=True),
-        click.IntRange(1, None, clamp=True)
-    ),
+    type=(native_str, click.IntRange(1, None, clamp=True),
+          click.IntRange(1, None, clamp=True)),
     multiple=True,
-    help="Subset of a system (SEGID FIRST LAST)"
-)
+    help="Subset of a system (SEGID FIRST LAST)")
 @click.option(
     "--all",
     "transformation",
@@ -134,11 +122,9 @@ from fluctmatch.analysis import (
         exists=True,
         file_okay=True,
         resolve_path=True,
-    )
-)
-def cli(
-    ntrials, std, kpos, pcut, ressep, output, subset, transformation, filename
-):
+    ))
+def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
+        filename):
     # Load the table, separate by I,I+r, and if requested, create a subset.
     table = ParamTable(ressep=ressep)
     table.from_file(click.format_filename(filename))
@@ -185,8 +171,7 @@ def cli(
         Lrand=Lrand,
         Ucorrel=Ucorrel,
         Vcorrel=Vcorrel,
-        ntrials=ntrials
-    )
+        ntrials=ntrials)
 
     # Determine the number of eigenmodes if kpos = 0
     _kpos = fluctsca.chooseKpos(Lsca, Lrand, stddev=std) if kpos == 0 else kpos
@@ -197,14 +182,12 @@ def cli(
     # Calculate IC sectors
     Uica, Wres = fluctsca.rotICA(U, kmax=_kpos)
     Uics, Uicsize, Usortedpos, Ucutoff, Uscaled_pd, Upd = fluctsca.icList(
-        Uica, _kpos, Ucorrel, p_cut=pcut
-    )
+        Uica, _kpos, Ucorrel, p_cut=pcut)
     Vica, Wtime = fluctsca.rotICA(Vt.T, kmax=_kpos)
-    Utica = Wtime.dot(U[:,:_kpos].T).T
+    Utica = Wtime.dot(U[:, :_kpos].T).T
     Vrica = Wres.dot(Vt[:_kpos]).T
     Vics, Vicsize, Vsortedpos, Vcutoff, Vscaled_pd, Vpd = fluctsca.icList(
-        Vica, _kpos, Vcorrel, p_cut=pcut
-    )
+        Vica, _kpos, Vcorrel, p_cut=pcut)
     D_sector = dict(
         std=std,
         kpos=_kpos,
@@ -227,20 +210,12 @@ def cli(
         Vscaled_pd=Vscaled_pd,
         Vpd=Vpd,
         Utica=Utica,
-        Vrica=Vrica
-    )
+        Vrica=Vrica)
 
-    D = dict(
-        info=D_info,
-        sca=D_sca,
-        sector=D_sector
-    )
+    D = dict(info=D_info, sca=D_sca, sector=D_sector)
     with open(click.format_filename(output), mode="wb") as dbf:
-        click.echo(
-            "Saving data to {}".format(click.format_filename(output))
-        )
+        click.echo("Saving data to {}".format(click.format_filename(output)))
         if PY3:
             click.echo(
-                "Note: The saved file will be incompatible with Python 2."
-            )
+                "Note: The saved file will be incompatible with Python 2.")
         cPickle.dump(D, dbf, protocol=cPickle.HIGHEST_PROTOCOL)

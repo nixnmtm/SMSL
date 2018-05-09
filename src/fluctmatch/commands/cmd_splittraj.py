@@ -41,38 +41,28 @@ _CONVERT = dict(
     CHARMM=utils.split_charmm,
 )
 
+
 @click.command(
-    "splittraj",
-    short_help="Split a trajectory using Gromacs or CHARMM."
-)
+    "splittraj", short_help="Split a trajectory using Gromacs or CHARMM.")
 @click.option(
     "--type",
     "program",
     type=click.Choice(viewkeys(_CONVERT)),
     default="GMX",
-    help="Split using an external MD program"
-)
+    help="Split using an external MD program")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
     "--toppar",
     metavar="DIR",
     default=path.join(os.getcwd(), "toppar"),
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Location of CHARMM topology/parameter files",
 )
 @click.option(
@@ -80,11 +70,7 @@ _CONVERT = dict(
     "trajectory",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -104,11 +90,7 @@ _CONVERT = dict(
     "-n",
     "index",
     metavar="FILE",
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs index file (e.g. ndx)",
 )
 @click.option(
@@ -172,13 +154,13 @@ _CONVERT = dict(
     type=click.IntRange(2, None, clamp=True),
     help="Size of each subtrajectory",
 )
-def cli(
-    program, toppar, topology, trajectory, data, index, outfile, logfile,
-    system, start, stop, window_size
-):
+def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
+        system, start, stop, window_size):
     half_size = window_size // 2
     beg = start - half_size if start >= window_size else start
-    values = zip(range(beg, stop+1, half_size), range(beg+window_size-1, stop+1, half_size))
+    values = zip(
+        range(beg, stop + 1, half_size),
+        range(beg + window_size - 1, stop + 1, half_size))
     values = [((y // half_size) - 1, x, y) for x, y in values]
 
     func = functools.partial(

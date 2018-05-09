@@ -30,8 +30,7 @@ from MDAnalysis.coordinates.core import reader
 from MDAnalysis.lib.util import openany
 
 from future.builtins import (
-    dict,
-)
+    dict, )
 from future.utils import native_str
 
 import numpy as np
@@ -44,26 +43,31 @@ _index = dict(
 )
 
 
-def _create_table(
-    directory, intcor="average.ic", parmfile="fluctmatch.dist.prm",
-    tbltype="Kb", verbose=False
-):
+def _create_table(directory,
+                  intcor="average.ic",
+                  parmfile="fluctmatch.dist.prm",
+                  tbltype="Kb",
+                  verbose=False):
     if path.isdir(directory):
         if verbose:
             print("Reading directory {}".format(directory))
         with reader(path.join(directory, intcor)) as ic_file:
             if verbose:
-                print("    Processing {}...".format(path.join(directory, intcor)))
+                print("    Processing {}...".format(
+                    path.join(directory, intcor)))
             ic_table = ic_file.read()
             ic_table.set_index(_header, inplace=True)
         with reader(path.join(directory, parmfile)) as prm_file:
             if verbose:
-                print("    Processing {}...".format(path.join(directory, parmfile)))
+                print("    Processing {}...".format(
+                    path.join(directory, parmfile)))
             prm_table = prm_file.read()["BONDS"].set_index(_header)
         table = pd.concat([ic_table, prm_table], axis=1)
         table.reset_index(inplace=True)
         table = table.set_index(_index["general"])[tbltype].to_frame()
-        table.columns = [path.basename(directory), ]
+        table.columns = [
+            path.basename(directory),
+        ]
         return table
 
 
@@ -71,9 +75,12 @@ class ParamTable(object):
     """Create a parameter table time series for distance or coupling strength.
 
     """
-    def __init__(
-        self, prefix="fluctmatch", tbltype="Kb", ressep=3, datadir=path.curdir
-    ):
+
+    def __init__(self,
+                 prefix="fluctmatch",
+                 tbltype="Kb",
+                 ressep=3,
+                 datadir=path.curdir):
         """
         Parameters
         ----------
@@ -112,10 +119,8 @@ class ParamTable(object):
         index = prm_table.index.names
         table = prm_table.reset_index()
         tmp = table[table["segidI"] == table["segidJ"]]
-        tmp = tmp[
-            (tmp["resI"] >= tmp["resJ"] + self._ressep) |
-            (tmp["resJ"] >= tmp["resI"] + self._ressep)
-        ]
+        tmp = tmp[(tmp["resI"] >= tmp["resJ"] + self._ressep)
+                  | (tmp["resJ"] >= tmp["resI"] + self._ressep)]
         diff = table[table["segidI"] != table["segidJ"]]
         table = pd.concat([tmp, diff], axis=0)
         table.set_index(index, inplace=True)
@@ -132,10 +137,8 @@ class ParamTable(object):
 
         columns = np.concatenate((revcol, self.table.columns[len(revcol):]))
         temp = self.table.copy(deep=True)
-        same = temp[
-            (temp["segidI"] == temp["segidJ"]) &
-            (temp["resI"] != temp["resJ"])
-        ]
+        same = temp[(temp["segidI"] == temp["segidJ"])
+                    & (temp["resI"] != temp["resJ"])]
 
         diff = temp[temp["segidI"] != temp["segidJ"]]
         temp = pd.concat([same, diff], axis=0)
@@ -225,7 +228,8 @@ class ParamTable(object):
         table = self._separate(self.table)
         table = 0.5 * table.groupby(level=["segidI", "resI"]).sum()
         table.sort_index(axis=1, inplace=True)
-        table = table.reindex(index=table.index, columns=np.sort(table.columns))
+        table = table.reindex(
+            index=table.index, columns=np.sort(table.columns))
         return table
 
     @property
@@ -239,5 +243,6 @@ class ParamTable(object):
         table = self._separate(self.table)
         table = table.groupby(level=["segidI", "resI", "segidJ", "resJ"]).sum()
         table.sort_index(axis=1, inplace=True)
-        table = table.reindex(index=table.index, columns=np.sort(table.columns))
+        table = table.reindex(
+            index=table.index, columns=np.sort(table.columns))
         return table

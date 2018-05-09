@@ -78,19 +78,15 @@ class CORWriter(CRD.CRDWriter):
     fmt = dict(
         # crdtype = "extended"
         # fortran_format = "(2I10,2X,A8,2X,A8,3F20.10,2X,A8,2X,A8,F20.10)"
-        ATOM_EXT=(
-            "{serial:10d}{totRes:10d}  {resname:<8.8s}  {name:<8.8s}"
-            "{pos[0]:20.10f}{pos[1]:20.10f}{pos[2]:20.10f}  "
-            "{chainID:<8.8s}  {resSeq:<8d}{tempfactor:20.10f}\n"
-        ),
+        ATOM_EXT=("{serial:10d}{totRes:10d}  {resname:<8.8s}  {name:<8.8s}"
+                  "{pos[0]:20.10f}{pos[1]:20.10f}{pos[2]:20.10f}  "
+                  "{chainID:<8.8s}  {resSeq:<8d}{tempfactor:20.10f}\n"),
         NUMATOMS_EXT="{0:10d} EXT\n",
         # crdtype = "standard"
         # fortran_format = "(2I5,1X,A4,1X,A4,3F10.5,1X,A4,1X,A4,F10.5)"
-        ATOM=(
-            "{serial:5d}{totRes:5d} {resname:<4.4s} {name:<4.4s}"
-            "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} "
-            "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"
-        ),
+        ATOM=("{serial:5d}{totRes:5d} {resname:<4.4s} {name:<4.4s}"
+              "{pos[0]:10.5f}{pos[1]:10.5f}{pos[2]:10.5f} "
+              "{chainID:<4.4s} {resSeq:<4d}{tempfactor:10.5f}\n"),
         TITLE="* FRAME {frame} FROM {where}",
         NUMATOMS="{0:5d}\n",
     )
@@ -139,11 +135,11 @@ class CORWriter(CRD.CRDWriter):
         attrs = {}
         missing_topology = []
         for attr, default in (
-            ("resnames", itertools.cycle(("UNK",))),
-            # Resids *must* be an array because we index it later
+            ("resnames", itertools.cycle(("UNK", ))),
+                # Resids *must* be an array because we index it later
             ("resids", np.ones(n_atoms, dtype=np.int)),
-            ("names", itertools.cycle(("X",))),
-            ("tempfactors", itertools.cycle((0.0,))),
+            ("names", itertools.cycle(("X", ))),
+            ("tempfactors", itertools.cycle((0.0, ))),
         ):
             try:
                 attrs[attr] = getattr(atoms, attr)
@@ -158,7 +154,7 @@ class CORWriter(CRD.CRDWriter):
             try:
                 attrs["chainIDs"] = atoms.chainIDs
             except (NoDataError, AttributeError):
-                attrs["chainIDs"] = itertools.cycle(("",))
+                attrs["chainIDs"] = itertools.cycle(("", ))
                 missing_topology.append(attr)
         if missing_topology:
             warnings.warn(
@@ -166,13 +162,10 @@ class CORWriter(CRD.CRDWriter):
                 "{miss}. These will be written with default values. "
                 "".format(miss=", ".join(missing_topology)))
 
-        with open(
-            self.filename, "wb"
-        ) as crd:
+        with open(self.filename, "wb") as crd:
             # Write Title
             crd.write(self.fmt["TITLE"].format(
-                frame=frame, where=u.trajectory.filename
-            ).encode())
+                frame=frame, where=u.trajectory.filename).encode())
             crd.write("\n".encode())
             crd.write("*\n".encode())
 
@@ -184,8 +177,8 @@ class CORWriter(CRD.CRDWriter):
             current_resid = 1
             resids = attrs["resids"]
             for i, pos, resname, name, chainID, resid, tempfactor in zip(
-                range(n_atoms), coor, attrs["resnames"], attrs["names"],
-                attrs["chainIDs"], attrs["resids"], attrs["tempfactors"]):
+                    range(n_atoms), coor, attrs["resnames"], attrs["names"],
+                    attrs["chainIDs"], attrs["resids"], attrs["tempfactors"]):
                 if not i == 0 and resids[i] != resids[i - 1]:
                     current_resid += 1
 
@@ -196,8 +189,11 @@ class CORWriter(CRD.CRDWriter):
 
                 crd.write(
                     at_fmt.format(
-                        serial=serial, totRes=current_resid, resname=resname,
-                        name=name, pos=pos, chainID=chainID,
-                        resSeq=resid, tempfactor=tempfactor
-                    ).encode()
-                )
+                        serial=serial,
+                        totRes=current_resid,
+                        resname=resname,
+                        name=name,
+                        pos=pos,
+                        chainID=chainID,
+                        resSeq=resid,
+                        tempfactor=tempfactor).encode())

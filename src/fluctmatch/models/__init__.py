@@ -21,10 +21,18 @@ from __future__ import (
 )
 
 __all__ = [
-    "Calpha", "Caside", "Ncsc", "Enm",
-    "Nucleic3", "Nucleic4",
-    "Water", "Tip3p", "Dma",
-    "SolventIons", "BioIons", "NobleAtoms",
+    "Calpha",
+    "Caside",
+    "Ncsc",
+    "Enm",
+    "Nucleic3",
+    "Nucleic4",
+    "Water",
+    "Tip3p",
+    "Dma",
+    "SolventIons",
+    "BioIons",
+    "NobleAtoms",
 ]
 
 from fluctmatch.models.protein import (

@@ -31,10 +31,7 @@ from future.utils import native_str
 from fluctmatch.analysis import paramtable
 
 
-@click.command(
-    "diff",
-    short_help="Calculate differences between two tables."
-)
+@click.command("diff", short_help="Calculate differences between two tables.")
 @click.option(
     "-o",
     "--outdir",
@@ -55,8 +52,7 @@ from fluctmatch.analysis import paramtable
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r"
-)
+    help="Number of residues to exclude in I,I+r")
 @click.argument(
     "table1",
     metavar="TABLE1",
@@ -84,13 +80,9 @@ def cli(outdir, ressep, table1, table2):
 
     d_table = table_1 - table_2
     d_perres = table_1.per_residue.subtract(
-        table_2.per_residue,
-        fill_value=0.0
-    )
+        table_2.per_residue, fill_value=0.0)
     d_interactions = table_1.interactions.subtract(
-        table_2.interactions,
-        fill_value=0.0
-    )
+        table_2.interactions, fill_value=0.0)
 
     filename = path.join(outdir, "dcoupling.txt")
     with open(filename, mode="wb") as output:
@@ -118,7 +110,8 @@ def cli(outdir, ressep, table1, table2):
 
     filename = path.join(outdir, "dinteractions.txt")
     with open(filename, mode="wb") as output:
-        click.echo("Writing residue-residue differences to {}".format(filename))
+        click.echo(
+            "Writing residue-residue differences to {}".format(filename))
         d_interactions = d_interactions.to_csv(
             header=True,
             index=True,

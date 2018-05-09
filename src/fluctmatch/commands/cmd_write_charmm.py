@@ -26,41 +26,26 @@ import MDAnalysis as mda
 from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command(
-    "write_charmm",
-    short_help="Write various CHARMM files."
-)
+@click.command("write_charmm", short_help="Write various CHARMM files.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
     "-f",
     "trajectory",
     metavar="FILE",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
     "-o",
     "outdir",
     metavar="DIR",
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=False, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -117,11 +102,18 @@ from fluctmatch.fluctmatch import utils as fmutils
     "--list",
     "model_list",
     is_flag=True,
-    help="List available models with their descriptions"
-)
+    help="List available models with their descriptions")
 def cli(
-    topology, trajectory, outdir, prefix, charmm_version,
-    extended, cmap, cheq, nonbonded, write_traj,
+        topology,
+        trajectory,
+        outdir,
+        prefix,
+        charmm_version,
+        extended,
+        cmap,
+        cheq,
+        nonbonded,
+        write_traj,
 ):
     kwargs = dict(
         outdir=outdir,

@@ -148,6 +148,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     bonds, angles, dihedrals
         master ConnectivityGroups for each connectivity type
     """
+
     def __init__(self, *args, **kwargs):
         """Initialise like a normal MDAnalysis Universe but give the mapping and
         com keywords.
@@ -178,8 +179,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         message = "<CG Universe with {} beads".format(len(self.atoms._beads))
         try:
             message += " and {:d} bonds".format(
-                len(self._topology.bonds.values)
-            )
+                len(self._topology.bonds.values))
         except AttributeError as exc:
             pass
         finally:
@@ -204,12 +204,11 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         # This replaces load_new in a traditional Universe
         try:
             self.trajectory = trajectory._Trajectory(
-                self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com
-            )
+                self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com)
         except (IOError, TypeError) as exc:
-            raise_with_traceback(RuntimeError(
-                "Unable to open {}".format(self.atu.trajectory.filename))
-            )
+            raise_with_traceback(
+                RuntimeError("Unable to open {}".format(
+                    self.atu.trajectory.filename)))
 
     def _apply_map(self, mapping):
         """Apply the mapping scheme to the beads.
@@ -235,8 +234,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
 
         residues = self.atu.atoms.split("residue")
         select_residues = enumerate(
-            itertools.product(residues, viewitems(mapping))
-        )
+            itertools.product(residues, viewitems(mapping)))
         for i, (res, (name, selection)) in select_residues:
             bead = res.select_atoms(selection)
             if bead:
@@ -261,9 +259,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
         atomnames = topologyattrs.Atomnames(
-            np.asarray(atomnames, dtype=np.object)
-        )
-        atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms)+100))
+            np.asarray(atomnames, dtype=np.object))
+        atomtypes = topologyattrs.Atomtypes(
+            np.asarray(np.arange(n_atoms) + 100))
         charges = topologyattrs.Charges(np.asarray(charges))
         masses = topologyattrs.Masses(np.asarray(masses))
 
@@ -273,8 +271,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         resids = np.asarray(resids)
         resnames = np.asarray(resnames, dtype=np.object)
         residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids,), (resids, resnames, segids)
-        )
+            (resids, ), (resids, resnames, segids))
 
         # transform from atom:Rid to atom:Rix
         residueids = topologyattrs.Resids(new_resids)
@@ -282,18 +279,21 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         residuenames = topologyattrs.Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids,) = topbase.change_squash(
-            (new_segids,), (new_segids,)
-        )
+        segidx, (perseg_segids, ) = topbase.change_squash((new_segids, ),
+                                                          (new_segids, ))
         segids = topologyattrs.Segids(perseg_segids)
 
         # Setup topology
-        top = topology.Topology(len(atomids), len(new_resids), len(segids),
-                                attrs=[_beads, atomids, atomnames, atomtypes,
-                                       charges, masses, vdwradii, residueids,
-                                       residuenums, residuenames, segids],
-                                atom_resindex=residx,
-                                residue_segindex=segidx)
+        top = topology.Topology(
+            len(atomids),
+            len(new_resids),
+            len(segids),
+            attrs=[
+                _beads, atomids, atomnames, atomtypes, charges, masses,
+                vdwradii, residueids, residuenums, residuenames, segids
+            ],
+            atom_resindex=residx,
+            residue_segindex=segidx)
         return top
 
     @abc.abstractmethod
@@ -320,8 +320,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         try:
             impropers = guessers.guess_improper_dihedrals(self.angles)
             self._topology.add_TopologyAttr(
-                (topologyattrs.Impropers(impropers))
-            )
+                (topologyattrs.Impropers(impropers)))
             self._generate_from_topology()
         except AttributeError:
             pass
@@ -361,7 +360,8 @@ def Merge(*args):
     print("This might take a while depending upon the number of "
           "trajectory frames.")
     if not all([
-            u.universe.trajectory.n_frames == args[0].universe.trajectory.n_frames for u in args
+            u.universe.trajectory.n_frames == args[0]
+            .universe.trajectory.n_frames for u in args
     ]):
         raise ValueError("The trajectories are not the same length.")
     ag = [_.atoms for _ in args]
@@ -380,8 +380,7 @@ def Merge(*args):
                 "The number of sites does not match the number of coordinates."
             )
         print("The new universe has {1} beads in {0} frames.".format(
-            *coordinates.shape
-        ))
+            *coordinates.shape))
 
         universe.load_new(coordinates, format=MemoryReader)
         print("The new trajectory will is assigned an average unit cell "

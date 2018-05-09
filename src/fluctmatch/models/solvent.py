@@ -74,22 +74,19 @@ class Tip3p(ModelBase):
     def _add_bonds(self):
         bonds = []
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name OW").ix,
-                         s.atoms.select_atoms("name HW1").ix)
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name OW").ix,
+                s.atoms.select_atoms("name HW1").ix)
         ])
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name OW").ix,
-                         s.atoms.select_atoms("name HW2").ix)
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name OW").ix,
+                s.atoms.select_atoms("name HW2").ix)
         ])
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name HW1").ix,
-                         s.atoms.select_atoms("name HW2").ix)
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name HW1").ix,
+                s.atoms.select_atoms("name HW2").ix)
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
@@ -119,21 +116,19 @@ class Dma(ModelBase):
     def _add_bonds(self):
         bonds = []
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name C1").ix,
-                         s.atoms.select_atoms("name N").ix)
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name C1").ix,
+                s.atoms.select_atoms("name N").ix)
         ])
         bonds.extend([
-            _ for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name C2").ix,
-                         s.atoms.select_atoms("name N").ix)
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name C2").ix,
+                s.atoms.select_atoms("name N").ix)
         ])
         bonds.extend([
-            _
-            for s in self.segments
-            for _ in zip(s.atoms.select_atoms("name C3").ix,
-                         s.atoms.select_atoms("name N").ix)
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name C3").ix,
+                s.atoms.select_atoms("name N").ix)
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()

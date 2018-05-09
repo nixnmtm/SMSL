@@ -32,9 +32,7 @@ from fluctmatch.analysis import entropy
 
 
 @click.command(
-    "entropy",
-    short_help="Calculate the Shannon entropy of residues."
-)
+    "entropy", short_help="Calculate the Shannon entropy of residues.")
 @click.option(
     "-o",
     "--outdir",
@@ -55,8 +53,7 @@ from fluctmatch.analysis import entropy
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Separation between residues (I,I+n)"
-)
+    help="Separation between residues (I,I+n)")
 @click.argument(
     "table",
     metavar="TABLE",

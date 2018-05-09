@@ -28,8 +28,7 @@ from MDAnalysis.core import (
     topologyattrs,
 )
 from future.builtins import (
-    super,
-)
+    super, )
 
 
 class _Beads(topologyattrs.AtomAttr):

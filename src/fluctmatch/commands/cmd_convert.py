@@ -32,20 +32,14 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
 
 
 @click.command(
-    "convert",
-    short_help="Convert from all-atom to coarse-grain model."
-)
+    "convert", short_help="Convert from all-atom to coarse-grain model.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
@@ -54,11 +48,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -67,11 +57,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     metavar="DIR",
     show_default=True,
     default=os.getcwd(),
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -171,11 +157,25 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "--list",
     "model_list",
     is_flag=True,
-    help="List available models with their descriptions"
-)
+    help="List available models with their descriptions")
 def cli(
-    topology, trajectory, outdir, prefix, rmin, rmax, model, charmm_version,
-    com, extended, resid, cmap, cheq, nonbonded, mass, write_traj, model_list,
+        topology,
+        trajectory,
+        outdir,
+        prefix,
+        rmin,
+        rmax,
+        model,
+        charmm_version,
+        com,
+        extended,
+        resid,
+        cmap,
+        cheq,
+        nonbonded,
+        mass,
+        write_traj,
+        model_list,
 ):
     if model_list:
         for k, v in iteritems(_DESCRIBE):
