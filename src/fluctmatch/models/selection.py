@@ -20,11 +20,11 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    super, )
 
 import numpy as np
 from MDAnalysis.core import selection
-from future.builtins import (
-    super, )
 
 
 class BioIonSelection(selection.Selection):

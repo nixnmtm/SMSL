@@ -20,17 +20,15 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-from os import path
-
 from future.utils import native_str, PY3
 from future.builtins import open
+from six.moves import cPickle
+
+from os import path
 
 import click
 import numpy as np
 import pandas as pd
-from six.moves import cPickle
-
 from fluctmatch.analysis.paramtable import ParamTable
 from fluctmatch.analysis import (
     fluctsca, )

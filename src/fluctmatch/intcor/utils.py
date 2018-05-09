@@ -20,11 +20,11 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (
+    raise_with_traceback, )
 
 import numpy as np
 import pandas as pd
-from future.utils import (
-    raise_with_traceback, )
 
 _HEADER = [
     "segidI", "resI", "I", "segidJ", "resJ", "J", "segidK", "resK", "K",

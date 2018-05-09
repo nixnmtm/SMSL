@@ -20,6 +20,11 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    dict,
+    zip,
+)
+from future.utils import viewitems
 
 import itertools
 from collections import OrderedDict
@@ -29,12 +34,6 @@ from MDAnalysis.core import (
     topologyattrs,
 )
 from MDAnalysis.topology import base as topbase
-from future.builtins import (
-    dict,
-    zip,
-)
-from future.utils import viewitems
-
 from fluctmatch.models import topattrs
 from fluctmatch.models.base import ModelBase
 from fluctmatch.models.selection import *

@@ -20,21 +20,19 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    dict, )
+from future.utils import native_str
 
 import functools
 import glob
 import multiprocessing as mp
 from os import path
 
-from MDAnalysis.coordinates.core import reader
-from MDAnalysis.lib.util import openany
-
-from future.builtins import (
-    dict, )
-from future.utils import native_str
-
 import numpy as np
 import pandas as pd
+from MDAnalysis.coordinates.core import reader
+from MDAnalysis.lib.util import openany
 
 _header = ["I", "J"]
 _index = dict(

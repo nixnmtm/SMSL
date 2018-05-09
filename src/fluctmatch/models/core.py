@@ -16,14 +16,12 @@
 #
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
-import itertools
-import warnings
-
 from future.utils import (
     viewkeys,
     raise_with_traceback,
 )
+
+import warnings
 
 from fluctmatch import _MODELS
 from fluctmatch.models import *

@@ -26,15 +26,6 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import itertools
-import warnings
-from io import TextIOWrapper
-
-import numpy as np
-from MDAnalysis.coordinates import CRD
-from MDAnalysis.exceptions import NoDataError
-from MDAnalysis.lib import util
 from future.builtins import (
     open,
     range,
@@ -42,6 +33,14 @@ from future.builtins import (
     super,
     zip,
 )
+
+import itertools
+import warnings
+
+import numpy as np
+from MDAnalysis.coordinates import CRD
+from MDAnalysis.exceptions import NoDataError
+from MDAnalysis.lib import util
 
 
 class CORReader(CRD.CRDReader):

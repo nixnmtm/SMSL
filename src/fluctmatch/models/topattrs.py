@@ -20,6 +20,8 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    super, )
 
 from collections import defaultdict
 
@@ -27,8 +29,6 @@ from MDAnalysis.core import (
     groups,
     topologyattrs,
 )
-from future.builtins import (
-    super, )
 
 
 class _Beads(topologyattrs.AtomAttr):

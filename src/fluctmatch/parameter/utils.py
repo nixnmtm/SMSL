@@ -20,12 +20,12 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import MDAnalysis as mda
-import numpy as np
-import pandas as pd
 from future.builtins import (
     dict, )
+
+import numpy as np
+import pandas as pd
+import MDAnalysis as mda
 
 
 def create_empty_parameters(universe, **kwargs):

@@ -20,14 +20,13 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import abc
-import os
-
 from future.builtins import (
     dict, )
 from future.utils import (
     with_metaclass, )
+
+import abc
+import os
 
 
 class FluctMatch(with_metaclass(abc.ABCMeta, object)):

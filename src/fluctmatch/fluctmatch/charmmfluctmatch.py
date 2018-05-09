@@ -35,19 +35,6 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import copy
-import os
-import subprocess
-import textwrap
-import time
-from os import path
-
-import MDAnalysis as mda
-import numpy as np
-import pandas as pd
-from MDAnalysis.lib import util
-from MDAnalysis.coordinates.core import reader
 from future.builtins import (
     dict,
     open,
@@ -59,8 +46,20 @@ from future.utils import (
     native_str,
     raise_with_traceback,
 )
-from scipy import constants
 
+import copy
+import os
+import subprocess
+import textwrap
+import time
+from os import path
+
+import numpy as np
+import pandas as pd
+from scipy import constants
+import MDAnalysis as mda
+from MDAnalysis.lib import util
+from MDAnalysis.coordinates.core import reader
 from fluctmatch.fluctmatch import base as fmbase
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.fluctmatch.data import (

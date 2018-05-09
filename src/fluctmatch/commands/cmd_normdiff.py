@@ -20,15 +20,14 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import open
+from future.utils import native_str
 
 import os
 from os import path
 
 import click
 import numpy as np
-from future.builtins import open
-from future.utils import native_str
-
 from fluctmatch.analysis import paramtable
 
 

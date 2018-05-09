@@ -40,6 +40,7 @@ from __future__ import (
 import os
 import sys
 from os import path
+
 import click
 
 CONTEXT_SETTINGS = dict(

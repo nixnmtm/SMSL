@@ -20,12 +20,12 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (viewkeys, iteritems)
 
 import os
 from os import path
 
 import click
-from future.utils import (viewkeys, iteritems)
 from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models.core import modeller
 from fluctmatch.fluctmatch.utils import write_charmm_files

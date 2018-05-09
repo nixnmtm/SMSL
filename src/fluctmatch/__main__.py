@@ -30,6 +30,7 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+
 from fluctmatch.cli import main
 
 if __name__ == "__main__":

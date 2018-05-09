@@ -20,12 +20,11 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import native_str
 
 import numpy as np
 import MDAnalysis as mda
-import numpy.testing as testing
-from future.utils import native_str
-
+from numpy import testing
 from fluctmatch.fluctmatch import utils as fmutils
 from ..datafiles import (
     TPR,

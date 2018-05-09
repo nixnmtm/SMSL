@@ -20,6 +20,7 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import range
 
 import functools
 import multiprocessing as mp
@@ -28,7 +29,6 @@ from os import path
 
 import numpy as np
 import pandas as pd
-from future.builtins import range
 from scipy import linalg
 from scipy.stats import (scoreatpercentile, t)
 from sklearn.utils import extmath

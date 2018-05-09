@@ -23,16 +23,16 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (
+    viewitems,
+    viewvalues,
+)
 
 import itertools
 
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
-from future.utils import (
-    viewitems,
-    viewvalues,
-)
 
 
 class _Trajectory(base.ReaderBase):

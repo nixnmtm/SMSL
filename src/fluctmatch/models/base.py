@@ -23,21 +23,6 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import abc
-import itertools
-import string
-
-import MDAnalysis as mda
-import numpy as np
-from MDAnalysis.core import (
-    topology,
-    topologyattrs,
-)
-from MDAnalysis.lib.util import asiterable
-from MDAnalysis.topology import base as topbase
-from MDAnalysis.topology import guessers
-import future.builtins
 from future.builtins import zip
 from future.utils import (
     raise_with_traceback,
@@ -45,6 +30,19 @@ from future.utils import (
     with_metaclass,
 )
 
+import abc
+import itertools
+import string
+
+import numpy as np
+import MDAnalysis as mda
+from MDAnalysis.core import (
+    topology,
+    topologyattrs,
+)
+from MDAnalysis.lib.util import asiterable
+from MDAnalysis.topology import base as topbase
+from MDAnalysis.topology import guessers
 from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models import (
     topattrs,

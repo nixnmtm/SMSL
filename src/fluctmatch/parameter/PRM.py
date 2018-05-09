@@ -20,6 +20,12 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    dict,
+    open,
+)
+from future.utils import (
+    native_str, )
 
 import textwrap
 import time
@@ -29,13 +35,6 @@ from os import environ
 import numpy as np
 import pandas as pd
 from MDAnalysis.lib import util
-from future.builtins import (
-    dict,
-    open,
-)
-from future.utils import (
-    native_str, )
-
 from fluctmatch.topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 

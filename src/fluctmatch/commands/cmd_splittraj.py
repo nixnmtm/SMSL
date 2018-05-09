@@ -20,18 +20,17 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import functools
-import multiprocessing as mp
-import os
-from os import path
-
 from future.builtins import (
     dict,
     range,
     zip,
 )
 from future.utils import viewkeys
+
+import functools
+import multiprocessing as mp
+import os
+from os import path
 
 import click
 from fluctmatch.fluctmatch import utils

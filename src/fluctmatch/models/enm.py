@@ -20,15 +20,14 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import numpy as np
-from MDAnalysis.core import topologyattrs
-from MDAnalysis.lib.distances import distance_array
 from future.builtins import (
     super,
     zip,
 )
 
+import numpy as np
+from MDAnalysis.core import topologyattrs
+from MDAnalysis.lib.distances import distance_array
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.models.base import (
     ModelBase,

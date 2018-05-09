@@ -20,14 +20,14 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (dict, open, zip)
 
 import os
 from os import path
 
 import click
-import MDAnalysis as mda
 import pandas as pd
-from future.builtins import (dict, open, zip)
+import MDAnalysis as mda
 
 
 @click.command(

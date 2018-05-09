@@ -20,11 +20,10 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import native_str
 
 import MDAnalysis as mda
-from future.utils import native_str
 from numpy import testing
-
 from fluctmatch.models import (
     ions,
     solvent,

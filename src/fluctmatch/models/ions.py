@@ -20,18 +20,16 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-from collections import OrderedDict
-
-from MDAnalysis.core import topologyattrs
-
-from fluctmatch.models.base import ModelBase
-from fluctmatch.models.selection import *
-
 from future.builtins import (
     super,
     zip,
 )
+
+from collections import OrderedDict
+
+from MDAnalysis.core import topologyattrs
+from fluctmatch.models.base import ModelBase
+from fluctmatch.models.selection import *
 
 
 class SolventIons(ModelBase):

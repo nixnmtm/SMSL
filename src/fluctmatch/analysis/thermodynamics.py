@@ -20,18 +20,16 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import open
+from future.utils import native_str
 
 import functools
 import glob
 import multiprocessing as mp
 from os import path
 
-from future.builtins import open
-from future.utils import native_str
-
 import numpy as np
 import pandas as pd
-
 from fluctmatch.fluctmatch import charmmfluctmatch
 
 

@@ -20,29 +20,6 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import logging
-import time
-from io import TextIOWrapper
-from os import environ
-
-import numpy as np
-import pandas as pd
-from MDAnalysis.core.topology import Topology
-from MDAnalysis.core.topologyattrs import (
-    Atomids,
-    Atomnames,
-    Atomtypes,
-    Masses,
-    Charges,
-    Resids,
-    Resnums,
-    Resnames,
-    Segids,
-)
-from MDAnalysis.lib import util
-from MDAnalysis.topology import PSFParser
-from MDAnalysis.topology.base import change_squash
 from future.builtins import (
     dict,
     open,
@@ -51,6 +28,15 @@ from future.builtins import (
 from future.utils import (
     native_str, )
 
+import logging
+import time
+from os import environ
+
+import numpy as np
+import pandas as pd
+from MDAnalysis.lib import util
+from MDAnalysis.topology import PSFParser
+from MDAnalysis.topology.base import change_squash
 from MDAnalysis.core.topologyattrs import (
     Atomids, Atomnames, Atomtypes, Masses, Charges, Resids, Resnums, Resnames,
     Segids, Bonds, Angles, Dihedrals, Impropers)

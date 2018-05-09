@@ -23,8 +23,6 @@ from __future__ import (
 
 import click
 import MDAnalysis as mda
-from fluctmatch.cli import pass_context
-from fluctmatch.fluctmatch import utils as fmutils
 
 
 @click.command("wordom", short_help="Convert between coordinate file types.")

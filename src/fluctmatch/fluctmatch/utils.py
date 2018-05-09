@@ -20,7 +20,8 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-from future.utils import PY2
+from future.builtins import (dict, super)
+from future.utils import (PY2, native_str)
 
 import copy
 import os
@@ -30,15 +31,12 @@ import textwrap
 from os import path
 
 import click
-import MDAnalysis as mda
-import MDAnalysis.analysis.base as analysis
 import numpy as np
 import pandas as pd
+import MDAnalysis as mda
+import MDAnalysis.analysis.base as analysis
 from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
-from future.builtins import (dict, super)
-from future.utils import native_str
-
 from fluctmatch.fluctmatch.data import charmm_split
 
 if PY2:

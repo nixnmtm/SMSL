@@ -20,14 +20,13 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import open
+from future.utils import native_str
 
 import os
 from os import path
 
 import click
-from future.builtins import open
-from future.utils import native_str
-
 from fluctmatch.analysis.paramstats import ParamStats
 from fluctmatch.analysis.paramtable import ParamTable
 
