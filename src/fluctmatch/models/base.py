@@ -23,7 +23,7 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-from future.builtins import zip
+from future.builtins import super, zip
 from future.utils import (
     raise_with_traceback,
     viewitems,
@@ -266,10 +266,10 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         # Residue
         # resids, resnames
         segids = np.asarray(segids, dtype=np.object)
-        resids = np.asarray(resids)
+        resids = np.asarray(resids, dtype=np.int32)
         resnames = np.asarray(resnames, dtype=np.object)
-        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids, ), (resids, resnames, segids))
+        residx, (new_resids, new_resnames, perres_segids) = topbase.change_squash(
+            (resids, resnames, segids), (resids, resnames, segids))
 
         # transform from atom:Rid to atom:Rix
         residueids = topologyattrs.Resids(new_resids)
@@ -277,8 +277,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         residuenames = topologyattrs.Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids, ) = topbase.change_squash((new_segids, ),
-                                                          (new_segids, ))
+        segidx, perseg_segids = topbase.squash_by(perres_segids)[:2]
         segids = topologyattrs.Segids(perseg_segids)
 
         # Setup topology
