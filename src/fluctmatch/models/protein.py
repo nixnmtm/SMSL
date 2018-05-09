@@ -54,7 +54,7 @@ class Calpha(ModelBase):
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
         self._set_masses()
-        self._set_chargess()
+        self._set_charges()
 
         # Update the masses and charges
 
@@ -73,7 +73,7 @@ class Calpha(ModelBase):
         self.atoms.select_atoms("calpha").masses = np.array(
             [_.total_mass() for _ in ca_atu])
 
-    def _set_chargess(self):
+    def _set_charges(self):
         ca_atu = self.atu.select_atoms("protein").split("residue")
         try:
             self.atoms.select_atoms("calpha").charges = np.array(
@@ -98,7 +98,7 @@ class Caside(ModelBase):
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
         self._set_masses()
-        self._set_chargess()
+        self._set_charges()
 
     def _add_bonds(self):
         bonds = []
@@ -123,7 +123,7 @@ class Caside(ModelBase):
         self.atoms.select_atoms("cbeta").masses = np.array(
             [_.total_mass() for _ in cb_atu])
 
-    def _set_chargess(self):
+    def _set_charges(self):
         ca_atu = self.atu.select_atoms("hbackbone").split("residue")
         cb_atu = self.atu.select_atoms("hsidechain").split("residue")
         try:
@@ -155,7 +155,7 @@ class Ncsc(ModelBase):
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
         self._set_masses()
-        self._set_chargess()
+        self._set_charges()
 
     def _add_bonds(self):
         bonds = []
@@ -196,7 +196,7 @@ class Ncsc(ModelBase):
         self.atoms.select_atoms("name O").masses = np.array(
             [_.total_mass() for _ in o_atu]) + ca_masses
 
-    def _set_chargess(self):
+    def _set_charges(self):
         n_atu = self.atu.select_atoms("amine").split("residue")
         o_atu = self.atu.select_atoms("carboxyl").split("residue")
         ca_atu = self.atu.select_atoms("hcalpha").split("residue")
@@ -254,7 +254,7 @@ class Polar(ModelBase):
         kwargs["mapping"] = self._mapping
         self._initialize(*args, **kwargs)
         self._set_masses()
-        self._set_chargess()
+        self._set_charges()
 
     def _apply_map(self, mapping):
         """Apply the mapping scheme to the beads.
@@ -385,7 +385,7 @@ class Polar(ModelBase):
         self.atoms.select_atoms("name O").masses = np.array(
             [_.total_mass() for _ in o_atu]) + ca_masses
 
-    def _set_chargess(self):
+    def _set_charges(self):
         n_atu = self.atu.select_atoms("amine").split("residue")
         o_atu = self.atu.select_atoms("carboxyl").split("residue")
         ca_atu = self.atu.select_atoms("hcalpha").split("residue")

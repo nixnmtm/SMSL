@@ -326,7 +326,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     def _set_masses(self):
         pass
 
-    def _set_chargess(self):
+    def _set_charges(self):
         pass
 
     @property
