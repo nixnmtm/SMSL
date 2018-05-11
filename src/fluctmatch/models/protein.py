@@ -304,7 +304,7 @@ class Polar(ModelBase):
         n_atoms = len(_beads)
 
         # Atom
-        _beads = topattrs._Beads(_beads)
+        # _beads = topattrs._Beads(_beads)
         vdwradii = np.zeros_like(atomids)
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
@@ -339,7 +339,7 @@ class Polar(ModelBase):
             len(new_resids),
             len(segids),
             attrs=[
-                _beads, atomids, atomnames, atomtypes, charges, masses,
+                atomids, atomnames, atomtypes, charges, masses,
                 vdwradii, residueids, residuenums, residuenames, segids
             ],
             atom_resindex=residx,

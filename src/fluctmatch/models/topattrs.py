@@ -31,18 +31,6 @@ from MDAnalysis.core import (
 )
 
 
-class _Beads(topologyattrs.AtomAttr):
-    """Underlying group of atoms for each bead"""
-    attrname = "_beads"
-    singular = "_bead"
-    target_classes = [groups.Atom, groups.Residue, groups.Segment]
-    per_object = "atom"
-    transplants = defaultdict(list)
-
-    def __init__(self, values, guessed=False):
-        super().__init__(values, guessed)
-
-
 class XplorTypes(topologyattrs.Atomtypes):
     """String types for atoms used for XPLOR-PSF."""
     attrname = "xplortypes"
