@@ -27,6 +27,7 @@ from future.builtins import (
 from future.utils import (
     native_str, )
 
+import logging
 import time
 from os import environ
 
@@ -34,6 +35,8 @@ import numpy as np
 import pandas as pd
 from MDAnalysis.lib import util
 from fluctmatch.topology import base as topbase
+
+logger = logging.getLogger(__name__)
 
 
 class RTFWriter(topbase.TopologyWriterBase):
@@ -139,10 +142,11 @@ class RTFWriter(topbase.TopologyWriterBase):
                     np.isin(bonds[idx], atoms, invert=True), "+", "").astype(
                         np.object)
                 if pos_names.size == 0:
-                    raise RuntimeWarning(
+                    logger.warning(
                         "Please check that all bond definitions are valid. "
                         "You may have some missing or broken bonds.")
-                names[idx] = pos_names + names[idx]
+                else:
+                    names[idx] = pos_names + names[idx]
                 names = names.astype(np.unicode)
 
                 # Eliminate redundancies.
