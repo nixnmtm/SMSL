@@ -23,6 +23,8 @@ from __future__ import (
 from future.builtins import open
 from future.utils import native_str
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -85,6 +87,43 @@ from fluctmatch.analysis.paramtable import ParamTable
     ),
 )
 def cli(stats, hist, outdir, ressep, tbltype, table):
+    # Setup logger
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(outdir, "stats.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
+    logger.info("Reading {}".format(table))
     pt = ParamTable(ressep=ressep)
     pt.from_file(table)
     ps = ParamStats(pt)
@@ -93,7 +132,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
         filename = path.join(outdir, "_".join((tbltype.lower(), "table",
                                                "stats.txt")))
         with open(filename, mode="wb") as stat_file:
-            click.echo("Writing table statistics to {}".format(filename))
+            logger.info("Writing table statistics to {}".format(filename))
             info = ps.table_stats().to_csv(
                 header=True,
                 index=True,
@@ -102,11 +141,12 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 encoding="utf-8",
             )
             stat_file.write(info.encode())
+            logger.debug("Table successfully written.")
 
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_stats.txt")
             with open(filename, mode="wb") as stat_file:
-                click.echo("Writing residue-residue statistics to {}".format(
+                logger.info("Writing residue-residue statistics to {}".format(
                     filename))
                 ps._table._ressep = 0
                 info = ps.interaction_stats().to_csv(
@@ -117,11 +157,13 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
+                logger.debug("Table successfully written.")
 
             filename = path.join(outdir, "residue_stats.txt")
             with open(filename, mode="wb") as stat_file:
-                click.echo("Writing individual residue statistics "
-                           "to {}".format(filename))
+                logger.info(
+                    "Writing individual residue statistics to {}".format(
+                        filename))
                 ps._table._ressep = ressep
                 info = ps.residue_stats().to_csv(
                     header=True,
@@ -131,12 +173,13 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
+                logger.debug("Table successfully written.")
 
     if hist:
         filename = path.join(outdir, "_".join((tbltype.lower(), "table",
                                                "hist.txt")))
         with open(filename, mode="wb") as stat_file:
-            click.echo("Writing table histogram to {}".format(filename))
+            logger.info("Writing table histogram to {}".format(filename))
             info = ps.table_hist().to_csv(
                 index=True,
                 sep=native_str(" "),
@@ -144,11 +187,12 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 encoding="utf-8",
             )
             stat_file.write(info.encode())
+            logger.debug("Table successfully written.")
 
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_hist.txt")
             with open(filename, mode="wb") as stat_file:
-                click.echo(
+                logger.info(
                     "Writing residue-residue histogram to {}".format(filename))
                 ps._table._ressep = 0
                 info = ps.interaction_hist().to_csv(
@@ -158,11 +202,13 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
+                logger.debug("Table successfully written.")
 
             filename = path.join(outdir, "residue_hist.txt")
             with open(filename, mode="wb") as stat_file:
-                click.echo("Writing individual residue histogram "
-                           "to {}".format(filename))
+                logger.info(
+                    "Writing individual residue histogram to {}".format(
+                        filename))
                 ps._table._ressep = ressep
                 info = ps.residue_hist().to_csv(
                     index=True,
@@ -171,3 +217,4 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
+                logger.debug("Table successfully written.")

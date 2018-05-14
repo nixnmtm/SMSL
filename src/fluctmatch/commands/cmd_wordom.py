@@ -21,6 +21,10 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
+from os import path
+
 import click
 import MDAnalysis as mda
 
@@ -73,10 +77,49 @@ import MDAnalysis as mda
     help="Interval between frames")
 @click.option("-v", "--verbose", is_flag=True, help="Show progress of output")
 def cli(topology, trajectory, outfile, start, stop, step, verbose):
+    # Setup logger
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(path.dirname(outfile), "wordom.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
+    logger.info("Loading the universe.")
     universe = mda.Universe(topology, trajectory)
     trajectory = universe.trajectory
     with mda.Writer(
             outfile, n_atoms=universe.atoms.n_atoms, dt=trajectory.dt) as trj:
+        logger.info("Converting from {} to {}".format(trajectory.format,
+                                                      trj.format))
         if verbose:
             with click.progressbar(
                     length=trajectory.n_frames,
@@ -87,3 +130,4 @@ def cli(topology, trajectory, outfile, start, stop, step, verbose):
         else:
             for ts in trajectory[start:stop:step]:
                 trj.write(ts)
+        logger.debug("Trajectory conversion successful.")

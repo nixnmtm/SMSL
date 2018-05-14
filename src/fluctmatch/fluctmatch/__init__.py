@@ -21,6 +21,8 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+
 from fluctmatch.coordinates import COR
 from fluctmatch.intcor import IC
 from fluctmatch.parameter import PRM
@@ -29,3 +31,6 @@ from fluctmatch.topology import (
     RTF,
     STR,
 )
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())

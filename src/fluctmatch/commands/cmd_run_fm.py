@@ -21,6 +21,8 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -152,6 +154,41 @@ def cli(
         nonbonded,
         restart,
 ):
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(outdir, "charmmfm.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     kwargs = dict(
         prefix=prefix,
         outdir=outdir,
@@ -162,5 +199,9 @@ def cli(
         nonbonded=nonbonded,
     )
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
+
+    logger.info("Initializing the parameters.")
     cfm.initialize(restart=restart)
+    logger.info("Running fluctuation matching.")
     cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles)
+    logger.info("Fluctuation matching successfully completed.")

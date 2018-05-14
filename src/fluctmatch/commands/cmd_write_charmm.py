@@ -21,6 +21,9 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
+
 import click
 import MDAnalysis as mda
 from fluctmatch.fluctmatch import utils as fmutils
@@ -115,6 +118,41 @@ def cli(
         nonbonded,
         write_traj,
 ):
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(outdir, "write_charmm.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     kwargs = dict(
         outdir=outdir,
         prefix=prefix,

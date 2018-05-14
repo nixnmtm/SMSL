@@ -21,6 +21,8 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -106,6 +108,41 @@ from fluctmatch.analysis import thermodynamics
 )
 def cli(datadir, outdir, topology, trajectory, nma_exec, temperature,
         charmm_version):
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(outdir, "thermo.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     # Attempt to create the necessary subdirectory
     try:
         os.makedirs(outdir)

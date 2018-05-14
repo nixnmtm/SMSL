@@ -28,11 +28,14 @@ from future.builtins import (
 from future.utils import viewkeys
 
 import functools
+import logging
+import logging.config
 import multiprocessing as mp
 import os
 from os import path
 
 import click
+from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch import utils
 
 _CONVERT = dict(
@@ -155,6 +158,52 @@ _CONVERT = dict(
 )
 def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
         system, start, stop, window_size):
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(path.dirname(outfile), "splittraj.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
+    if program == "GMX" and mdutil.which("gmx") is None:
+        logger.error("Gromacs 5.0+ is required. "
+                     "If installed, please ensure that it is in your path.")
+        raise OSError("Gromacs 5.0+ is required. "
+                      "If installed, please ensure that it is in your path.")
+    if program == "CHARMM" and mdutil.which("charmm") is None:
+        logger.error("CHARMM is required. If installed, "
+                     "please ensure that it is in your path.")
+        raise OSError("CHARMM is required. If installed, "
+                      "please ensure that it is in your path.")
+
     half_size = window_size // 2
     beg = start - half_size if start >= window_size else start
     values = zip(

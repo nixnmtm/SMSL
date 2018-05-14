@@ -22,6 +22,8 @@ from __future__ import (
 )
 from future.builtins import (dict, open, zip)
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -79,18 +81,56 @@ import MDAnalysis as mda
     help="Table file",
 )
 def cli(top1, top2, coord, table, outfile):
+    # Setup logger
+    logging.config.dictConfig({
+        "version"                 : 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters"              : {
+            "standard": {
+                "class" : "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class"  : "logging.Formatter",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers"                : {
+            "console": {
+                "class"    : "logging.StreamHandler",
+                "level"    : "INFO",
+                "formatter": "standard",
+            },
+            "file"   : {
+                "class"    : "logging.FileHandler",
+                "filename" : path.join(path.dirname(outfile), "table_convert.log"),
+                "level"    : "DEBUG",
+                "mode"     : "w",
+                "formatter": "detailed",
+            }
+        },
+        "root"                    : {
+            "level"   : "DEBUG",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     cg = mda.Universe(top1, coord)
     fluctmatch = mda.Universe(top2, coord)
     convert = dict(zip(fluctmatch.atoms.names, cg.atoms.names))
     resnames = dict(zip(cg.residues.resnums, cg.residues.resnames))
 
     with open(table, "rb") as tbl:
+        logger.info("Loading {}.".format(table))
         constants = pd.read_csv(
             tbl,
             header=0,
             skipinitialspace=True,
             delim_whitespace=True,
         )
+        logger.debug("Table loaded successfully.")
 
     # Transform assigned bead names to an all-atom designation.
     constants["I"] = constants["I"].apply(lambda x: convert[x])
@@ -107,6 +147,7 @@ def cli(top1, top2, coord, table, outfile):
     constants.set_index(cols, inplace=True)
 
     with open(outfile, "wb") as output:
+        logger.info("Writing updated table to {}.".format(outfile))
         constants = constants.to_csv(
             header=True,
             index=True,
@@ -114,3 +155,4 @@ def cli(top1, top2, coord, table, outfile):
             float_format="%.4f",
         )
         output.write(constants.encode())
+        logger.debug("Table written successfully.")

@@ -35,12 +35,14 @@ from future.builtins import (
 )
 
 import itertools
-import warnings
+import logging
 
 import numpy as np
 from MDAnalysis.coordinates import CRD
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysis.lib import util
+
+logger = logging.getLogger(__name__)
 
 
 class CORReader(CRD.CRDReader):
@@ -156,13 +158,14 @@ class CORWriter(CRD.CRDWriter):
                 attrs["chainIDs"] = itertools.cycle(("", ))
                 missing_topology.append(attr)
         if missing_topology:
-            warnings.warn(
+            logger.warn(
                 "Supplied AtomGroup was missing the following attributes: "
                 "{miss}. These will be written with default values. "
                 "".format(miss=", ".join(missing_topology)))
 
         with open(self.filename, "wb") as crd:
             # Write Title
+            logger.debug("Writing {}".format(self.filename))
             crd.write(self.fmt["TITLE"].format(
                 frame=frame, where=u.trajectory.filename).encode())
             crd.write("\n".encode())
@@ -196,3 +199,4 @@ class CORWriter(CRD.CRDWriter):
                         chainID=chainID,
                         resSeq=resid,
                         tempfactor=tempfactor).encode())
+            logger.debug("Coordinate file successfully written.")
