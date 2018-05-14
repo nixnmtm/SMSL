@@ -86,11 +86,11 @@ class Enm(ModelBase):
 
     def _add_bonds(self):
         positions = fmutils.AverageStructure(self.atu.atoms).run().result
-        dm = distance_array(positions, positions, backend="OpenMP")
+        distmat = distance_array(positions, positions, backend="OpenMP")
         if self._rmin > 0.:
-            a0, a1 = np.where((dm >= self._rmin) & (dm <= self._rmax))
+            a0, a1 = np.where((distmat >= self._rmin) & (distmat <= self._rmax))
         else:
-            a0, a1 = np.where((dm > self._rmin) & (dm <= self._rmax))
+            a0, a1 = np.where((distmat > self._rmin) & (distmat <= self._rmax))
         bonds = topologyattrs.Bonds(
             set([(x, y) for x, y in zip(a0, a1) if y > x]))
         self._topology.add_TopologyAttr(bonds)
