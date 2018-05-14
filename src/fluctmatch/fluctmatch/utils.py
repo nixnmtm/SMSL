@@ -223,14 +223,13 @@ def write_charmm_files(universe,
         positions = positions.reshape((*positions.shape, 1))
         avg_universe = universe.copy()
         avg_universe.load_new(positions, format=memory.MemoryReader, order="acf")
+        logger.info("Writing {}...".format(filenames["crd_file"]))
         with mda.Writer(
                 native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
-            logger.info("Writing {}...".format(filenames["crd_file"]))
             crd.write(avg_universe.atoms)
     else:
         with mda.Writer(
                 native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
-            logger.info("Writing {}...".format(filenames["crd_file"]))
             crd.write(universe.atoms)
 
 
