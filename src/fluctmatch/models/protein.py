@@ -339,8 +339,8 @@ class Polar(ModelBase):
             len(new_resids),
             len(segids),
             attrs=[
-                atomids, atomnames, atomtypes, charges, masses,
-                vdwradii, residueids, residuenums, residuenames, segids
+                atomids, atomnames, atomtypes, charges, masses, vdwradii,
+                residueids, residuenums, residuenames, segids
             ],
             atom_resindex=residx,
             residue_segindex=segidx)
@@ -366,7 +366,8 @@ class Polar(ModelBase):
         bonds.extend([
             _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name O").ix,
-                s.atoms.select_atoms("name N").ix[1:]) if s.residues.n_residues > 1
+                s.atoms.select_atoms("name N").ix[1:])
+            if s.residues.n_residues > 1
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()

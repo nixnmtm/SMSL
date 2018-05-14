@@ -35,17 +35,11 @@ from tests.datafiles import (
 
 def test_nucleic3_creation():
     aa_universe = mda.Universe(PDB_dna)
-    n_atoms = (
-        aa_universe.select_atoms(
-            "nucleicphosphate and not name H*"
-        ).residues.n_residues +
-        aa_universe.select_atoms(
-            "hnucleicsugar and not name H*"
-        ).residues.n_residues +
-        aa_universe.select_atoms(
-            "hnucleicbase and not name H*"
-        ).residues.n_residues
-    )
+    n_atoms = (aa_universe.select_atoms("nucleicphosphate and not name H*")
+               .residues.n_residues + aa_universe.select_atoms(
+                   "hnucleicsugar and not name H*").residues.n_residues +
+               aa_universe.select_atoms(
+                   "hnucleicbase and not name H*").residues.n_residues)
     cg_universe = nucleic.Nucleic3(PDB_dna)
 
     testing.assert_equal(
@@ -62,16 +56,14 @@ def test_nucleic3_positions():
     dna = mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG")
     for _ in dna.residues:
         positions.append(
-            _.atoms.select_atoms(
-                "nucleicphosphate and not name H*"
-            ).center_of_mass()
-        )
-        positions.append(_.atoms.select_atoms(
-            "hnucleicsugar and not name H*"
-        ).center_of_mass())
-        positions.append(_.atoms.select_atoms(
-            "hnucleicbase and not name H*"
-        ).center_of_mass())
+            _.atoms.select_atoms("nucleicphosphate and not name H*")
+            .center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("hnucleicsugar and not name H*")
+            .center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("hnucleicbase and not name H*")
+            .center_of_mass())
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -94,18 +86,12 @@ def test_nucleic4_creation():
     aa_universe = mda.Universe(PDB_dna)
     n_atoms = (
         aa_universe.select_atoms(
-            "nucleicphosphate and not name H*"
-        ).residues.n_residues +
-        aa_universe.select_atoms(
-            "sugarC4 and not name H*"
-        ).residues.n_residues +
-        aa_universe.select_atoms(
-            "sugarC2 and not name H*"
-        ).residues.n_residues +
-        aa_universe.select_atoms(
-            "nucleiccenter and not name H*"
-        ).residues.n_residues
-    )
+            "nucleicphosphate and not name H*").residues.n_residues +
+        aa_universe.select_atoms("sugarC4 and not name H*").residues.n_residues
+        +
+        aa_universe.select_atoms("sugarC2 and not name H*").residues.n_residues
+        + aa_universe.select_atoms(
+            "nucleiccenter and not name H*").residues.n_residues)
     cg_universe = nucleic.Nucleic4(PDB_dna)
 
     testing.assert_equal(
@@ -122,19 +108,13 @@ def test_nucleic4_positions():
     dna = mda.Universe(PDB_dna).select_atoms("nucleic or resname OXG")
     for _ in dna.residues:
         positions.append(
-            _.atoms.select_atoms("nucleicphosphate and not name H*").center_of_mass()
-        )
+            _.atoms.select_atoms("nucleicphosphate and not name H*")
+            .center_of_mass())
+        positions.append(_.atoms.select_atoms("name C4'").center_of_mass())
+        positions.append(_.atoms.select_atoms("name C2'").center_of_mass())
         positions.append(
-            _.atoms.select_atoms("name C4'").center_of_mass()
-        )
-        positions.append(
-            _.atoms.select_atoms("name C2'").center_of_mass()
-        )
-        positions.append(
-            _.atoms.select_atoms(
-                "nucleiccenter and not name H*"
-            ).center_of_mass()
-        )
+            _.atoms.select_atoms("nucleiccenter and not name H*")
+            .center_of_mass())
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -152,22 +132,17 @@ def test_nucleic4_trajectory():
         verbose=True,
     )
 
+
 def test_nucleic6_creation():
-    h1 = (
-        "(resname ADE DA* RA* and name N6) or "
-        "(resname OXG GUA DG* RG* and name O6) or "
-        "(resname CYT DC* RC* and name N4) or "
-        "(resname THY URA DT* RU* and name O4)"
-    )
-    h2 = (
-        "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
-        "(resname CYT DC* RC* THY URA DT* RU* and name N3)"
-    )
-    h3 = (
-        "(resname ADE DA* RA* and name H2) or "
-        "(resname OXG GUA DG* RG* and name N2) or "
-        "(resname CYT DC* RC* THY URA DT* RU* and name O2)"
-    )
+    h1 = ("(resname ADE DA* RA* and name N6) or "
+          "(resname OXG GUA DG* RG* and name O6) or "
+          "(resname CYT DC* RC* and name N4) or "
+          "(resname THY URA DT* RU* and name O4)")
+    h2 = ("(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
+          "(resname CYT DC* RC* THY URA DT* RU* and name N3)")
+    h3 = ("(resname ADE DA* RA* and name H2) or "
+          "(resname OXG GUA DG* RG* and name N2) or "
+          "(resname CYT DC* RC* THY URA DT* RU* and name O2)")
 
     aa_universe = mda.Universe(PDB_dna)
     n_atoms = (
@@ -176,8 +151,7 @@ def test_nucleic6_creation():
         aa_universe.select_atoms("name C2'").residues.n_residues +
         aa_universe.select_atoms(h1).residues.n_residues +
         aa_universe.select_atoms(h2).residues.n_residues +
-        aa_universe.select_atoms(h3).residues.n_residues
-    )
+        aa_universe.select_atoms(h3).residues.n_residues)
     cg_universe = nucleic.Nucleic6(PDB_dna)
 
     testing.assert_equal(

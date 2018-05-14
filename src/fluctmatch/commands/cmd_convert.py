@@ -180,35 +180,36 @@ def cli(
         model_list,
 ):
     logging.config.dictConfig({
-        "version"                 : 1,
+        "version": 1,
         "disable_existing_loggers": False,  # this fixes the problem
-        "formatters"              : {
+        "formatters": {
             "standard": {
-                "class" : "logging.Formatter",
+                "class": "logging.Formatter",
                 "format": "%(name)-12s %(levelname)-8s %(message)s",
             },
             "detailed": {
-                "class"  : "logging.Formatter",
-                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
                 "datefmt": "%m-%d-%y %H:%M",
             },
         },
-        "handlers"                : {
+        "handlers": {
             "console": {
-                "class"    : "logging.StreamHandler",
-                "level"    : "INFO",
+                "class": "logging.StreamHandler",
+                "level": "INFO",
                 "formatter": "standard",
             },
-            "file"   : {
-                "class"    : "logging.FileHandler",
-                "filename" : path.join(outdir, "convert.log"),
-                "level"    : "INFO",
-                "mode"     : "w",
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "convert.log"),
+                "level": "INFO",
+                "mode": "w",
                 "formatter": "detailed",
             }
         },
-        "root"                    : {
-            "level"   : "INFO",
+        "root": {
+            "level": "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -222,19 +223,20 @@ def cli(
     kwargs = dict()
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
 
-    kwargs.update(dict(
-        outdir=outdir,
-        prefix=prefix,
-        rmin=rmin,
-        rmax=rmax,
-        charmm_version=charmm_version,
-        extended=extended,
-        resid=not resid,
-        cmap=not cmap,
-        cheq=not cheq,
-        nonbonded=not nonbonded,
-        write_traj=write_traj,
-    ))
+    kwargs.update(
+        dict(
+            outdir=outdir,
+            prefix=prefix,
+            rmin=rmin,
+            rmax=rmax,
+            charmm_version=charmm_version,
+            extended=extended,
+            resid=not resid,
+            cmap=not cmap,
+            cheq=not cheq,
+            nonbonded=not nonbonded,
+            write_traj=write_traj,
+        ))
     if mass:
         logger.info("Setting all bead masses to 1.0.")
         universe.atoms.mass = 1.0

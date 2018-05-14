@@ -188,7 +188,8 @@ def write_charmm_files(universe,
     logger.warning("The system has {:d} atoms, {:d} bonds, {:d} angles, {:d} "
                    "dihedrals, and {:d} impropers. Depending upon "
                    "the size of the system, file writing may take a while and "
-                   "have a large file size.".format(n_atoms, n_bonds, n_angles, n_dihedrals, n_impropers))
+                   "have a large file size.".format(n_atoms, n_bonds, n_angles,
+                                                    n_dihedrals, n_impropers))
 
     # Write required CHARMM input files.
     with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
@@ -232,7 +233,8 @@ def write_charmm_files(universe,
         positions = AverageStructure(universe.atoms).run().result
         positions = positions.reshape((*positions.shape, 1))
         avg_universe = universe.copy()
-        avg_universe.load_new(positions, format=memory.MemoryReader, order="acf")
+        avg_universe.load_new(
+            positions, format=memory.MemoryReader, order="acf")
         with mda.Writer(
                 native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
             logger.info("Writing {}...".format(filenames["crd_file"]))

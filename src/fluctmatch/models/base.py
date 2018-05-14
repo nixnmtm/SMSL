@@ -290,8 +290,8 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
             len(new_resids),
             len(segids),
             attrs=[
-                atomids, atomnames, atomtypes, charges, masses,
-                vdwradii, residueids, residuenums, residuenames, segids
+                atomids, atomnames, atomtypes, charges, masses, vdwradii,
+                residueids, residuenums, residuenames, segids
             ],
             atom_resindex=residx,
             residue_segindex=segidx)

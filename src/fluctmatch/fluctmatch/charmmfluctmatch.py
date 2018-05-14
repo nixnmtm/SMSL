@@ -227,8 +227,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 avg_table = self._create_ic_table(universe, avg_bonds)
                 table.write(avg_table)
 
-            logger.info(
-                "Determining the fluctuation of bond distances...")
+            logger.info("Determining the fluctuation of bond distances...")
             with mda.Writer(self.filenames["init_fluct_ic"],
                             **self.kwargs) as table:
                 logger.info("Writing {}...".format(
@@ -259,8 +258,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         else:
             try:
                 # Read the parameter files.
-                logger.info(
-                    "Loading parameter and internal coordinate files.")
+                logger.info("Loading parameter and internal coordinate files.")
                 with reader(self.filenames["fixed_prm"]) as fixed:
                     self.parameters.update(fixed.read())
                 with reader(self.filenames["dynamic_prm"]) as dynamic:
