@@ -181,13 +181,13 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(path.dirname(outfile), "splittraj.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })

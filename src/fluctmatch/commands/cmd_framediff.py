@@ -90,13 +90,13 @@ def cli(outdir, ressep, table):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "framediff.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -105,7 +105,7 @@ def cli(outdir, ressep, table):
     logger.info("Reading {}".format(table))
     table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table)
-    logger.debug("{} read successfully.".format(table))
+    logger.info("{} read successfully.".format(table))
 
     d_table = table_1.table.diff(axis=1).dropna(axis=1)
     d_perres = table_1.per_residue.diff(axis=1).dropna(axis=1)
@@ -122,7 +122,7 @@ def cli(outdir, ressep, table):
             encoding="utf-8",
         )
         output.write(d_table.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "dframe_perres.txt")
     with open(filename, mode="wb") as output:
@@ -136,7 +136,7 @@ def cli(outdir, ressep, table):
             encoding="utf-8",
         )
         output.write(d_perres.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "dframe_interactions.txt")
     with open(filename, mode="wb") as output:
@@ -150,4 +150,4 @@ def cli(outdir, ressep, table):
             encoding="utf-8",
         )
         output.write(d_interactions.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")

@@ -101,13 +101,13 @@ def cli(outdir, ressep, kb, b0):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "normdiff.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -119,13 +119,13 @@ def cli(outdir, ressep, kb, b0):
     kb_table = paramtable.ParamTable(ressep=ressep)
     kb_table.from_file(kb)
     kb_table = kb_table.table.copy(deep=True)
-    logger.debug("Table loaded successfully.")
+    logger.info("Table loaded successfully.")
 
     logger.info("Loading distance table.")
     b0_table = paramtable.ParamTable(ressep=ressep)
     b0_table.from_file(b0)
     b0_table = b0_table.table.copy(deep=True)
-    logger.debug("Table loaded successfully.")
+    logger.info("Table loaded successfully.")
 
     idx = (kb_table == 0.0)
     maxkb = np.maximum(kb_table[kb_table.columns[1:].values],
@@ -156,7 +156,7 @@ def cli(outdir, ressep, kb, b0):
             encoding="utf-8",
         )
         output.write(kb_table.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "normed_b0.txt")
     with open(filename, mode="wb") as output:
@@ -169,4 +169,4 @@ def cli(outdir, ressep, kb, b0):
             encoding="utf-8",
         )
         output.write(b0_table.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")

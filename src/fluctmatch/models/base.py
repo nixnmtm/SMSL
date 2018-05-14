@@ -415,7 +415,7 @@ def rename_universe(universe):
     :class:`~MDAnalysis.Universe`
         The universe with renamed residues and atoms.
     """
-    logger.debug("Renaming atom names and atom types within the universe.")
+    logger.info("Renaming atom names and atom types within the universe.")
     atomnames = np.array([
         "{}{:0>3d}".format(lett, i)
         for lett, segment in zip(string.ascii_uppercase, universe.segments)

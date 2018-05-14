@@ -101,13 +101,13 @@ def cli(topology, trajectory, outfile, start, stop, step, verbose):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(path.dirname(outfile), "wordom.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -130,4 +130,4 @@ def cli(topology, trajectory, outfile, start, stop, step, verbose):
         else:
             for ts in trajectory[start:stop:step]:
                 trj.write(ts)
-        logger.debug("Trajectory conversion successful.")
+        logger.info("Trajectory conversion successful.")

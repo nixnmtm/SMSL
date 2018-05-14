@@ -276,7 +276,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 table = pd.concat([fluct_table, avg_table], axis=1)
 
                 # Set the target fluctuation values.
-                logger.debug("Files loaded successfully...")
+                logger.info("Files loaded successfully...")
                 self.target = copy.deepcopy(self.parameters)
                 self.target["BONDS"].set_index(self.bond_def, inplace=True)
                 table.columns = self.target["BONDS"].columns
@@ -325,7 +325,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             dimension = ("dimension chsize 1000000" if version >= 36 else "")
             with open(
                     self.filenames["charmm_input"], mode="wb") as charmm_file:
-                logger.debug("Writing CHARMM input file.")
+                logger.info("Writing CHARMM input file.")
                 charmm_inp = charmm_nma.nma.format(
                     temperature=self.temperature,
                     flex="flex" if version else "",
@@ -467,7 +467,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                          if version >= 36 else "")
             with open(
                     self.filenames["thermo_input"], mode="wb") as charmm_file:
-                logger.debug("Writing CHARMM input file.")
+                logger.info("Writing CHARMM input file.")
                 charmm_inp = charmm_thermo.thermodynamics.format(
                     trajectory=path.join(self.outdir, self.args[-1]),
                     temperature=self.temperature,
@@ -496,7 +496,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
         # Read log file
         with open(self.filenames["thermo_log"], "rb") as log_file:
-            logger.debug("Reading CHARMM log file.")
+            logger.info("Reading CHARMM log file.")
             for line in log_file:
                 if line.find(header) < 0:
                     continue

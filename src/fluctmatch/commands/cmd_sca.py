@@ -149,13 +149,13 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(path.dirname(filename), "fluctsca.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -169,24 +169,24 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
     kb = table._separate(table.table)
     _index = kb.index.names
     if transformation == "backbone":
-        logger.debug("Calculating backbone-backbone interactions.")
+        logger.info("Calculating backbone-backbone interactions.")
         kb.reset_index(inplace=True)
         kb = kb[(kb["I"] == "N") | (kb["I"] == "CA") | (kb["I"] == "O")]
         kb = kb[(kb["J"] == "N") | (kb["J"] == "CA") | (kb["J"] == "O")]
         table.table = kb.set_index(_index)
     elif transformation == "sidechain":
-        logger.debug("Calculating sidechain-sidechain interactions.")
+        logger.info("Calculating sidechain-sidechain interactions.")
         kb.reset_index(inplace=True)
         kb = kb[(kb["I"] == "CB") & (kb["J"] == "CB")]
         table.table = kb.set_index(_index)
     elif transformation == "bbsc":
-        logger.debug("Calculating backbone-sidechain interactions.")
+        logger.info("Calculating backbone-sidechain interactions.")
         kb.reset_index(inplace=True)
         tmp1 = kb[(kb["I"] == "CB") & ((kb["J"] == "N") | (kb["J"] == "O"))]
         tmp2 = kb[(kb["J"] == "CB") & ((kb["I"] == "N") | (kb["I"] == "O"))]
         table.table = pd.concat([tmp1, tmp2], axis=0).set_index(_index)
     else:
-        logger.debug("Accounting for all interactions.")
+        logger.info("Accounting for all interactions.")
     kb = table.per_residue
 
     D_info = dict(
@@ -225,12 +225,12 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
     Vcorr = fluctsca.correlate(Vt.T, Lsca, kmax=_kpos)
 
     # Calculate IC sectors
-    logger.debug("Calculating the ICA for the residues.")
+    logger.info("Calculating the ICA for the residues.")
     Uica, Wres = fluctsca.rotICA(U, kmax=_kpos)
     Uics, Uicsize, Usortedpos, Ucutoff, Uscaled_pd, Upd = fluctsca.icList(
         Uica, _kpos, Ucorrel, p_cut=pcut)
 
-    logger.debug("Calculating the ICA for the windows.")
+    logger.info("Calculating the ICA for the windows.")
     Vica, Wtime = fluctsca.rotICA(Vt.T, kmax=_kpos)
     Utica = Wtime.dot(U[:, :_kpos].T).T
     Vrica = Wres.dot(Vt[:_kpos]).T

@@ -51,7 +51,7 @@ def create_empty_table(universe):
     """
     table = pd.DataFrame()
     atomgroup = universe.atoms
-    logging.debug("Creating an empty table.")
+    logging.info("Creating an empty table.")
     try:
         dihedrals = atomgroup.dihedrals
         if len(dihedrals) == 0:

@@ -84,7 +84,7 @@ class IntcorReader(TopologyReaderBase):
         table = pd.DataFrame()
         with open(self.filename, "rb") as icfile, TextIOWrapper(
                 icfile, encoding="utf-8") as buf:
-            logger.debug("Writing to {}".format(self.filename))
+            logger.info("Writing to {}".format(self.filename))
             for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
@@ -121,7 +121,7 @@ class IntcorReader(TopologyReaderBase):
             else:
                 columns = self.cols
             table.columns = columns
-            logger.debug("Table read successfully.")
+            logger.info("Table read successfully.")
         return table
 
 
@@ -200,7 +200,7 @@ class IntcorWriter(TopologyWriterBase):
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
         with open(self.filename, "wb") as icfile:
-            logger.debug("Writing to {}".format(self.filename))
+            logger.info("Writing to {}".format(self.filename))
             for _ in self._title:
                 icfile.write(_.encode())
                 icfile.write("\n".encode())
@@ -224,4 +224,4 @@ class IntcorWriter(TopologyWriterBase):
                 icfile,
                 ictable.reset_index(),
                 fmt=native_str(self.fmt[self.key]))
-            logger.debug("Table successfully written.")
+            logger.info("Table successfully written.")

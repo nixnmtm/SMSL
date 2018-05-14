@@ -117,13 +117,13 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "table.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -147,7 +147,7 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
                 encoding="utf-8",
             )
             output.write(table.encode())
-            logger.debug("Table successfully written.")
+            logger.info("Table successfully written.")
 
         fn = path.join(outdir, filename("interactions", ext="txt"))
         with open(fn, mode="wb") as output:
@@ -160,4 +160,4 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
                 encoding="utf-8",
             )
             output.write(table.encode())
-            logger.debug("Table successfully written.")
+            logger.info("Table successfully written.")

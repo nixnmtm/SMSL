@@ -89,13 +89,13 @@ def cli(outdir, ressep, table):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "entropy.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -115,7 +115,7 @@ def cli(outdir, ressep, table):
             encoding="utf-8",
         )
         output.write(ent.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "relative.entropy.txt")
     with open(filename, mode="wb") as output:
@@ -128,7 +128,7 @@ def cli(outdir, ressep, table):
             encoding="utf-8",
         )
         output.write(ent.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "windiff.entropy.txt")
     with open(filename, mode="wb") as output:
@@ -142,4 +142,4 @@ def cli(outdir, ressep, table):
             encoding="utf-8",
         )
         output.write(ent.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")

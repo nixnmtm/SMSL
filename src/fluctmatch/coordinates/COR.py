@@ -165,7 +165,7 @@ class CORWriter(CRD.CRDWriter):
 
         with open(self.filename, "wb") as crd:
             # Write Title
-            logger.debug("Writing {}".format(self.filename))
+            logger.info("Writing {}".format(self.filename))
             crd.write(self.fmt["TITLE"].format(
                 frame=frame, where=u.trajectory.filename).encode())
             crd.write("\n".encode())
@@ -199,4 +199,4 @@ class CORWriter(CRD.CRDWriter):
                         chainID=chainID,
                         resSeq=resid,
                         tempfactor=tempfactor).encode())
-            logger.debug("Coordinate file successfully written.")
+            logger.info("Coordinate file successfully written.")

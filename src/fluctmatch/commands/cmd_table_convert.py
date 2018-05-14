@@ -105,13 +105,13 @@ def cli(top1, top2, coord, table, outfile):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(path.dirname(outfile), "table_convert.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -130,7 +130,7 @@ def cli(top1, top2, coord, table, outfile):
             skipinitialspace=True,
             delim_whitespace=True,
         )
-        logger.debug("Table loaded successfully.")
+        logger.info("Table loaded successfully.")
 
     # Transform assigned bead names to an all-atom designation.
     constants["I"] = constants["I"].apply(lambda x: convert[x])
@@ -155,4 +155,4 @@ def cli(top1, top2, coord, table, outfile):
             float_format="%.4f",
         )
         output.write(constants.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")

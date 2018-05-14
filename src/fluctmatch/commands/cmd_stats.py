@@ -111,13 +111,13 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "stats.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -141,7 +141,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 encoding="utf-8",
             )
             stat_file.write(info.encode())
-            logger.debug("Table successfully written.")
+            logger.info("Table successfully written.")
 
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_stats.txt")
@@ -157,7 +157,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
-                logger.debug("Table successfully written.")
+                logger.info("Table successfully written.")
 
             filename = path.join(outdir, "residue_stats.txt")
             with open(filename, mode="wb") as stat_file:
@@ -173,7 +173,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
-                logger.debug("Table successfully written.")
+                logger.info("Table successfully written.")
 
     if hist:
         filename = path.join(outdir, "_".join((tbltype.lower(), "table",
@@ -187,7 +187,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                 encoding="utf-8",
             )
             stat_file.write(info.encode())
-            logger.debug("Table successfully written.")
+            logger.info("Table successfully written.")
 
         if tbltype == "Kb":
             filename = path.join(outdir, "interaction_hist.txt")
@@ -202,7 +202,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
-                logger.debug("Table successfully written.")
+                logger.info("Table successfully written.")
 
             filename = path.join(outdir, "residue_hist.txt")
             with open(filename, mode="wb") as stat_file:
@@ -217,4 +217,4 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
-                logger.debug("Table successfully written.")
+                logger.info("Table successfully written.")

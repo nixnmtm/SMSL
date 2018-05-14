@@ -95,13 +95,13 @@ def cli(outdir, ressep, table1, table2):
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "diff.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
@@ -110,12 +110,12 @@ def cli(outdir, ressep, table1, table2):
     logger.info("Loading {}".format(table1))
     table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table1)
-    logger.debug("{} loaded".format(table1))
+    logger.info("{} loaded".format(table1))
 
     logger.info("Loading {}".format(table2))
     table_2 = paramtable.ParamTable(ressep=ressep)
     table_2.from_file(table2)
-    logger.debug("{} loaded".format(table2))
+    logger.info("{} loaded".format(table2))
 
     d_table = table_1 - table_2
     d_perres = table_1.per_residue.subtract(
@@ -134,7 +134,7 @@ def cli(outdir, ressep, table1, table2):
             encoding="utf-8",
         )
         output.write(d_table.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "dperres.txt")
     with open(filename, mode="wb") as output:
@@ -147,7 +147,7 @@ def cli(outdir, ressep, table1, table2):
             encoding="utf-8",
         )
         output.write(d_perres.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "dinteractions.txt")
     with open(filename, mode="wb") as output:
@@ -161,4 +161,4 @@ def cli(outdir, ressep, table1, table2):
             encoding="utf-8",
         )
         output.write(d_interactions.encode())
-        logger.debug("Table written successfully.")
+        logger.info("Table written successfully.")

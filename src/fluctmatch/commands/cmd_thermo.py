@@ -131,13 +131,13 @@ def cli(datadir, outdir, topology, trajectory, nma_exec, temperature,
             "file"   : {
                 "class"    : "logging.FileHandler",
                 "filename" : path.join(outdir, "thermo.log"),
-                "level"    : "DEBUG",
+                "level"    : "INFO",
                 "mode"     : "w",
                 "formatter": "detailed",
             }
         },
         "root"                    : {
-            "level"   : "DEBUG",
+            "level"   : "INFO",
             "handlers": ["console", "file"]
         },
     })
