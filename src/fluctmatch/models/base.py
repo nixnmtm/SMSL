@@ -429,7 +429,7 @@ def rename_universe(universe):
 
     universe._topology.add_TopologyAttr(topologyattrs.Atomnames(atomnames))
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))
-    if not np.issubdtype(universe.atoms.types.dtype, np.int):
+    if not np.issubdtype(universe.atoms.types.dtype, np.int64):
         universe._topology.add_TopologyAttr(topologyattrs.Atomtypes(atomnames))
     universe._generate_from_topology()
     return universe
