@@ -219,7 +219,7 @@ class NucleicPhosphateSelection(AdditionalNucleicSelection):
     """
     token = "nucleicphosphate"
     phos_atoms = np.array(
-        ["P", "O1P", "O2P", "O5'", "C5'", "H5'", "H5''", "H5T"])
+        ["P", "O1P", "O2P", "O5'", "C5'", "H5'", "H5''", "O5T", "H5T"])
 
     def apply(self, group):
         mask = np.in1d(group.names, self.phos_atoms)
