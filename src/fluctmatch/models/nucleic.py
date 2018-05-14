@@ -65,7 +65,7 @@ class Nucleic3(ModelBase):
         bonds.extend([
             _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name C4'").ix[:-1],
-                s.atoms.select_atoms("name P").ix[1:]) if s.n_residues > 1
+                s.atoms.select_atoms("name P").ix[1:]) if s.residues.n_residues > 1
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
