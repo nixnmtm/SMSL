@@ -68,7 +68,9 @@ class Enm(ModelBase):
         rename_universe(self)
         charges = kwargs.get("charges", False)
         if not charges:
-            self.atoms.charges = 0.
+            self._topology.add_TopologyAttr(
+                topologyattrs.Charges(np.zeros(self.atoms.n_atoms))
+            )
         self._topology.add_TopologyAttr(
             topologyattrs.Atomtypes(np.arange(self.atoms.n_atoms) + 1))
         self._topology.add_TopologyAttr(topologyattrs.Angles([]))
