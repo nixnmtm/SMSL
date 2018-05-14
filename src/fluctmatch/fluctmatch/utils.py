@@ -180,6 +180,16 @@ def write_charmm_files(universe,
         traj_file=".".join((filename, "dcd")),
     )
 
+    n_atoms = universe.atoms.n_atoms
+    n_bonds = len(universe.bonds)
+    n_angles = len(universe.angles)
+    n_dihedrals = len(universe.dihedrals)
+    n_impropers = len(universe.impropers)
+    logger.warning("The system has {:d} atoms, {:d} bonds, {:d} angles, {:d} "
+                   "dihedrals, and {:d} impropers. Depending upon "
+                   "the size of the system, file writing may take a while and "
+                   "have a large file size.".format(n_atoms, n_bonds, n_angles, n_dihedrals, n_impropers))
+
     # Write required CHARMM input files.
     with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
         logger.info("Writing {}...".format(filenames["topology_file"]))
