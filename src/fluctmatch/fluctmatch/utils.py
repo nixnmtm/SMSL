@@ -214,8 +214,7 @@ def write_charmm_files(universe,
         logger.info("Writing {}...".format(filenames["xplor_psf_file"]))
         psf.write(universe)
 
-    # Calculate the average coordinates, average bond lengths, and
-    # fluctuations of bond lengths from the trajectory.
+    # Calculate the average coordinates from the trajectory.
     if universe.trajectory.n_frames > 1:
         logger.info("Determining the average structure of the trajectory. ")
         logger.warning("Note: This could take a while depending upon the "
