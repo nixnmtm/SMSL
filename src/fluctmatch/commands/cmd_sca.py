@@ -136,7 +136,7 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
             },
             "detailed": {
                 "class"  : "logging.Formatter",
-                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
                 "datefmt": "%m-%d-%y %H:%M",
             },
         },

@@ -98,7 +98,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             },
             "detailed": {
                 "class"  : "logging.Formatter",
-                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s",
+                "format" : "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
                 "datefmt": "%m-%d-%y %H:%M",
             },
         },
