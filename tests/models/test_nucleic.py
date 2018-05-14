@@ -125,10 +125,10 @@ def test_nucleic4_positions():
             _.atoms.select_atoms("nucleicphosphate and not name H*").center_of_mass()
         )
         positions.append(
-            _.atoms.select_atoms("sugarC4 and not name H*").center_of_mass()
+            _.atoms.select_atoms("name C4'").center_of_mass()
         )
         positions.append(
-            _.atoms.select_atoms("sugarC2 and not name H*").center_of_mass()
+            _.atoms.select_atoms("name C2'").center_of_mass()
         )
         positions.append(
             _.atoms.select_atoms(
