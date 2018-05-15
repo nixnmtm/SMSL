@@ -6,6 +6,7 @@ Changelog
 ------------------
 
 * Fixes bug in writing average coordinate file
+* Added log file command-line option
 
 3.3.0 (2018-05-15)
 ------------------
