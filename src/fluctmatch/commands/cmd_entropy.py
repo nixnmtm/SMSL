@@ -35,6 +35,15 @@ from fluctmatch.analysis import entropy
 @click.command(
     "entropy", short_help="Calculate the Shannon entropy of residues.")
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "entropy.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "--outdir",
     metavar="OUTDIR",
@@ -64,7 +73,7 @@ from fluctmatch.analysis import entropy
         resolve_path=True,
     ),
 )
-def cli(outdir, ressep, table):
+def cli(logfile, outdir, ressep, table):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
@@ -89,7 +98,7 @@ def cli(outdir, ressep, table):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "entropy.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

@@ -33,6 +33,15 @@ from fluctmatch.analysis import paramtable
 
 @click.command("diff", short_help="Calculate differences between two tables.")
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "diff.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "--outdir",
     metavar="OUTDIR",
@@ -71,7 +80,7 @@ from fluctmatch.analysis import paramtable
         resolve_path=True,
     ),
 )
-def cli(outdir, ressep, table1, table2):
+def cli(logfile, outdir, ressep, table1, table2):
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,  # this fixes the problem
@@ -95,7 +104,7 @@ def cli(outdir, ressep, table1, table2):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "diff.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

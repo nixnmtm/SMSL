@@ -23,6 +23,7 @@ from __future__ import (
 
 import logging
 import logging.config
+from os import path
 
 import click
 import MDAnalysis as mda
@@ -43,6 +44,15 @@ from fluctmatch.fluctmatch import utils as fmutils
     metavar="FILE",
     type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
+)
+@click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "write_charmm.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
 )
 @click.option(
     "-o",
@@ -109,6 +119,7 @@ from fluctmatch.fluctmatch import utils as fmutils
 def cli(
         topology,
         trajectory,
+        logfile,
         outdir,
         prefix,
         charmm_version,
@@ -141,7 +152,7 @@ def cli(
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "write_charmm.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

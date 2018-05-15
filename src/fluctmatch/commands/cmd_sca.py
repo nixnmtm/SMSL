@@ -40,6 +40,15 @@ from fluctmatch.analysis import (
     "sca",
     short_help="Statistical coupling analysis (SCA) on coupling strength")
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "fluctsca.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-n",
     "--ntrials",
     metavar="NTRIALS",
@@ -123,7 +132,7 @@ from fluctmatch.analysis import (
         file_okay=True,
         resolve_path=True,
     ))
-def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
+def cli(logfile, ntrials, std, kpos, pcut, ressep, output, subset, transformation,
         filename):
     # Setup logger
     logging.config.dictConfig({
@@ -149,7 +158,7 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(path.dirname(filename), "fluctsca.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

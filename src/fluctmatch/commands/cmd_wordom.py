@@ -45,6 +45,15 @@ import MDAnalysis as mda
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "wordom.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "outfile",
     metavar="FILE",
@@ -76,7 +85,7 @@ import MDAnalysis as mda
     type=click.IntRange(1, None, clamp=True),
     help="Interval between frames")
 @click.option("-v", "--verbose", is_flag=True, help="Show progress of output")
-def cli(topology, trajectory, outfile, start, stop, step, verbose):
+def cli(topology, trajectory, logfile, outfile, start, stop, step, verbose):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
@@ -101,7 +110,7 @@ def cli(topology, trajectory, outfile, start, stop, step, verbose):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(path.dirname(outfile), "wordom.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

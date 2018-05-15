@@ -36,6 +36,15 @@ import MDAnalysis as mda
     "table_convert",
     short_help="Transform an ENM IC table name to corresponding atoms.")
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "table_convert.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-s1",
     "top1",
     metavar="FILE",
@@ -80,7 +89,7 @@ import MDAnalysis as mda
     type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Table file",
 )
-def cli(top1, top2, coord, table, outfile):
+def cli(logfile, top1, top2, coord, table, outfile):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
@@ -105,8 +114,7 @@ def cli(top1, top2, coord, table, outfile):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(
-                    path.dirname(outfile), "table_convert.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",
