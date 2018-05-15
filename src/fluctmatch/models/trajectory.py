@@ -66,6 +66,7 @@ class _Trajectory(base.ReaderBase):
         """
         self._u = universe
         self._t = universe.trajectory
+        self.__dict__.update(universe.trajectory.__dict__)
         self._mapping = mapping
         residue_selection = itertools.product(self._u.residues,
                                               viewitems(self._mapping))
