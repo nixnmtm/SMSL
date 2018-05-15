@@ -46,6 +46,15 @@ from fluctmatch.analysis import paramtable
     help="Data directory",
 )
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "table.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "--outdir",
     metavar="OUTDIR",
@@ -86,7 +95,7 @@ from fluctmatch.analysis import paramtable
     "--verbose",
     is_flag=True,
 )
-def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
+def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose):
     pt = paramtable.ParamTable(
         prefix=prefix,
         tbltype=tbltype,
@@ -117,7 +126,7 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "table.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

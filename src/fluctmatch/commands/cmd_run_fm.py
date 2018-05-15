@@ -51,6 +51,15 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "charmmfm.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "outdir",
     metavar="DIR",
@@ -142,6 +151,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 def cli(
         topology,
         trajectory,
+        logfile,
         outdir,
         nma_exec,
         temperature,
@@ -177,7 +187,7 @@ def cli(
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "charmmfm.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",
