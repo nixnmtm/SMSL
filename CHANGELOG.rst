@@ -2,6 +2,19 @@
 Changelog
 =========
 
+3.3.1 (2018-05-15)
+------------------
+
+* Fixes bug in writing average coordinate file
+
+3.3.0 (2018-05-15)
+------------------
+
+* Uses MDAnalysis 0.18.0
+* Fix Merge bug
+* Added logging features
+* Formatted according to PEP8
+
 3.1.0 (2017-11-07)
 ------------------
 
