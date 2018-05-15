@@ -20,12 +20,11 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import native_str
 
 import numpy as np
 import MDAnalysis as mda
-import numpy.testing as testing
-from future.utils import native_str
-
+from numpy import testing
 from fluctmatch.fluctmatch import utils as fmutils
 from ..datafiles import (
     TPR,
@@ -35,10 +34,8 @@ from ..datafiles import (
 
 def test_average_structure():
     universe = mda.Universe(TPR, XTC)
-    avg_positions = np.mean([
-        universe.atoms.positions
-        for _ in universe.trajectory
-    ], axis=0)
+    avg_positions = np.mean(
+        [universe.atoms.positions for _ in universe.trajectory], axis=0)
     positions = fmutils.AverageStructure(universe.atoms).run().result
     testing.assert_allclose(
         positions,
@@ -49,10 +46,8 @@ def test_average_structure():
 
 def test_average_bonds():
     universe = mda.Universe(TPR, XTC)
-    avg_bonds = np.mean([
-        universe.bonds.bonds()
-        for _ in universe.trajectory
-    ], axis=0)
+    avg_bonds = np.mean(
+        [universe.bonds.bonds() for _ in universe.trajectory], axis=0)
     (bonds, ) = fmutils.BondStats(universe, func="mean").run().result
     testing.assert_allclose(
         bonds["r_IJ"],
@@ -63,10 +58,8 @@ def test_average_bonds():
 
 def test_bond_fluctuation():
     universe = mda.Universe(TPR, XTC)
-    bond_fluct = np.std([
-        universe.bonds.bonds()
-        for _ in universe.trajectory
-    ], axis=0)
+    bond_fluct = np.std(
+        [universe.bonds.bonds() for _ in universe.trajectory], axis=0)
     (bonds, ) = fmutils.BondStats(universe, func="std").run().result
     testing.assert_allclose(
         bonds["r_IJ"],
@@ -77,14 +70,10 @@ def test_bond_fluctuation():
 
 def test_bond_all_stats():
     universe = mda.Universe(TPR, XTC)
-    bond_average = np.mean([
-        universe.bonds.bonds()
-        for _ in universe.trajectory
-    ], axis=0)
-    bond_fluct = np.std([
-        universe.bonds.bonds()
-        for _ in universe.trajectory
-    ], axis=0)
+    bond_average = np.mean(
+        [universe.bonds.bonds() for _ in universe.trajectory], axis=0)
+    bond_fluct = np.std(
+        [universe.bonds.bonds() for _ in universe.trajectory], axis=0)
     (average, std) = fmutils.BondStats(universe, func="both").run().result
     testing.assert_allclose(
         std["r_IJ"],
@@ -95,4 +84,3 @@ def test_bond_all_stats():
         bond_fluct,
         err_msg=native_str("Bond fluctuations don't match."),
     )
-

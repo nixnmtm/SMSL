@@ -21,47 +21,34 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
+from os import path
+
 import click
 import MDAnalysis as mda
-from fluctmatch.cli import pass_context
-from fluctmatch.fluctmatch import utils as fmutils
 
 
-@click.command(
-    "wordom",
-    short_help="Convert between coordinate file types."
-)
+@click.command("wordom", short_help="Convert between coordinate file types.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
     "-f",
     "trajectory",
     metavar="FILE",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
     "-o",
     "outfile",
     metavar="FILE",
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -87,26 +74,61 @@ from fluctmatch.fluctmatch import utils as fmutils
     default=1,
     show_default=True,
     type=click.IntRange(1, None, clamp=True),
-    help="Interval between frames"
-)
-@click.option(
-    "-v",
-    "--verbose",
-    is_flag=True,
-    help="Show progress of output"
-)
+    help="Interval between frames")
+@click.option("-v", "--verbose", is_flag=True, help="Show progress of output")
 def cli(topology, trajectory, outfile, start, stop, step, verbose):
+    # Setup logger
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(path.dirname(outfile), "wordom.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
+    logger.info("Loading the universe.")
     universe = mda.Universe(topology, trajectory)
     trajectory = universe.trajectory
-    with mda.Writer(outfile, n_atoms=universe.atoms.n_atoms, dt=trajectory.dt) as trj:
+    with mda.Writer(
+            outfile, n_atoms=universe.atoms.n_atoms, dt=trajectory.dt) as trj:
+        logger.info("Converting from {} to {}".format(trajectory.format,
+                                                      trj.format))
         if verbose:
             with click.progressbar(
-                length=trajectory.n_frames,
-                label="Trajectory frames written"
-            ) as bar:
-                    for ts in trajectory[start:stop:step]:
-                        trj.write(ts)
-                        bar.update(ts.frame)
+                    length=trajectory.n_frames,
+                    label="Trajectory frames written") as bar:
+                for ts in trajectory[start:stop:step]:
+                    trj.write(ts)
+                    bar.update(ts.frame)
         else:
             for ts in trajectory[start:stop:step]:
                 trj.write(ts)
+        logger.info("Trajectory conversion successful.")

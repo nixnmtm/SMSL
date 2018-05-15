@@ -20,15 +20,14 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import numpy as np
-from MDAnalysis.core import topologyattrs
-from MDAnalysis.lib.distances import distance_array
 from future.builtins import (
     super,
     zip,
 )
 
+import numpy as np
+from MDAnalysis.core import topologyattrs
+from MDAnalysis.lib.distances import distance_array
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.models.base import (
     ModelBase,
@@ -56,8 +55,7 @@ class Enm(ModelBase):
         message = "<CG Universe with {} beads".format(self.atoms.n_atoms)
         try:
             message += " and {:d} bonds".format(
-                len(self._topology.bonds.values)
-            )
+                len(self._topology.bonds.values))
         except AttributeError as exc:
             pass
         finally:
@@ -70,10 +68,10 @@ class Enm(ModelBase):
         rename_universe(self)
         charges = kwargs.get("charges", False)
         if not charges:
-            self.atoms.charges = 0.
-        self._topology.add_TopologyAttr(topologyattrs.Atomtypes(
-            np.arange(self.atoms.n_atoms) + 1)
-        )
+            self._topology.add_TopologyAttr(
+                topologyattrs.Charges(np.zeros(self.atoms.n_atoms)))
+        self._topology.add_TopologyAttr(
+            topologyattrs.Atomtypes(np.arange(self.atoms.n_atoms) + 1))
         self._topology.add_TopologyAttr(topologyattrs.Angles([]))
         self._topology.add_TopologyAttr(topologyattrs.Dihedrals([]))
         self._topology.add_TopologyAttr(topologyattrs.Impropers([]))
@@ -87,16 +85,14 @@ class Enm(ModelBase):
 
     def _add_bonds(self):
         positions = fmutils.AverageStructure(self.atu.atoms).run().result
-        dm = distance_array(positions, positions, backend="OpenMP")
+        distmat = distance_array(positions, positions, backend="OpenMP")
         if self._rmin > 0.:
-            a0, a1 = np.where((dm >= self._rmin) & (dm <= self._rmax))
+            a0, a1 = np.where((distmat >= self._rmin) &
+                              (distmat <= self._rmax))
         else:
-            a0, a1 = np.where((dm > self._rmin) & (dm <= self._rmax))
-        bonds = topologyattrs.Bonds(set([
-            (x, y)
-            for x, y in zip(a0, a1)
-            if y > x
-        ]))
+            a0, a1 = np.where((distmat > self._rmin) & (distmat <= self._rmax))
+        bonds = topologyattrs.Bonds(
+            set([(x, y) for x, y in zip(a0, a1) if y > x]))
         self._topology.add_TopologyAttr(bonds)
         self._generate_from_topology()
 

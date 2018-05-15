@@ -20,10 +20,9 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
 from future.utils import native_str
-from numpy import testing
 
+from numpy import testing
 from fluctmatch.models import (
     protein,
     solvent,
@@ -35,11 +34,7 @@ from fluctmatch.models.base import (
     rename_universe,
 )
 from fluctmatch.models.selection import *
-from tests.datafiles import (
-    PDB_prot,
-    TIP3P,
-    IONS
-)
+from tests.datafiles import (PDB_prot, TIP3P, IONS)
 
 
 def test_universe():
@@ -53,8 +48,7 @@ def test_merge_creation():
 
     cg_universe = Merge(prot, water, solvions)
     cg_natoms = (
-        prot.atoms.n_atoms + water.atoms.n_atoms + solvions.atoms.n_atoms
-    )
+        prot.atoms.n_atoms + water.atoms.n_atoms + solvions.atoms.n_atoms)
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
@@ -70,9 +64,9 @@ def test_merge_positions():
 
     cg_universe = Merge(prot, water, solvions)
     positions = np.concatenate(
-        (prot.atoms.positions, water.atoms.positions, solvions.atoms.positions),
-        axis=0
-    )
+        (prot.atoms.positions, water.atoms.positions,
+         solvions.atoms.positions),
+        axis=0)
     testing.assert_allclose(
         cg_universe.atoms.positions,
         positions,

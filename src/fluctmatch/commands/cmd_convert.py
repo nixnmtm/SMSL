@@ -20,32 +20,28 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (viewkeys, iteritems)
 
+import logging
+import logging.config
 import os
 from os import path
 
 import click
-from future.utils import (viewkeys, iteritems)
 from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models.core import modeller
 from fluctmatch.fluctmatch.utils import write_charmm_files
 
 
 @click.command(
-    "convert",
-    short_help="Convert from all-atom to coarse-grain model."
-)
+    "convert", short_help="Convert from all-atom to coarse-grain model.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
@@ -54,11 +50,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -67,11 +59,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     metavar="DIR",
     show_default=True,
     default=os.getcwd(),
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -155,6 +143,12 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     help="Include charge equilibrium section in CHARMM PSF file",
 )
 @click.option(
+    "--uniform",
+    "mass",
+    is_flag=True,
+    help="Set uniform mass of beads to 1.0",
+)
+@click.option(
     "--write",
     "write_traj",
     is_flag=True,
@@ -165,29 +159,85 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "--list",
     "model_list",
     is_flag=True,
-    help="List available models with their descriptions"
-)
+    help="List available models with their descriptions")
 def cli(
-    topology, trajectory, outdir, prefix, rmin, rmax, model, charmm_version,
-    com, extended, resid, cmap, cheq, nonbonded, write_traj, model_list,
+        topology,
+        trajectory,
+        outdir,
+        prefix,
+        rmin,
+        rmax,
+        model,
+        charmm_version,
+        com,
+        extended,
+        resid,
+        cmap,
+        cheq,
+        nonbonded,
+        mass,
+        write_traj,
+        model_list,
 ):
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "convert.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     if model_list:
         for k, v in iteritems(_DESCRIBE):
             print("{:20}{}".format(k, v))
         return
 
-    kwargs = dict(
-        outdir=outdir,
-        prefix=prefix,
-        rmin=rmin,
-        rmax=rmax,
-        charmm_version=charmm_version,
-        extended=extended,
-        resid=not resid,
-        cmap=not cmap,
-        cheq=not cheq,
-        nonbonded=not nonbonded,
-        write_traj=write_traj,
-    )
+    kwargs = dict()
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
+
+    kwargs.update(
+        dict(
+            outdir=outdir,
+            prefix=prefix,
+            rmin=rmin,
+            rmax=rmax,
+            charmm_version=charmm_version,
+            extended=extended,
+            resid=not resid,
+            cmap=not cmap,
+            cheq=not cheq,
+            nonbonded=not nonbonded,
+            write_traj=write_traj,
+        ))
+    if mass:
+        logger.info("Setting all bead masses to 1.0.")
+        universe.atoms.mass = 1.0
     write_charmm_files(universe, **kwargs)

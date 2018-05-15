@@ -28,6 +28,7 @@ import pandas as pd
 class ParamStats(object):
     """Calculate parameter statistics from a parameter table.
     """
+
     def __init__(self, table):
         """
 
@@ -55,10 +56,7 @@ class ParamStats(object):
         A `pandas.Series` histogram
         """
         hist, bin_edges = np.histogram(
-            self._table.table,
-            bins=100,
-            density=True
-        )
+            self._table.table, bins=100, density=True)
         edges = (bin_edges[1:] + bin_edges[:-1]) / 2
         return pd.Series(hist, index=edges)
 
@@ -80,10 +78,7 @@ class ParamStats(object):
         A `pandas.Series` histogram
         """
         hist, bin_edges = np.histogram(
-            self._table.interactions,
-            bins="auto",
-            density=True
-        )
+            self._table.interactions, bins="auto", density=True)
         edges = (bin_edges[1:] + bin_edges[:-1]) / 2
         return pd.Series(hist, index=edges)
 
@@ -105,9 +100,6 @@ class ParamStats(object):
         A `pandas.Series` histogram
         """
         hist, bin_edges = np.histogram(
-            self._table.per_residue,
-            bins="auto",
-            density=True
-        )
+            self._table.per_residue, bins="auto", density=True)
         edges = (bin_edges[1:] + bin_edges[:-1]) / 2
         return pd.Series(hist, index=edges)

@@ -21,6 +21,8 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -29,21 +31,14 @@ from MDAnalysis.lib.util import which
 from fluctmatch.fluctmatch import charmmfluctmatch
 
 
-@click.command(
-    "run_fm",
-    short_help="Run fluctuation matching."
-)
+@click.command("run_fm", short_help="Run fluctuation matching.")
 @click.option(
     "-s",
     "topology",
     metavar="FILE",
     default=path.join(os.getcwd(), "md.tpr"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
 )
 @click.option(
@@ -52,11 +47,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="FILE",
     default=path.join(os.getcwd(), "md.xtc"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
@@ -65,11 +56,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     metavar="DIR",
     default=os.getcwd(),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -80,11 +67,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     envvar="CHARMMEXEC",
     default=which("charmm"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="CHARMM executable file",
 )
 @click.option(
@@ -157,10 +140,56 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     help="Restart simulation",
 )
 def cli(
-    topology, trajectory, outdir, nma_exec, temperature,
-    n_cycles, tol, prefix, charmm_version,
-    extended, resid, nonbonded, restart,
+        topology,
+        trajectory,
+        outdir,
+        nma_exec,
+        temperature,
+        n_cycles,
+        tol,
+        prefix,
+        charmm_version,
+        extended,
+        resid,
+        nonbonded,
+        restart,
 ):
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "charmmfm.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     kwargs = dict(
         prefix=prefix,
         outdir=outdir,
@@ -171,5 +200,9 @@ def cli(
         nonbonded=nonbonded,
     )
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
+
+    logger.info("Initializing the parameters.")
     cfm.initialize(restart=restart)
+    logger.info("Running fluctuation matching.")
     cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles)
+    logger.info("Fluctuation matching successfully completed.")

@@ -20,18 +20,16 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-from collections import OrderedDict
-
-from MDAnalysis.core import topologyattrs
-
-from fluctmatch.models.base import ModelBase
-from fluctmatch.models.selection import *
-
 from future.builtins import (
     super,
     zip,
 )
+
+from collections import OrderedDict
+
+from MDAnalysis.core import topologyattrs
+from fluctmatch.models.base import ModelBase
+from fluctmatch.models.selection import *
 
 
 class SolventIons(ModelBase):
@@ -51,12 +49,11 @@ class SolventIons(ModelBase):
         resnames = np.unique(self.residues.resnames)
         restypes = {
             k: v
-            for k, v in zip(resnames, np.arange(resnames.size)+10)
+            for k, v in zip(resnames,
+                            np.arange(resnames.size) + 10)
         }
-        self.atoms.types = np.asarray([
-            restypes[atom.resname]
-            for atom in self.atoms
-        ])
+        self.atoms.types = np.asarray(
+            [restypes[atom.resname] for atom in self.atoms])
 
     def _add_bonds(self):
         self._topology.add_TopologyAttr(topologyattrs.Bonds([]))
@@ -80,12 +77,11 @@ class BioIons(ModelBase):
         resnames = np.unique(self.residues.resnames)
         restypes = {
             k: v
-            for k, v in zip(resnames, np.arange(resnames.size)+20)
+            for k, v in zip(resnames,
+                            np.arange(resnames.size) + 20)
         }
-        self.atoms.types = np.asarray([
-            restypes[atom.resname]
-            for atom in self.atoms
-        ])
+        self.atoms.types = np.asarray(
+            [restypes[atom.resname] for atom in self.atoms])
 
     def _add_bonds(self):
         self._topology.add_TopologyAttr(topologyattrs.Bonds([]))
@@ -109,12 +105,11 @@ class NobleAtoms(ModelBase):
         resnames = np.unique(self.residues.resnames)
         restypes = {
             k: v
-            for k, v in zip(resnames, np.arange(resnames.size)+40)
+            for k, v in zip(resnames,
+                            np.arange(resnames.size) + 40)
         }
-        self.atoms.types = np.asarray([
-            restypes[atom.resname]
-            for atom in self.atoms
-        ])
+        self.atoms.types = np.asarray(
+            [restypes[atom.resname] for atom in self.atoms])
 
     def _add_bonds(self):
         self._topology.add_TopologyAttr(topologyattrs.Bonds([]))

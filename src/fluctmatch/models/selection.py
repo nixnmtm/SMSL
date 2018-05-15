@@ -20,12 +20,11 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    super, )
 
 import numpy as np
 from MDAnalysis.core import selection
-from future.builtins import (
-    super,
-)
 
 
 class BioIonSelection(selection.Selection):
@@ -63,10 +62,8 @@ class BackboneSelection(selection.BackboneSelection):
     oxy_atoms = ["OXT", "OT1", "OT2"]
 
     def apply(self, group):
-        mask = np.in1d(
-            group.names,
-            np.concatenate([self.bb_atoms, self.oxy_atoms])
-        )
+        mask = np.in1d(group.names,
+                       np.concatenate([self.bb_atoms, self.oxy_atoms]))
         mask &= np.in1d(group.resnames, self.prot_res)
         return group[mask].unique
 
@@ -76,15 +73,14 @@ class HBackboneSelection(BackboneSelection):
     """
     token = "hbackbone"
     hbb_atoms = np.array([
-        "H", "HN", "H1", "H2", "H3", "HT1", "HT2", "HT3",
-        "HA", "HA1", "HA2", "1HA", "2HA"
+        "H", "HN", "H1", "H2", "H3", "HT1", "HT2", "HT3", "HA", "HA1", "HA2",
+        "1HA", "2HA"
     ])
 
     def apply(self, group):
-        mask = np.in1d(
-            group.names,
-            np.concatenate([self.bb_atoms, self.oxy_atoms, self.hbb_atoms])
-        )
+        mask = np.in1d(group.names,
+                       np.concatenate(
+                           [self.bb_atoms, self.oxy_atoms, self.hbb_atoms]))
         mask &= np.in1d(group.resnames, self.prot_res)
         return group[mask].unique
 
@@ -108,10 +104,8 @@ class HCalphaSelection(CalphaSelection):
     hcalpha = np.array(["HA", "HA1", "HA2", "1HA", "2HA"])
 
     def apply(self, group):
-        mask = np.in1d(
-            group.names,
-            np.concatenate([self.calpha, self.hcalpha])
-        )
+        mask = np.in1d(group.names, np.concatenate([self.calpha,
+                                                    self.hcalpha]))
         mask &= np.in1d(group.resnames, self.prot_res)
         return group[mask].unique
 
@@ -161,8 +155,7 @@ class HSidechainSelection(HBackboneSelection):
         mask = np.in1d(
             group.names,
             np.concatenate([self.bb_atoms, self.oxy_atoms, self.hbb_atoms]),
-            invert=True
-        )
+            invert=True)
         mask &= np.in1d(group.resnames, self.prot_res)
         return group[mask].unique
 
@@ -173,20 +166,15 @@ class AdditionalNucleicSelection(selection.NucleicSelection):
 
     def __init__(self, parser, tokens):
         super().__init__(parser, tokens)
-        self.nucl_res = np.concatenate(
-            (self.nucl_res,
-             ["OXG", "HPX"]),
-            axis=0
-        )
+        self.nucl_res = np.concatenate((self.nucl_res, ["OXG", "HPX"]), axis=0)
 
     def apply(self, group):
         mask = np.in1d(group.resnames, self.nucl_res)
         return group[mask].unique
 
 
-class HNucleicSugarSelection(
-    AdditionalNucleicSelection, selection.NucleicSugarSelection
-):
+class HNucleicSugarSelection(AdditionalNucleicSelection,
+                             selection.NucleicSugarSelection):
     """Contains the additional atoms definitions for the sugar.
     """
     token = "hnucleicsugar"
@@ -194,17 +182,11 @@ class HNucleicSugarSelection(
     def __init__(self, parser, tokens):
         super().__init__(parser, tokens)
         self.sug_atoms = np.concatenate(
-            (
-                self.sug_atoms,
-                 np.array([
-                     "H1'", "O1'",
-                     "O2'", "H2'", "H2''",
-                     "O3'", "H3'", "H3T",
-                     "H4'"
-                 ])
-            ),
-            axis=0
-        )
+            (self.sug_atoms,
+             np.array([
+                 "H1'", "O1'", "O2'", "H2'", "H2''", "O3'", "H3'", "H3T", "H4'"
+             ])),
+            axis=0)
 
     def apply(self, group):
         mask = np.in1d(group.names, self.sug_atoms)
@@ -220,20 +202,11 @@ class HBaseSelection(AdditionalNucleicSelection, selection.BaseSelection):
     def __init__(self, parser, tokens):
         super().__init__(parser, tokens)
         self.base_atoms = np.concatenate(
-            (
-                self.base_atoms,
-                [
-                    "O8", "H8",
-                    "H21", "H22", "H2",
-                    "O6", "H6", "H61", "H62",
-                    "H41", "H42",
-                    "H5", "H51", "H52", "H53",
-                    "H3",
-                    "H7"
-                ]
-            ),
-            axis=0
-        )
+            (self.base_atoms, [
+                "O8", "H8", "H21", "H22", "H2", "O6", "H6", "H61", "H62",
+                "H41", "H42", "H5", "H51", "H52", "H53", "H3", "H7"
+            ]),
+            axis=0)
 
     def apply(self, group):
         mask = np.in1d(group.names, self.base_atoms)
@@ -245,10 +218,8 @@ class NucleicPhosphateSelection(AdditionalNucleicSelection):
     """Contains the nucleic phosphate group including the C5'.
     """
     token = "nucleicphosphate"
-    phos_atoms = np.array([
-        "P", "O1P", "O2P",
-        "O5'", "C5'", "H5'", "H5''", "H5T"
-    ])
+    phos_atoms = np.array(
+        ["P", "O1P", "O2P", "O5'", "C5'", "H5'", "H5''", "O5T", "H5T"])
 
     def apply(self, group):
         mask = np.in1d(group.names, self.phos_atoms)
@@ -261,8 +232,12 @@ class NucleicC2Selection(AdditionalNucleicSelection):
     """
     token = "sugarC2"
     c3_atoms = np.array([
-        "C1'", "H1'",
-        "C2'", "O2'", "H2'", "H2''",
+        "C1'",
+        "H1'",
+        "C2'",
+        "O2'",
+        "H2'",
+        "H2''",
     ])
 
     def apply(self, group):
@@ -276,8 +251,13 @@ class NucleicC4Selection(AdditionalNucleicSelection):
     """
     token = "sugarC4"
     c3_atoms = np.array([
-        "C3'", "O3'", "H3'", "H3T",
-        "C4'", "O4'", "H4'",
+        "C3'",
+        "O3'",
+        "H3'",
+        "H3T",
+        "C4'",
+        "O4'",
+        "H4'",
     ])
 
     def apply(self, group):

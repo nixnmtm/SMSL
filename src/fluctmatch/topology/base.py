@@ -20,11 +20,10 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (
+    with_metaclass, )
 
 from MDAnalysis.coordinates.base import (_Readermeta, _Writermeta, IOBase)
-from future.utils import (
-    with_metaclass,
-)
 
 
 class TopologyReaderBase(with_metaclass(_Readermeta, IOBase)):

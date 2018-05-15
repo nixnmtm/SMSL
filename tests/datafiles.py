@@ -24,10 +24,15 @@ from __future__ import (
 from os import path
 
 __all__ = [
-    "PDB",          # PDB
-    "PDB_prot", "PDB_dna",
-    "TIP3P", "TIP4P", "IONS", "DMA",
-    "TPR", "XTC",   # Gromacs
+    "PDB",  # PDB
+    "PDB_prot",
+    "PDB_dna",
+    "TIP3P",
+    "TIP4P",
+    "IONS",
+    "DMA",
+    "TPR",
+    "XTC",  # Gromacs
     "NCSC",
 ]
 

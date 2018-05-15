@@ -23,13 +23,20 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import super, zip
+from future.utils import (
+    raise_with_traceback,
+    viewitems,
+    with_metaclass,
+)
 
 import abc
 import itertools
+import logging
 import string
 
-import MDAnalysis as mda
 import numpy as np
+import MDAnalysis as mda
 from MDAnalysis.core import (
     topology,
     topologyattrs,
@@ -37,21 +44,13 @@ from MDAnalysis.core import (
 from MDAnalysis.lib.util import asiterable
 from MDAnalysis.topology import base as topbase
 from MDAnalysis.topology import guessers
-from future.builtins import (
-    super,
-)
-from future.builtins import zip
-from future.utils import (
-    raise_with_traceback,
-    viewitems,
-    with_metaclass,
-)
-
 from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models import (
     topattrs,
     trajectory,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class _ModelMeta(abc.ABCMeta):
@@ -150,6 +149,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     bonds, angles, dihedrals
         master ConnectivityGroups for each connectivity type
     """
+
     def __init__(self, *args, **kwargs):
         """Initialise like a normal MDAnalysis Universe but give the mapping and
         com keywords.
@@ -177,11 +177,10 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
             raise_with_traceback(RuntimeError("Failed to create a universe."))
 
     def __repr__(self):
-        message = "<CG Universe with {} beads".format(len(self.atoms._beads))
+        message = "<CG Universe with {} beads".format(len(self.atoms))
         try:
             message += " and {:d} bonds".format(
-                len(self._topology.bonds.values)
-            )
+                len(self._topology.bonds.values))
         except AttributeError as exc:
             pass
         finally:
@@ -206,12 +205,11 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         # This replaces load_new in a traditional Universe
         try:
             self.trajectory = trajectory._Trajectory(
-                self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com
-            )
+                self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com)
         except (IOError, TypeError) as exc:
-            raise_with_traceback(RuntimeError(
-                "Unable to open {}".format(self.atu.trajectory.filename))
-            )
+            raise_with_traceback(
+                RuntimeError("Unable to open {}".format(
+                    self.atu.trajectory.filename)))
 
     def _apply_map(self, mapping):
         """Apply the mapping scheme to the beads.
@@ -237,8 +235,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
 
         residues = self.atu.atoms.split("residue")
         select_residues = enumerate(
-            itertools.product(residues, viewitems(mapping))
-        )
+            itertools.product(residues, viewitems(mapping)))
         for i, (res, (name, selection)) in select_residues:
             bead = res.select_atoms(selection)
             if bead:
@@ -258,25 +255,25 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         n_atoms = len(_beads)
 
         # Atom
-        _beads = topattrs._Beads(_beads)
+        # _beads = topattrs._Beads(_beads)
         vdwradii = np.zeros_like(atomids)
         vdwradii = topologyattrs.Radii(vdwradii)
         atomids = topologyattrs.Atomids(np.asarray(atomids))
         atomnames = topologyattrs.Atomnames(
-            np.asarray(atomnames, dtype=np.object)
-        )
-        atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms)+100))
+            np.asarray(atomnames, dtype=np.object))
+        atomtypes = topologyattrs.Atomtypes(
+            np.asarray(np.arange(n_atoms) + 100))
         charges = topologyattrs.Charges(np.asarray(charges))
         masses = topologyattrs.Masses(np.asarray(masses))
 
         # Residue
         # resids, resnames
         segids = np.asarray(segids, dtype=np.object)
-        resids = np.asarray(resids)
+        resids = np.asarray(resids, dtype=np.int32)
         resnames = np.asarray(resnames, dtype=np.object)
-        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids,), (resids, resnames, segids)
-        )
+        residx, (new_resids, new_resnames,
+                 perres_segids) = topbase.change_squash(
+                     (resids, resnames, segids), (resids, resnames, segids))
 
         # transform from atom:Rid to atom:Rix
         residueids = topologyattrs.Resids(new_resids)
@@ -284,18 +281,20 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         residuenames = topologyattrs.Resnames(new_resnames)
 
         # Segment
-        segidx, (perseg_segids,) = topbase.change_squash(
-            (new_segids,), (new_segids,)
-        )
+        segidx, perseg_segids = topbase.squash_by(perres_segids)[:2]
         segids = topologyattrs.Segids(perseg_segids)
 
         # Setup topology
-        top = topology.Topology(len(atomids), len(new_resids), len(segids),
-                                attrs=[_beads, atomids, atomnames, atomtypes,
-                                       charges, masses, vdwradii, residueids,
-                                       residuenums, residuenames, segids],
-                                atom_resindex=residx,
-                                residue_segindex=segidx)
+        top = topology.Topology(
+            len(atomids),
+            len(new_resids),
+            len(segids),
+            attrs=[
+                atomids, atomnames, atomtypes, charges, masses, vdwradii,
+                residueids, residuenums, residuenames, segids
+            ],
+            atom_resindex=residx,
+            residue_segindex=segidx)
         return top
 
     @abc.abstractmethod
@@ -322,8 +321,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         try:
             impropers = guessers.guess_improper_dihedrals(self.angles)
             self._topology.add_TopologyAttr(
-                (topologyattrs.Impropers(impropers))
-            )
+                (topologyattrs.Impropers(impropers)))
             self._generate_from_topology()
         except AttributeError:
             pass
@@ -331,7 +329,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
     def _set_masses(self):
         pass
 
-    def _set_chargess(self):
+    def _set_charges(self):
         pass
 
     @property
@@ -360,11 +358,13 @@ def Merge(*args):
     import multiprocessing as mp
     from MDAnalysis.coordinates.memory import MemoryReader
 
-    print("This might take a while depending upon the number of "
-          "trajectory frames.")
+    logger.warning("This might take a while depending upon the number of "
+                   "trajectory frames.")
     if not all([
-            u.universe.trajectory.n_frames == args[0].universe.trajectory.n_frames for u in args
+            u.universe.trajectory.n_frames == args[0]
+            .universe.trajectory.n_frames for u in args
     ]):
+        logger.error("The trajectories are not the same length.")
         raise ValueError("The trajectories are not the same length.")
     ag = [_.atoms for _ in args]
     unit_cell = np.mean([_._unitcell for _ in args[0].trajectory], axis=0)
@@ -378,17 +378,20 @@ def Merge(*args):
         ]
         coordinates = np.array(coordinates)
         if universe.atoms.n_atoms != coordinates.shape[1]:
+            logger.error(
+                "The number of sites does not match the number of coordinates."
+            )
             raise RuntimeError(
                 "The number of sites does not match the number of coordinates."
             )
-        print("The new universe has {1} beads in {0} frames.".format(
-            *coordinates.shape
-        ))
+        logger.info("The new universe has {1} beads in {0} frames.".format(
+            *coordinates.shape))
 
         universe.load_new(coordinates, format=MemoryReader)
-        print("The new trajectory will is assigned an average unit cell "
-              "for the entire trajectory. This is currently a limitation "
-              "implemented by MDAnalysis.")
+        logger.warning(
+            "The new trajectory will is assigned an average unit cell "
+            "for the entire trajectory. This is currently a limitation "
+            "implemented by MDAnalysis.")
         universe.trajectory.ts._unitcell = unit_cell
     return universe
 
@@ -412,6 +415,7 @@ def rename_universe(universe):
     :class:`~MDAnalysis.Universe`
         The universe with renamed residues and atoms.
     """
+    logger.info("Renaming atom names and atom types within the universe.")
     atomnames = np.array([
         "{}{:0>3d}".format(lett, i)
         for lett, segment in zip(string.ascii_uppercase, universe.segments)
@@ -425,7 +429,7 @@ def rename_universe(universe):
 
     universe._topology.add_TopologyAttr(topologyattrs.Atomnames(atomnames))
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))
-    if not np.issubdtype(universe.atoms.types.dtype, np.int):
+    if not np.issubdtype(universe.atoms.types.dtype, np.int64):
         universe._topology.add_TopologyAttr(topologyattrs.Atomtypes(atomnames))
     universe._generate_from_topology()
     return universe

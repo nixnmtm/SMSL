@@ -20,15 +20,6 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
-import textwrap
-import time
-from io import TextIOWrapper
-from os import environ
-
-import numpy as np
-import pandas as pd
-from MDAnalysis.lib import util
 from future.builtins import (
     dict,
     open,
@@ -38,6 +29,13 @@ from future.utils import (
     raise_with_traceback,
 )
 
+import textwrap
+import time
+from os import environ
+
+import numpy as np
+import pandas as pd
+from MDAnalysis.lib import util
 from fluctmatch.topology import base as topbase
 
 
@@ -63,31 +61,25 @@ class STRWriter(topbase.TopologyWriterBase):
 
         width = 4 if self._version < 36 else 8
         if self._version >= 36:
-            self.fmt = (
-                """
+            self.fmt = ("""
                 IC EDIT
                 DIST %-{width}s %{width}d %-{width}s %-{width}s %{width}d %-{width}s%{width}.1f
                 END
-                """.format(width=width)
-            )
+                """.format(width=width))
         else:
-            self.fmt = (
-                """
+            self.fmt = ("""
                 IC EDIT
                 DIST BYNUM %{width}d BYNUM %{width}d %{width}.1f
                 END
-                """.format(width=width)
-            )
+                """.format(width=width))
 
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
         self._title = kwargs.get(
-            "title",
-            (
+            "title", (
                 "* Created by fluctmatch on {date}".format(date=date),
                 "* User: {user}".format(user=user),
-            )
-        )
+            ))
         if not util.iterable(self._title):
             self._title = util.asiterable(self._title)
 
@@ -106,8 +98,12 @@ class STRWriter(topbase.TopologyWriterBase):
             if self._version >= 36:
                 a1, a2 = universe.atoms.bonds.atom1, universe.atoms.bonds.atom2
                 data = (
-                    a1.segids, a1.resids, a1.names,
-                    a2.segids, a2.resids, a2.names,
+                    a1.segids,
+                    a1.resids,
+                    a1.names,
+                    a2.segids,
+                    a2.resids,
+                    a2.names,
                     dist,
                 )
                 data = pd.concat([pd.DataFrame(_) for _ in data], axis=1)
@@ -118,15 +114,12 @@ class STRWriter(topbase.TopologyWriterBase):
             raise_with_traceback(AttributeError("No bonds were found."))
 
         # Write the data to the file.
-        with open(
-            self.filename, "wb"
-        ) as stream_file:
+        with open(self.filename, "wb") as stream_file:
             for _ in self._title:
                 stream_file.write(_.encode())
                 stream_file.write("\n".encode())
             np.savetxt(
                 stream_file,
                 data,
-                fmt=native_str(textwrap.dedent(self.fmt[1:]))
-            )
+                fmt=native_str(textwrap.dedent(self.fmt[1:])))
             stream_file.write("RETURN\n".encode())

@@ -23,16 +23,16 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (
+    viewitems,
+    viewvalues,
+)
 
 import itertools
 
 import MDAnalysis
 from MDAnalysis.coordinates import base
 from MDAnalysis.core import groups
-from future.utils import (
-    viewitems,
-    viewvalues,
-)
 
 
 class _Trajectory(base.ReaderBase):
@@ -67,9 +67,8 @@ class _Trajectory(base.ReaderBase):
         self._u = universe
         self._t = universe.trajectory
         self._mapping = mapping
-        residue_selection = itertools.product(
-            self._u.residues, viewitems(self._mapping)
-        )
+        residue_selection = itertools.product(self._u.residues,
+                                              viewitems(self._mapping))
 
         self._beads = []
         for res, (key, selection) in residue_selection:
@@ -77,9 +76,8 @@ class _Trajectory(base.ReaderBase):
                 self._beads.append(res.atoms.select_atoms(selection))
             elif key == "CB":
                 if isinstance(selection, dict):
-                    value = selection.get(
-                        res.resname, "hsidechain and not name H*"
-                    )
+                    value = selection.get(res.resname,
+                                          "hsidechain and not name H*")
                     self._beads.append(res.atoms.select_atoms(value))
                 else:
                     self._beads.append(res.atoms.select_atoms(selection))
@@ -109,8 +107,7 @@ class _Trajectory(base.ReaderBase):
             self.n_atoms,
             positions=self._t.ts.has_positions,
             velocities=self._t.ts.has_velocities,
-            forces=self._t.ts.has_forces
-        )
+            forces=self._t.ts.has_forces)
         self._fill_ts(self._t.ts)
 
     def __iter__(self):
@@ -154,18 +151,15 @@ class _Trajectory(base.ReaderBase):
         if self.ts.has_positions:
             if self.com:
                 self.ts._pos[:] = [
-                    bead.center_of_mass()
-                    for bead in self._beads
+                    bead.center_of_mass() for bead in self._beads
                 ]
             else:
                 self.ts._pos[:] = [
-                    bead.center_of_geometry()
-                    for bead in self._beads
+                    bead.center_of_geometry() for bead in self._beads
                 ]
 
-        residue_selection = itertools.product(
-            residues, viewitems(self._mapping)
-        )
+        residue_selection = itertools.product(residues, viewitems(
+            self._mapping))
         if self.ts.has_velocities:
             try:
                 self.ts._velocities[:] = [

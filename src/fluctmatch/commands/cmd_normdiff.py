@@ -20,22 +20,23 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import open
+from future.utils import native_str
 
+import logging
+import logging.config
 import os
 from os import path
 
 import click
 import numpy as np
-from future.builtins import open
-from future.utils import native_str
-
 from fluctmatch.analysis import paramtable
+
+logger = logging.getLogger(__name__)
 
 
 @click.command(
-    "normdiff",
-    short_help="Normalize the differences between t and t - dt/2."
-)
+    "normdiff", short_help="Normalize the differences between t and t - dt/2.")
 @click.option(
     "-o",
     "--outdir",
@@ -56,8 +57,7 @@ from fluctmatch.analysis import paramtable
     default=3,
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
-    help="Number of residues to exclude in I,I+r"
-)
+    help="Number of residues to exclude in I,I+r")
 @click.argument(
     "kb",
     metavar="kb_table",
@@ -77,21 +77,60 @@ from fluctmatch.analysis import paramtable
     ),
 )
 def cli(outdir, ressep, kb, b0):
+    # Setup logger
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "normdiff.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     resgrp = ['segidI', 'resI']
 
+    logger.info("Loading coupling strength table.")
     kb_table = paramtable.ParamTable(ressep=ressep)
     kb_table.from_file(kb)
     kb_table = kb_table.table.copy(deep=True)
+    logger.info("Table loaded successfully.")
 
+    logger.info("Loading distance table.")
     b0_table = paramtable.ParamTable(ressep=ressep)
     b0_table.from_file(b0)
     b0_table = b0_table.table.copy(deep=True)
+    logger.info("Table loaded successfully.")
 
     idx = (kb_table == 0.0)
-    maxkb = np.maximum(
-        kb_table[kb_table.columns[1:].values],
-        kb_table[kb_table.columns[:-1]].values
-    )
+    maxkb = np.maximum(kb_table[kb_table.columns[1:].values],
+                       kb_table[kb_table.columns[:-1]].values)
 
     maxkb[maxkb == 0.0] = np.NaN
     kb_table = kb_table.diff(axis=1).dropna(axis=1) / maxkb
@@ -109,6 +148,7 @@ def cli(outdir, ressep, kb, b0):
 
     filename = path.join(outdir, "normed_kb.txt")
     with open(filename, mode="wb") as output:
+        logger.info("Writing normed coupling strengths to {}".format(filename))
         kb_table = kb_table.to_csv(
             header=True,
             index=True,
@@ -117,9 +157,11 @@ def cli(outdir, ressep, kb, b0):
             encoding="utf-8",
         )
         output.write(kb_table.encode())
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "normed_b0.txt")
     with open(filename, mode="wb") as output:
+        logger.info("Writing normed distances to {}".format(filename))
         b0_table = b0_table.to_csv(
             header=True,
             index=True,
@@ -128,3 +170,4 @@ def cli(outdir, ressep, kb, b0):
             encoding="utf-8",
         )
         output.write(b0_table.encode())
+        logger.info("Table written successfully.")

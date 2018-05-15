@@ -20,6 +20,12 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (
+    dict,
+    open,
+)
+from future.utils import (
+    native_str, )
 
 import textwrap
 import time
@@ -29,18 +35,7 @@ from os import environ
 import numpy as np
 import pandas as pd
 from MDAnalysis.lib import util
-from future.builtins import (
-    dict,
-    open,
-)
-from future.utils import (
-    native_str,
-)
-
-from fluctmatch.topology.base import (
-    TopologyReaderBase,
-    TopologyWriterBase
-)
+from fluctmatch.topology.base import (TopologyReaderBase, TopologyWriterBase)
 
 
 class ParamReader(TopologyReaderBase):
@@ -58,15 +53,13 @@ class ParamReader(TopologyReaderBase):
         ATOMS=np.arange(1, 4),
         BONDS=np.arange(4),
         ANGLES=np.arange(5),
-        DIHEDRALS=np.arange(6)
-    )
+        DIHEDRALS=np.arange(6))
     _prmcolumns = dict(
         ATOMS=["type", "atom", "mass"],
         BONDS=["I", "J", "Kb", "b0"],
         ANGLES=["I", "J", "K", "Ktheta", "theta0"],
         DIHEDRALS=["I", "J", "K", "L", "Kchi", "n", "delta"],
-        IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"]
-    )
+        IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"])
 
     def __init__(self, filename):
         self.filename = util.filename(filename, ext="prm")
@@ -78,21 +71,22 @@ class ParamReader(TopologyReaderBase):
         -------
         Dictionary with CHARMM parameters per key.
         """
-        parameters = dict(ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
+        parameters = dict(
+            ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
         headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
-        with open(
-            self.filename, "rb"
-        ) as prmfile, TextIOWrapper(prmfile, encoding="utf-8") as buf:
+        with open(self.filename, "rb") as prmfile, TextIOWrapper(
+                prmfile, encoding="utf-8") as buf:
             for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
-                    continue       # ignore TITLE and empty lines
+                    continue  # ignore TITLE and empty lines
 
                 # Parse sections
                 if line in headers:
                     section = line
                     continue
-                elif line.startswith("NONBONDED") or line.startswith("CMAP") or line.startswith("END"):
+                elif line.startswith("NONBONDED") or line.startswith(
+                        "CMAP") or line.startswith("END"):
                     break
 
                 # Removes any Urey-Bradley values
@@ -108,8 +102,10 @@ class ParamReader(TopologyReaderBase):
                 parameters[section].append(field)
 
         for key, value in parameters.items():
-            parameters[key] = pd.DataFrame(value, columns=self._prmcolumns[key])
-            parameters[key] = parameters[key].apply(pd.to_numeric, errors="ignore")
+            parameters[key] = pd.DataFrame(
+                value, columns=self._prmcolumns[key])
+            parameters[key] = parameters[key].apply(
+                pd.to_numeric, errors="ignore")
         return parameters
 
 
@@ -152,12 +148,10 @@ class ParamWriter(TopologyWriterBase):
         date = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
         user = environ["USER"]
         self._title = kwargs.get(
-            "title",
-            (
+            "title", (
                 "* Created by fluctmatch on {date}".format(date=date),
                 "* User: {user}".format(user=user),
-            )
-        )
+            ))
         if not util.iterable(self._title):
             self._title = util.asiterable(self._title)
 
@@ -173,9 +167,7 @@ class ParamWriter(TopologyWriterBase):
             A collection of atoms in an AtomGroup to define the ATOMS section,
             if desired.
         """
-        with open(
-            self.filename, "wb"
-        ) as prmfile:
+        with open(self.filename, "wb") as prmfile:
             for title in self._title:
                 prmfile.write(title.encode())
                 prmfile.write("\n".encode())
@@ -186,18 +178,15 @@ class ParamWriter(TopologyWriterBase):
                     if np.issubdtype(atomgroup.types.dtype, np.int):
                         atom_types = atomgroup.types
                     else:
-                        atom_types = np.arange(atomgroup.n_atoms)+1
+                        atom_types = np.arange(atomgroup.n_atoms) + 1
                     atoms = [atom_types, atomgroup.types, atomgroup.masses]
-                    parameters["ATOMS"] = pd.concat([
-                        pd.Series(_)
-                        for _ in atoms
-                    ], axis=1)
+                    parameters["ATOMS"] = pd.concat(
+                        [pd.Series(_) for _ in atoms], axis=1)
                     parameters["ATOMS"].columns = ["type", "atom", "mass"]
                 else:
                     raise RuntimeError(
                         "Either define ATOMS parameter or provide a "
-                        "MDAnalsys.AtomGroup"
-                    )
+                        "MDAnalsys.AtomGroup")
 
             if self._version >= 39 and not parameters["ATOMS"].empty:
                 parameters["ATOMS"]["type"] = -1
@@ -212,17 +201,13 @@ class ParamWriter(TopologyWriterBase):
                 prmfile.write("\n".encode())
 
             if self._nonbonded:
-                nb_header = (
-                    """
+                nb_header = ("""
                     NONBONDED nbxmod  5 atom cdiel shift vatom vdistance vswitch -
                     cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
-                    """
-                )
+                    """)
                 atom_list = np.concatenate(
-                    (
-                        parameters["BONDS"]["I"].values,
-                        parameters["BONDS"]["J"].values
-                    ),
+                    (parameters["BONDS"]["I"].values,
+                     parameters["BONDS"]["J"].values),
                     axis=0,
                 )
                 atom_list = pd.DataFrame(np.unique(atom_list))
@@ -233,8 +218,7 @@ class ParamWriter(TopologyWriterBase):
                     prmfile,
                     nb_list,
                     fmt=native_str(self._fmt["NONBONDED"]),
-                    delimiter=native_str("")
-                )
+                    delimiter=native_str(""))
             prmfile.write("\nEND\n".encode())
 
 

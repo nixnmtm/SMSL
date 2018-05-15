@@ -20,31 +20,28 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.builtins import (dict, open, zip)
 
+import logging
+import logging.config
 import os
 from os import path
 
 import click
-import MDAnalysis as mda
 import pandas as pd
-from future.builtins import (dict, open, zip)
+import MDAnalysis as mda
 
 
 @click.command(
     "table_convert",
-    short_help="Transform an ENM IC table name to corresponding atoms."
-)
+    short_help="Transform an ENM IC table name to corresponding atoms.")
 @click.option(
     "-s1",
     "top1",
     metavar="FILE",
     default=path.join(os.getcwd(), "cg.xplor.psf"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Topology file",
 )
 @click.option(
@@ -53,11 +50,7 @@ from future.builtins import (dict, open, zip)
     metavar="FILE",
     default=path.join(os.getcwd(), "fluctmatch.xplor.psf"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Topology file",
 )
 @click.option(
@@ -66,11 +59,7 @@ from future.builtins import (dict, open, zip)
     metavar="FILE",
     default=path.join(os.getcwd(), "cg.dcd"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Coordinate file",
 )
 @click.option(
@@ -79,11 +68,7 @@ from future.builtins import (dict, open, zip)
     metavar="FILE",
     default=path.join(os.getcwd(), "kb.txt"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
     help="Coordinate file",
 )
 @click.option(
@@ -92,44 +77,79 @@ from future.builtins import (dict, open, zip)
     metavar="OUTFILE",
     default=path.join(os.getcwd(), "kb_aa.txt"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Table file",
 )
 def cli(top1, top2, coord, table, outfile):
+    # Setup logger
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(
+                    path.dirname(outfile), "table_convert.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     cg = mda.Universe(top1, coord)
     fluctmatch = mda.Universe(top2, coord)
     convert = dict(zip(fluctmatch.atoms.names, cg.atoms.names))
     resnames = dict(zip(cg.residues.resnums, cg.residues.resnames))
 
     with open(table, "rb") as tbl:
+        logger.info("Loading {}.".format(table))
         constants = pd.read_csv(
             tbl,
             header=0,
             skipinitialspace=True,
             delim_whitespace=True,
         )
+        logger.info("Table loaded successfully.")
 
     # Transform assigned bead names to an all-atom designation.
-    constants["I"] = constants["I"].apply(
-        lambda x: convert[x]
-    )
-    constants["J"] = constants["J"].apply(
-        lambda x: convert[x]
-    )
+    constants["I"] = constants["I"].apply(lambda x: convert[x])
+    constants["J"] = constants["J"].apply(lambda x: convert[x])
 
     # Create lists of corresponding residues
-    constants["resnI"] = constants["resI"].apply(lambda x: resnames[x]).to_frame()
-    constants["resnJ"] = constants["resJ"].apply(lambda x: resnames[x]).to_frame()
+    constants["resnI"] = constants["resI"].apply(
+        lambda x: resnames[x]).to_frame()
+    constants["resnJ"] = constants["resJ"].apply(
+        lambda x: resnames[x]).to_frame()
 
     # Concatenate the columns
     cols = ["segidI", "resI", "resnI", "I", "segidJ", "resJ", "resnJ", "J"]
     constants.set_index(cols, inplace=True)
 
     with open(outfile, "wb") as output:
+        logger.info("Writing updated table to {}.".format(outfile))
         constants = constants.to_csv(
             header=True,
             index=True,
@@ -137,3 +157,4 @@ def cli(top1, top2, coord, table, outfile):
             float_format="%.4f",
         )
         output.write(constants.encode())
+        logger.info("Table written successfully.")

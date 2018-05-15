@@ -22,7 +22,6 @@ from __future__ import (
 )
 
 from click.testing import CliRunner
-
 from fluctmatch.cli import main
 
 

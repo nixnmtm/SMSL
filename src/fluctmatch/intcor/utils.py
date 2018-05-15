@@ -20,18 +20,20 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
+from future.utils import (
+    raise_with_traceback, )
+
+import logging
 
 import numpy as np
 import pandas as pd
-from future.utils import (
-    raise_with_traceback,
-)
 
 _HEADER = [
-    "segidI", "resI", "I", "segidJ", "resJ", "J",
-    "segidK", "resK", "K", "segidL", "resL", "L",
-    "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
+    "segidI", "resI", "I", "segidJ", "resJ", "J", "segidK", "resK", "K",
+    "segidL", "resL", "L", "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
 ]
+
+logger = logging.getLogger(__name__)
 
 
 def create_empty_table(universe):
@@ -49,6 +51,7 @@ def create_empty_table(universe):
     """
     table = pd.DataFrame()
     atomgroup = universe.atoms
+    logging.info("Creating an empty table.")
     try:
         dihedrals = atomgroup.dihedrals
         if len(dihedrals) == 0:
@@ -64,42 +67,55 @@ def create_empty_table(universe):
                 if len(bonds) == 0:
                     raise AttributeError
             except AttributeError:
+                logger.exception("Bonds, angles, and torsions undefined")
                 raise_with_traceback(
-                    AttributeError("Bonds, angles, and torsions undefined")
-                )
+                    AttributeError("Bonds, angles, and torsions undefined"))
             else:
                 n_bonds = len(bonds)
                 atom1, atom2 = bonds.atom1, bonds.atom2
                 zeros = pd.DataFrame(np.zeros((n_bonds, 5), dtype=np.float))
-                cols = pd.DataFrame(
-                    [atom1.segids, atom1.resnums, atom1.names,
-                     atom2.segids, atom2.resnums, atom2.names,
-                     ["??", ] * n_bonds, ["??", ] * n_bonds, ["??", ] * n_bonds,
-                     ["??", ] * n_bonds, ["??", ] * n_bonds, ["??", ] * n_bonds]
-                ).T
+                cols = pd.DataFrame([
+                    atom1.segids, atom1.resnums, atom1.names, atom2.segids,
+                    atom2.resnums, atom2.names, [
+                        "??",
+                    ] * n_bonds, [
+                        "??",
+                    ] * n_bonds, [
+                        "??",
+                    ] * n_bonds, [
+                        "??",
+                    ] * n_bonds, [
+                        "??",
+                    ] * n_bonds, [
+                        "??",
+                    ] * n_bonds
+                ]).T
                 table = pd.concat([table, cols, zeros], axis=1)
         else:
             n_angles = len(angles)
             atom1, atom2, atom3 = angles.atom1, angles.atom2, angles.atom3
             zeros = pd.DataFrame(np.zeros((n_angles, 5), dtype=np.float))
-            cols = pd.DataFrame(
-                [atom1.segids, atom1.resnums, atom1.names,
-                 atom2.segids, atom2.resnums, atom2.names,
-                 atom3.segids, atom3.resnums, atom3.names,
-                 ["??", ] * n_angles, ["??", ] * n_angles, ["??", ] * n_angles]
-            ).T
+            cols = pd.DataFrame([
+                atom1.segids, atom1.resnums, atom1.names, atom2.segids,
+                atom2.resnums, atom2.names, atom3.segids, atom3.resnums,
+                atom3.names, [
+                    "??",
+                ] * n_angles, [
+                    "??",
+                ] * n_angles, [
+                    "??",
+                ] * n_angles
+            ]).T
             table = pd.concat([table, cols, zeros], axis=1)
     else:
         n_dihedrals = len(dihedrals)
-        atom1, atom2, atom3, atom4 = (
-            dihedrals.atom1, dihedrals.atom2, dihedrals.atom3, dihedrals.atom4
-        )
+        atom1, atom2, atom3, atom4 = (dihedrals.atom1, dihedrals.atom2,
+                                      dihedrals.atom3, dihedrals.atom4)
         zeros = pd.DataFrame(np.zeros((n_dihedrals, 5), dtype=np.float))
         cols = pd.DataFrame([
-            atom1.segids, atom1.resnums, atom1.names,
-            atom2.segids, atom2.resnums, atom2.names,
-            atom3.segids, atom3.resnums, atom3.names,
-            atom4.segids, atom4.resnums, atom4.names
+            atom1.segids, atom1.resnums, atom1.names, atom2.segids,
+            atom2.resnums, atom2.names, atom3.segids, atom3.resnums,
+            atom3.names, atom4.segids, atom4.resnums, atom4.names
         ]).T
         table = pd.concat([table, cols, zeros], axis=1)
 

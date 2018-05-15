@@ -21,6 +21,8 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -29,10 +31,7 @@ from MDAnalysis.lib.util import which
 from fluctmatch.analysis import thermodynamics
 
 
-@click.command(
-    "thermo",
-    short_help="Calculate thermodynamic properties."
-)
+@click.command("thermo", short_help="Calculate thermodynamic properties.")
 @click.option(
     "-s",
     "topology",
@@ -65,11 +64,7 @@ from fluctmatch.analysis import thermodynamics
     metavar="DIR",
     default=path.join(os.getcwd(), "data"),
     show_default=True,
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -78,11 +73,7 @@ from fluctmatch.analysis import thermodynamics
     metavar="DIR",
     default=os.getcwd(),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help="Directory",
 )
 @click.option(
@@ -93,11 +84,7 @@ from fluctmatch.analysis import thermodynamics
     envvar="CHARMMEXEC",
     default=which("charmm"),
     show_default=True,
-    type=click.Path(
-        exists=False,
-        file_okay=True,
-        resolve_path=True
-    ),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="CHARMM executable file",
 )
 @click.option(
@@ -119,9 +106,44 @@ from fluctmatch.analysis import thermodynamics
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
-def cli(
-    datadir, outdir, topology, trajectory, nma_exec, temperature, charmm_version
-):
+def cli(datadir, outdir, topology, trajectory, nma_exec, temperature,
+        charmm_version):
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "thermo.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     # Attempt to create the necessary subdirectory
     try:
         os.makedirs(outdir)
@@ -135,5 +157,4 @@ def cli(
         trajectory=trajectory,
         temperature=temperature,
         nma_exec=nma_exec,
-        charmm_version=charmm_version
-    )
+        charmm_version=charmm_version)

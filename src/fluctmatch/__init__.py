@@ -20,10 +20,14 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-
 from future.builtins import dict
 
-__version__ = "3.2.12"
+import logging
+
+__version__ = "3.3.0"
 
 _MODELS = dict()
 _DESCRIBE = dict()
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
