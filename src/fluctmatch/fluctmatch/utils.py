@@ -226,34 +226,36 @@ def write_charmm_files(universe,
         psf.write(universe)
 
     # Calculate the average coordinates from the trajectory.
-    if universe.trajectory.n_frames > 1:
-        logger.info("Determining the average structure of the trajectory. ")
-        logger.warning("Note: This could take a while depending upon the "
-                       "size of your trajectory.")
-        positions = AverageStructure(universe.atoms).run().result
-        positions = positions.reshape((*positions.shape, 1))
-        avg_universe = mda.Universe.empty(
-            n_atoms=n_atoms,
-            n_residues=universe.residues.n_residues,
-            n_segments=universe.segments.n_segments,
-            atom_resindex=universe.atoms.resindices,
-            residue_segindex=universe.residues.segindices,
-            trajectory=True)
-        avg_universe.__dict__.update(universe.__dict__)
-        avg_universe.load_new(
-            positions, format=memory.MemoryReader, order="acf")
+    logger.info("Determining the average structure of the trajectory. ")
+    logger.warning("Note: This could take a while depending upon the "
+                   "size of your trajectory.")
+    positions = AverageStructure(universe.atoms).run().result
+    positions = positions.reshape((*positions.shape, 1))
 
-        # avg_universe.load_new(
-        #     positions, )
-        with mda.Writer(
-                native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
-            logger.info("Writing {}...".format(filenames["crd_file"]))
-            crd.write(avg_universe.atoms)
-    else:
-        with mda.Writer(
-                native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
-            logger.info("Writing {}...".format(filenames["crd_file"]))
-            crd.write(universe.atoms)
+    # Create a new universe.
+    topologies = ("names", "resids", "resnums", "resnames", "segids")
+    avg_universe = mda.Universe.empty(
+        n_atoms=n_atoms,
+        n_residues=universe.residues.n_residues,
+        n_segments=universe.segments.n_segments,
+        atom_resindex=universe.atoms.resindices,
+        residue_segindex=universe.residues.segindices,
+        trajectory=True)
+    for _ in topologies:
+        avg_universe.add_TopologyAttr(_)
+    avg_universe.atoms.names = universe.atoms.names
+    avg_universe.residues.resids = universe.residues.resids
+    avg_universe.residues.resnums = universe.residues.resnums
+    avg_universe.residues.resnames = universe.residues.resnames
+    avg_universe.segments.segids = universe.segments.segids
+    avg_universe.load_new(positions, order="acf")
+
+    # avg_universe.load_new(
+    #     positions, )
+    with mda.Writer(
+            native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+        logger.info("Writing {}...".format(filenames["crd_file"]))
+        crd.write(avg_universe.atoms)
 
 
 def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
