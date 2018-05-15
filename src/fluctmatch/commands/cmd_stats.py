@@ -35,6 +35,15 @@ from fluctmatch.analysis.paramtable import ParamTable
 
 @click.command("stats", short_help="Calculate statistics of a table.")
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "convert.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-s",
     "--stats",
     is_flag=True,
@@ -86,7 +95,7 @@ from fluctmatch.analysis.paramtable import ParamTable
         resolve_path=True,
     ),
 )
-def cli(stats, hist, outdir, ressep, tbltype, table):
+def cli(logfile, stats, hist, outdir, ressep, tbltype, table):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
@@ -111,7 +120,7 @@ def cli(stats, hist, outdir, ressep, tbltype, table):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "stats.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

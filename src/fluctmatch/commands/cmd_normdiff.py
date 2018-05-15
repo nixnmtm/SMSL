@@ -38,6 +38,15 @@ logger = logging.getLogger(__name__)
 @click.command(
     "normdiff", short_help="Normalize the differences between t and t - dt/2.")
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "normdiff.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "--outdir",
     metavar="OUTDIR",
@@ -76,7 +85,7 @@ logger = logging.getLogger(__name__)
         resolve_path=True,
     ),
 )
-def cli(outdir, ressep, kb, b0):
+def cli(logfile, outdir, ressep, kb, b0):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
@@ -101,7 +110,7 @@ def cli(outdir, ressep, kb, b0):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "normdiff.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

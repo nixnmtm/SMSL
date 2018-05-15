@@ -54,6 +54,15 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     help="Trajectory file (e.g. xtc trr dcd)",
 )
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "convert.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "--outdir",
     metavar="DIR",
@@ -155,7 +164,6 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     help="Convert the trajectory file",
 )
 @click.option(
-    "-l",
     "--list",
     "model_list",
     is_flag=True,
@@ -163,6 +171,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
 def cli(
         topology,
         trajectory,
+        logfile,
         outdir,
         prefix,
         rmin,
@@ -202,7 +211,7 @@ def cli(
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "convert.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",

@@ -68,6 +68,15 @@ from fluctmatch.analysis import thermodynamics
     help="Directory",
 )
 @click.option(
+    "-l",
+    "--logfile",
+    metavar="LOG",
+    show_default=True,
+    default=path.join(os.getcwd(), "thermo.log"),
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Log file",
+)
+@click.option(
     "-o",
     "outdir",
     metavar="DIR",
@@ -106,7 +115,7 @@ from fluctmatch.analysis import thermodynamics
     type=click.IntRange(27, None, clamp=True),
     help="CHARMM version",
 )
-def cli(datadir, outdir, topology, trajectory, nma_exec, temperature,
+def cli(datadir, logfile, outdir, topology, trajectory, nma_exec, temperature,
         charmm_version):
     logging.config.dictConfig({
         "version": 1,
@@ -131,7 +140,7 @@ def cli(datadir, outdir, topology, trajectory, nma_exec, temperature,
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": path.join(outdir, "thermo.log"),
+                "filename": logfile,
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",
