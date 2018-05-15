@@ -232,9 +232,12 @@ def write_charmm_files(universe,
                        "size of your trajectory.")
         positions = AverageStructure(universe.atoms).run().result
         positions = positions.reshape((*positions.shape, 1))
-        avg_universe = universe.copy()
-        avg_universe.load_new(
-            positions, format=memory.MemoryReader, order="acf")
+        avg_universe = mda.Universe.empty(n_atoms=n_atoms, n_residues=universe.residues.n_residues, n_segments=universe.segments.n_segments, atom_resindex=universe.atoms.resindices, residue_segindex=universe.residues.segindices, trajectory=True)
+        avg_universe.__dict__.update(universe.__dict__)
+        avg_universe.load_new(positions, format=memory.MemoryReader, order="acf")
+
+        # avg_universe.load_new(
+        #     positions, )
         with mda.Writer(
                 native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
             logger.info("Writing {}...".format(filenames["crd_file"]))
