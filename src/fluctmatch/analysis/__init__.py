@@ -21,5 +21,10 @@ from __future__ import (
     unicode_literals,
 )
 
+import logging
+
 from fluctmatch.intcor import IC
 from fluctmatch.parameter import PRM
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())

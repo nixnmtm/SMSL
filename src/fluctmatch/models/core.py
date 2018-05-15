@@ -19,13 +19,17 @@ from __future__ import (absolute_import, division, print_function,
 from future.utils import (
     viewkeys,
     raise_with_traceback,
+    reraise,
 )
 
-import warnings
+import logging
+import sys
 
 from fluctmatch import _MODELS
 from fluctmatch.models import *
 from fluctmatch.models.base import Merge
+
+logger = logging.getLogger(__name__)
 
 
 def modeller(*args, **kwargs):
@@ -44,18 +48,24 @@ def modeller(*args, **kwargs):
         "ncsc",
     ])
     models = [_.upper() for _ in models]
-    if "ENM" in models:
-        warnings.warn(
-            "ENM model detected. All other models are being ignored.")
-        universe = _MODELS["ENM"](*args, **kwargs)
-        return universe
+    try:
+        if "ENM" in models:
+            logger.warning(
+                "ENM model detected. All other models are being ignored.")
+            universe = _MODELS["ENM"](*args, **kwargs)
+            return universe
+    except Exception as e:
+        logger.exception(
+            "An error occurred while trying to create the universe.")
+        reraise(e)
 
     try:
         universe = [_MODELS[model](*args, **kwargs) for model in models]
     except KeyError:
         msg = ("{0} is not an available model. "
                "Please try {1}".format(model, viewkeys(_MODELS)))
+        logger.exception(msg)
         raise_with_traceback(KeyError(msg))
-
-    universe = Merge(*universe) if len(universe) > 1 else universe[0]
-    return universe
+    else:
+        universe = Merge(*universe) if len(universe) > 1 else universe[0]
+        return universe

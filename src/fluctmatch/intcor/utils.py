@@ -23,6 +23,8 @@ from __future__ import (
 from future.utils import (
     raise_with_traceback, )
 
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -30,6 +32,8 @@ _HEADER = [
     "segidI", "resI", "I", "segidJ", "resJ", "J", "segidK", "resK", "K",
     "segidL", "resL", "L", "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
 ]
+
+logger = logging.getLogger(__name__)
 
 
 def create_empty_table(universe):
@@ -47,6 +51,7 @@ def create_empty_table(universe):
     """
     table = pd.DataFrame()
     atomgroup = universe.atoms
+    logging.info("Creating an empty table.")
     try:
         dihedrals = atomgroup.dihedrals
         if len(dihedrals) == 0:
@@ -62,6 +67,7 @@ def create_empty_table(universe):
                 if len(bonds) == 0:
                     raise AttributeError
             except AttributeError:
+                logger.exception("Bonds, angles, and torsions undefined")
                 raise_with_traceback(
                     AttributeError("Bonds, angles, and torsions undefined"))
             else:

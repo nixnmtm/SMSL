@@ -28,6 +28,7 @@ from future.builtins import (
 from future.utils import (
     native_str, )
 
+import logging
 import time
 from io import TextIOWrapper
 from os import environ
@@ -36,6 +37,8 @@ import numpy as np
 import pandas as pd
 from MDAnalysis.lib import util
 from fluctmatch.topology.base import (TopologyReaderBase, TopologyWriterBase)
+
+logger = logging.getLogger(__name__)
 
 
 class IntcorReader(TopologyReaderBase):
@@ -81,6 +84,7 @@ class IntcorReader(TopologyReaderBase):
         table = pd.DataFrame()
         with open(self.filename, "rb") as icfile, TextIOWrapper(
                 icfile, encoding="utf-8") as buf:
+            logger.info("Writing to {}".format(self.filename))
             for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
@@ -117,6 +121,7 @@ class IntcorReader(TopologyReaderBase):
             else:
                 columns = self.cols
             table.columns = columns
+            logger.info("Table read successfully.")
         return table
 
 
@@ -195,6 +200,7 @@ class IntcorWriter(TopologyWriterBase):
         ictable[rescol] = ictable[rescol].astype(np.unicode)
 
         with open(self.filename, "wb") as icfile:
+            logger.info("Writing to {}".format(self.filename))
             for _ in self._title:
                 icfile.write(_.encode())
                 icfile.write("\n".encode())
@@ -218,3 +224,4 @@ class IntcorWriter(TopologyWriterBase):
                 icfile,
                 ictable.reset_index(),
                 fmt=native_str(self.fmt[self.key]))
+            logger.info("Table successfully written.")

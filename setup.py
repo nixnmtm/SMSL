@@ -45,7 +45,7 @@ def read(*names, **kwargs):
 
 setup(
     name="fluctmatch",
-    version="3.2.12",
+    version="3.3.0",
     license="BSD license",
     description="Elastic network model using fluctuation matching.",
     long_description="%s\n%s" % (

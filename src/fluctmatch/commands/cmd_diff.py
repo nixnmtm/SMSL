@@ -23,6 +23,7 @@ from __future__ import (
 from future.builtins import open
 from future.utils import native_str
 
+import logging
 import os
 from os import path
 
@@ -71,11 +72,51 @@ from fluctmatch.analysis import paramtable
     ),
 )
 def cli(outdir, ressep, table1, table2):
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "diff.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
+    logger.info("Loading {}".format(table1))
     table_1 = paramtable.ParamTable(ressep=ressep)
     table_1.from_file(table1)
+    logger.info("{} loaded".format(table1))
 
+    logger.info("Loading {}".format(table2))
     table_2 = paramtable.ParamTable(ressep=ressep)
     table_2.from_file(table2)
+    logger.info("{} loaded".format(table2))
 
     d_table = table_1 - table_2
     d_perres = table_1.per_residue.subtract(
@@ -85,7 +126,7 @@ def cli(outdir, ressep, table1, table2):
 
     filename = path.join(outdir, "dcoupling.txt")
     with open(filename, mode="wb") as output:
-        click.echo("Writing table differences to {}".format(filename))
+        logger.info("Writing table differences to {}".format(filename))
         d_table = d_table.to_csv(
             header=True,
             index=True,
@@ -94,10 +135,11 @@ def cli(outdir, ressep, table1, table2):
             encoding="utf-8",
         )
         output.write(d_table.encode())
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "dperres.txt")
     with open(filename, mode="wb") as output:
-        print("Writing per residue differences to {}".format(filename))
+        logger.info("Writing per residue differences to {}".format(filename))
         d_perres = d_perres.to_csv(
             header=True,
             index=True,
@@ -106,10 +148,11 @@ def cli(outdir, ressep, table1, table2):
             encoding="utf-8",
         )
         output.write(d_perres.encode())
+        logger.info("Table written successfully.")
 
     filename = path.join(outdir, "dinteractions.txt")
     with open(filename, mode="wb") as output:
-        click.echo(
+        logger.info(
             "Writing residue-residue differences to {}".format(filename))
         d_interactions = d_interactions.to_csv(
             header=True,
@@ -119,3 +162,4 @@ def cli(outdir, ressep, table1, table2):
             encoding="utf-8",
         )
         output.write(d_interactions.encode())
+        logger.info("Table written successfully.")

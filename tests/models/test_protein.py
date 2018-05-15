@@ -36,10 +36,8 @@ from tests.datafiles import (
 def test_calpha_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Calpha(PDB_prot)
-    cg_natoms = (
-        aa_universe.select_atoms("calpha").n_atoms +
-        aa_universe.select_atoms("bioion").n_atoms
-    )
+    cg_natoms = (aa_universe.select_atoms("calpha").n_atoms +
+                 aa_universe.select_atoms("bioion").n_atoms)
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
@@ -77,11 +75,9 @@ def test_calpha_trajectory():
 def test_caside_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Caside(PDB_prot)
-    cg_natoms = (
-        aa_universe.select_atoms("calpha").n_atoms +
-        aa_universe.select_atoms("cbeta").n_atoms +
-        aa_universe.select_atoms("bioion").n_atoms
-    )
+    cg_natoms = (aa_universe.select_atoms("calpha").n_atoms +
+                 aa_universe.select_atoms("cbeta").n_atoms +
+                 aa_universe.select_atoms("bioion").n_atoms)
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
@@ -98,9 +94,7 @@ def test_caside_positions():
         positions.append(_.atoms.select_atoms("calpha").center_of_mass())
         if _.resname != "GLY":
             cbeta = "hsidechain and not name H*"
-            positions.append(
-                _.atoms.select_atoms(cbeta).center_of_mass()
-            )
+            positions.append(_.atoms.select_atoms(cbeta).center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
     testing.assert_allclose(
@@ -124,12 +118,10 @@ def test_caside_trajectory():
 def test_ncsc_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Ncsc(PDB_prot)
-    cg_natoms = (
-        aa_universe.select_atoms("protein and name N").n_atoms +
-        aa_universe.select_atoms("protein and name O OT1").n_atoms +
-        aa_universe.select_atoms("cbeta").n_atoms +
-        aa_universe.select_atoms("bioion").n_atoms
-    )
+    cg_natoms = (aa_universe.select_atoms("protein and name N").n_atoms +
+                 aa_universe.select_atoms("protein and name O OT1").n_atoms +
+                 aa_universe.select_atoms("cbeta").n_atoms +
+                 aa_universe.select_atoms("bioion").n_atoms)
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
@@ -146,10 +138,9 @@ def test_ncsc_positions():
         positions.append(_.atoms.select_atoms("name N").center_of_mass())
         if _.resname != "GLY":
             cbeta = "hsidechain and not name H*"
-            positions.append(
-                _.atoms.select_atoms(cbeta).center_of_mass()
-            )
-        positions.append(_.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass())
+            positions.append(_.atoms.select_atoms(cbeta).center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
     testing.assert_allclose(
@@ -173,12 +164,10 @@ def test_ncsc_trajectory():
 def test_polar_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Polar(PDB_prot)
-    cg_natoms = (
-        aa_universe.select_atoms("protein and name N").n_atoms +
-        aa_universe.select_atoms("protein and name O OT1").n_atoms +
-        aa_universe.select_atoms("cbeta").n_atoms +
-        aa_universe.select_atoms("bioion").n_atoms
-    )
+    cg_natoms = (aa_universe.select_atoms("protein and name N").n_atoms +
+                 aa_universe.select_atoms("protein and name O OT1").n_atoms +
+                 aa_universe.select_atoms("cbeta").n_atoms +
+                 aa_universe.select_atoms("bioion").n_atoms)
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
@@ -195,12 +184,10 @@ def test_polar_positions():
         positions.append(_.atoms.select_atoms("name N").center_of_mass())
         if _.resname != "GLY":
             cbeta = cg_universe._mapping["CB"].get(
-                _.resname, "hsidechain and not name H*"
-            )
-            positions.append(
-                _.atoms.select_atoms(cbeta).center_of_mass()
-            )
-        positions.append(_.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass())
+                _.resname, "hsidechain and not name H*")
+            positions.append(_.atoms.select_atoms(cbeta).center_of_mass())
+        positions.append(
+            _.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass())
     for _ in aa_universe.select_atoms("bioion").residues:
         positions.append(_.atoms.center_of_mass())
     testing.assert_allclose(

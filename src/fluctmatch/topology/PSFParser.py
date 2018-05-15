@@ -103,8 +103,8 @@ class PSF36Parser(PSFParser.PSFParser):
             # psfremarks = [psffile.next() for i in range(int(title[0]))]
             for _ in range(int(title[0])):
                 next(psffile)
-            logger.debug("PSF file {0}: format {1}"
-                         "".format(psffile.name, self._format))
+            logger.info("PSF file {0}: format {1}"
+                        "".format(psffile.name, self._format))
 
             # Atoms first and mandatory
             top = self._parse_sec(psffile, ('NATOM', 1, 1, self._parseatoms))
@@ -219,8 +219,8 @@ class PSF36Parser(PSFParser.PSFParser):
                     logger.warn("Guessing that this is actually a"
                                 " NAMD-type PSF file..."
                                 " continuing with fingers crossed!")
-                    logger.debug("First NAMD-type line: {0}: {1}"
-                                 "".format(i, line.rstrip()))
+                    logger.info("First NAMD-type line: {0}: {1}"
+                                "".format(i, line.rstrip()))
                 except ValueError:
                     atom_parser = util.FORTRANReader(
                         atom_parsers[self._format].replace("A6", "A4"))
@@ -228,8 +228,8 @@ class PSF36Parser(PSFParser.PSFParser):
                     logger.warn("Guessing that this is actually a"
                                 " pre CHARMM36 PSF file..."
                                 " continuing with fingers crossed!")
-                    logger.debug("First NAMD-type line: {0}: {1}"
-                                 "".format(i, line.rstrip()))
+                    logger.info("First NAMD-type line: {0}: {1}"
+                                "".format(i, line.rstrip()))
 
             atomids[i] = vals[0]
             segids[i] = vals[1] if vals[1] else "SYSTEM"

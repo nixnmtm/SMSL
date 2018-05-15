@@ -23,6 +23,8 @@ from __future__ import (
 from future.builtins import open
 from future.utils import native_str
 
+import logging
+import logging.config
 import os
 from os import path
 
@@ -91,6 +93,43 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
         ressep=ressep,
         datadir=data_dir,
     )
+    # Setup logger
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(outdir, "table.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     pt.run(verbose=verbose)
 
     # Write the various tables to different files.
@@ -100,6 +139,7 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
     if tbltype == "Kb":
         fn = path.join(outdir, filename("perres", ext="txt"))
         with open(fn, mode="wb") as output:
+            logger.info("Writing per-residue data to {}.".format(fn))
             table = pt.per_residue.to_csv(
                 header=True,
                 index=True,
@@ -108,9 +148,11 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
                 encoding="utf-8",
             )
             output.write(table.encode())
+            logger.info("Table successfully written.")
 
         fn = path.join(outdir, filename("interactions", ext="txt"))
         with open(fn, mode="wb") as output:
+            logger.info("Writing interactions to {}.".format(fn))
             table = pt.interactions.to_csv(
                 header=True,
                 index=True,
@@ -119,3 +161,4 @@ def cli(data_dir, outdir, prefix, tbltype, ressep, verbose):
                 encoding="utf-8",
             )
             output.write(table.encode())
+            logger.info("Table successfully written.")

@@ -21,20 +21,7 @@ from __future__ import (
     unicode_literals,
 )
 
-__all__ = [
-    "Calpha",
-    "Caside",
-    "Ncsc",
-    "Enm",
-    "Nucleic3",
-    "Nucleic4",
-    "Water",
-    "Tip3p",
-    "Dma",
-    "SolventIons",
-    "BioIons",
-    "NobleAtoms",
-]
+import logging
 
 from fluctmatch.models.protein import (
     Calpha,
@@ -56,3 +43,21 @@ from fluctmatch.models.solvent import (
     Tip3p,
     Dma,
 )
+
+__all__ = [
+    "Calpha",
+    "Caside",
+    "Ncsc",
+    "Enm",
+    "Nucleic3",
+    "Nucleic4",
+    "Water",
+    "Tip3p",
+    "Dma",
+    "SolventIons",
+    "BioIons",
+    "NobleAtoms",
+]
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())

@@ -24,6 +24,8 @@ from future.utils import native_str, PY3
 from future.builtins import open
 from six.moves import cPickle
 
+import logging
+import logging.config
 from os import path
 
 import click
@@ -123,25 +125,69 @@ from fluctmatch.analysis import (
     ))
 def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
         filename):
+    # Setup logger
+    logging.config.dictConfig({
+        "version": 1,
+        "disable_existing_loggers": False,  # this fixes the problem
+        "formatters": {
+            "standard": {
+                "class": "logging.Formatter",
+                "format": "%(name)-12s %(levelname)-8s %(message)s",
+            },
+            "detailed": {
+                "class": "logging.Formatter",
+                "format":
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                "datefmt": "%m-%d-%y %H:%M",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": path.join(path.dirname(filename), "fluctsca.log"),
+                "level": "INFO",
+                "mode": "w",
+                "formatter": "detailed",
+            }
+        },
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "file"]
+        },
+    })
+    logger = logging.getLogger(__name__)
+
     # Load the table, separate by I,I+r, and if requested, create a subset.
+    logger.info("Loading parameter table {}".format(
+        click.format_filename(filename)))
     table = ParamTable(ressep=ressep)
     table.from_file(click.format_filename(filename))
     kb = table._separate(table.table)
     _index = kb.index.names
     if transformation == "backbone":
+        logger.info("Calculating backbone-backbone interactions.")
         kb.reset_index(inplace=True)
         kb = kb[(kb["I"] == "N") | (kb["I"] == "CA") | (kb["I"] == "O")]
         kb = kb[(kb["J"] == "N") | (kb["J"] == "CA") | (kb["J"] == "O")]
         table.table = kb.set_index(_index)
     elif transformation == "sidechain":
+        logger.info("Calculating sidechain-sidechain interactions.")
         kb.reset_index(inplace=True)
         kb = kb[(kb["I"] == "CB") & (kb["J"] == "CB")]
         table.table = kb.set_index(_index)
     elif transformation == "bbsc":
+        logger.info("Calculating backbone-sidechain interactions.")
         kb.reset_index(inplace=True)
         tmp1 = kb[(kb["I"] == "CB") & ((kb["J"] == "N") | (kb["J"] == "O"))]
         tmp2 = kb[(kb["J"] == "CB") & ((kb["I"] == "N") | (kb["I"] == "O"))]
         table.table = pd.concat([tmp1, tmp2], axis=0).set_index(_index)
+    else:
+        logger.info("Accounting for all interactions.")
     kb = table.per_residue
 
     D_info = dict(
@@ -151,6 +197,8 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
 
     if subset:
         segid, start, stop = subset[0]
+        logger.info("Using a subset of {} between {:d} and {:d}".format(
+            segid, start, stop))
         kb = kb.loc[segid].loc[start:stop]
         D_info["kb"] = kb.copy(deep=True)
         D_info["subset"] = subset[0]
@@ -158,7 +206,7 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
     # Calculate eigenvalues and eigenvectors for the time series with sign correction.
     U, Lsca, Vt = fluctsca.svd(kb)
 
-    # Sign correction similar to that in SCA
+    logger.info("Using {:d} random trials.".format(ntrials))
     Lrand = fluctsca.randomize(kb, ntrials=ntrials)
     Ucorrel = kb.values.dot(kb.T.values)
     Vcorrel = kb.values.T.dot(kb.values)
@@ -173,14 +221,17 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
 
     # Determine the number of eigenmodes if kpos = 0
     _kpos = fluctsca.chooseKpos(Lsca, Lrand, stddev=std) if kpos == 0 else kpos
-    click.echo("Selecting {:d} eigenmodes".format(_kpos))
+    logger.info("Selecting {:d} eigenmodes".format(_kpos))
     Ucorr = fluctsca.correlate(U, Lsca, kmax=_kpos)
     Vcorr = fluctsca.correlate(Vt.T, Lsca, kmax=_kpos)
 
     # Calculate IC sectors
+    logger.info("Calculating the ICA for the residues.")
     Uica, Wres = fluctsca.rotICA(U, kmax=_kpos)
     Uics, Uicsize, Usortedpos, Ucutoff, Uscaled_pd, Upd = fluctsca.icList(
         Uica, _kpos, Ucorrel, p_cut=pcut)
+
+    logger.info("Calculating the ICA for the windows.")
     Vica, Wtime = fluctsca.rotICA(Vt.T, kmax=_kpos)
     Utica = Wtime.dot(U[:, :_kpos].T).T
     Vrica = Wres.dot(Vt[:_kpos]).T
@@ -212,8 +263,8 @@ def cli(ntrials, std, kpos, pcut, ressep, output, subset, transformation,
 
     D = dict(info=D_info, sca=D_sca, sector=D_sector)
     with open(click.format_filename(output), mode="wb") as dbf:
-        click.echo("Saving data to {}".format(click.format_filename(output)))
+        logger.info("Saving data to {}".format(click.format_filename(output)))
         if PY3:
-            click.echo(
+            logger.warning(
                 "Note: The saved file will be incompatible with Python 2.")
         cPickle.dump(D, dbf, protocol=cPickle.HIGHEST_PROTOCOL)
