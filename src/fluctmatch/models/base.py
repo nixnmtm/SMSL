@@ -45,10 +45,7 @@ from MDAnalysis.lib.util import asiterable
 from MDAnalysis.topology import base as topbase
 from MDAnalysis.topology import guessers
 from fluctmatch import (_DESCRIBE, _MODELS)
-from fluctmatch.models import (
-    topattrs,
-    trajectory,
-)
+from fluctmatch.models import trajectory
 
 logger = logging.getLogger(__name__)
 
