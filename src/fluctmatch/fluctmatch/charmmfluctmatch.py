@@ -214,7 +214,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             calculations.
         """
         if not restart:
-            universe = mda.Universe(*self.args, **self.kwargs)
+            in_memory = self.kwargs.get("in_memory", False)
+            universe = mda.Universe(*self.args, in_memory=in_memory)
 
             # Create and write initial internal coordinate files.
             logger.info("Determining the average bond distances...")

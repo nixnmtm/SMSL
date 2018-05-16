@@ -229,7 +229,7 @@ def cli(
             print("{:20}{}".format(k, v))
         return
 
-    kwargs = dict()
+    kwargs = dict(in_memory=False)
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
 
     kwargs.update(
