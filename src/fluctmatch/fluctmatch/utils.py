@@ -36,7 +36,6 @@ import numpy as np
 import pandas as pd
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
-from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch.data import charmm_split
 

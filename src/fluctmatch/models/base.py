@@ -352,7 +352,6 @@ def Merge(*args):
     :class:`~MDAnalysis.Universe`
         A merged universe.
     """
-    import multiprocessing as mp
     from MDAnalysis.coordinates.memory import MemoryReader
 
     logger.warning("This might take a while depending upon the number of "

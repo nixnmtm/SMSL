@@ -23,7 +23,6 @@ from future.utils import (
 )
 
 import logging
-import sys
 
 from fluctmatch import _MODELS
 from fluctmatch.models import *

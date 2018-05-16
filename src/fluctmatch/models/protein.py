@@ -34,7 +34,6 @@ from MDAnalysis.core import (
     topologyattrs,
 )
 from MDAnalysis.topology import base as topbase
-from fluctmatch.models import topattrs
 from fluctmatch.models.base import ModelBase
 from fluctmatch.models.selection import *
 
