@@ -176,5 +176,5 @@ def cli(
         nonbonded=not nonbonded,
         write_traj=write_traj,
     )
-    universe = mda.Universe(topology, trajectory, in_memory=False)
+    universe = mda.Universe(topology, trajectory)
     fmutils.write_charmm_files(universe, **kwargs)
