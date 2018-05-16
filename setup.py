@@ -88,6 +88,7 @@ setup(
     ],
     install_requires=[
         "click",
+        "future",
         "MDAnalysis",
         "numpy",
         "pandas",
