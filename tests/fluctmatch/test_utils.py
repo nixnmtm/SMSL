@@ -81,6 +81,6 @@ def test_bond_all_stats():
         err_msg=native_str("Bond fluctuations don't match."),
     ) and testing.assert_allclose(
         average["r_IJ"],
-        bond_fluct,
-        err_msg=native_str("Bond fluctuations don't match."),
+        bond_average,
+        err_msg=native_str("Bond averages don't match."),
     )
