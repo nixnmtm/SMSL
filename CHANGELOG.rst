@@ -2,11 +2,10 @@
 Changelog
 =========
 
-3.3.1 (2018-05-15)
+3.3.2 (2018-05-16)
 ------------------
 
-* Fixes bug in writing average coordinate file
-* Added log file command-line option
+* Fixed bug for setting up universe
 
 3.3.0 (2018-05-15)
 ------------------
