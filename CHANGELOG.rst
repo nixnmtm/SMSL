@@ -2,10 +2,21 @@
 Changelog
 =========
 
+3.3.3 (2018-05-16)
+------------------
+
+* Removed in_memory keyword argument
+
 3.3.2 (2018-05-16)
 ------------------
 
-* Fixed bug for setting up universe
+* Fixed bug for setting up unive
+
+3.3.1 (2018-05-16)
+------------------
+
+* Fixes bug in writing average coordinate file
+* Added log file command-line option
 
 3.3.0 (2018-05-15)
 ------------------
