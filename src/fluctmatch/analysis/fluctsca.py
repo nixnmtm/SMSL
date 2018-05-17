@@ -27,6 +27,7 @@ import multiprocessing as mp
 import os
 from os import path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import linalg
@@ -170,7 +171,6 @@ def figUnits(v1,
      '''
     import colorsys
 
-    Ntot = len(v1)
     # Plot all items in white:
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -248,7 +248,7 @@ def icList(Vpica, kpos, Csca, p_cut=0.95):
     degree of coevolution. Additionally returns the numeric value of the cutoff for each IC, and the
     pdf fit, which can be used for plotting/evaluation.
     icList, icsize, sortedpos, cutoff, pd  = icList(Vsca,Lsca,Lrand) """
-    #do the PDF/CDF fit, and assign cutoffs
+    # do the PDF/CDF fit, and assign cutoffs
     Npos = len(Vpica)
     cutoff = []
     scaled_pdf = []
@@ -274,11 +274,11 @@ def icList(Vpica, kpos, Csca, p_cut=0.95):
         diff = abs(tail - p_cut)
         x_pos = diff.argmin()
         cutoff.append(x_dist[x_pos + tmp])
-    #select the positions with significant contributions to each IC
+    # select the positions with significant contributions to each IC
     ic_init = []
     for k in range(kpos):
         ic_init.append([i for i in range(Npos) if Vpica[i, k] > cutoff[k]])
-    #construct the sorted, non-redundant iclist
+    # construct the sorted, non-redundant iclist
     sortedpos = []
     icsize = []
     ics = []
@@ -290,9 +290,10 @@ def icList(Vpica, kpos, Csca, p_cut=0.95):
         for kprime in [kp for kp in range(kpos) if (kp != k)]:
             tmp = [v for v in icpos_tmp if v in ic_init[kprime]]
             for i in tmp:
-                remsec = np.linalg.norm(Csca_nodiag[i,ic_init[k]]) \
-                         < np.linalg.norm(Csca_nodiag[i,ic_init[kprime]])
-                if remsec: icpos_tmp.remove(i)
+                remsec = np.linalg.norm(Csca_nodiag[i, ic_init[k]]) \
+                         < np.linalg.norm(Csca_nodiag[i, ic_init[kprime]])
+                if remsec:
+                    icpos_tmp.remove(i)
         sortedpos += sorted(icpos_tmp, key=lambda i: -Vpica[i, k])
         icsize.append(len(icpos_tmp))
         s = Unit()
@@ -315,7 +316,8 @@ def basicICA(x, r, Niter):
       -  `w` = unmixing matrix
       -  `change` = record of incremental changes during the iterations.
 
-    **Note:** r and Niter should be adjusted to achieve convergence, which should be assessed by visualizing "change" with plot(range(iter) ,change)
+    **Note:** r and Niter should be adjusted to achieve convergence, which
+    should be assessed by visualizing "change" with plot(range(iter) ,change)
 
     **Example:**
       >>> [w, change] = basicICA(x, r, Niter)

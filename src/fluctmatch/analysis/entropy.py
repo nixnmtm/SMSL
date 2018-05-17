@@ -120,10 +120,12 @@ class Entropy(object):
         -------
         Entropy difference between two windows
         """
-        # Calculate value of maximum probability and define penalty value.
-        header = ["segidI", "resI"]
-        normalize = lambda x: x / x.sum()
 
+        # Calculate value of maximum probability and define penalty value.
+        def normalize(x):
+            return x / x.sum()
+
+        header = ["segidI", "resI"]
         table = self._table._separate(self._table.table)
         hist, edges = np.histogram(
             table, range=(1e-4, table.values.max()), bins=bins)

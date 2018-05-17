@@ -159,6 +159,9 @@ def cli(datadir, logfile, outdir, topology, trajectory, nma_exec, temperature,
     except OSError:
         pass
 
+    logger.info("Calculating thermodynamic properties.")
+    logger.warning("Depending upon the size of the system, this may take a "
+                   "while.")
     thermodynamics.create_thermo_tables(
         datadir,
         outdir,

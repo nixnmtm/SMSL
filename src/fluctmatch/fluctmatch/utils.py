@@ -333,7 +333,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     with mdutil.openany(fpath, "w") as temp:
         print(kwargs.get("system", 0), file=temp)
     with mdutil.openany(fpath, "r") as temp, \
-        mdutil.openany(path.join(subdir, logfile), mode="w") as log:
+            mdutil.openany(path.join(subdir, logfile), mode="w") as log:
         subprocess.check_call(
             command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)

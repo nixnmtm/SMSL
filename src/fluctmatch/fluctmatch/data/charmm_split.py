@@ -25,7 +25,7 @@ split_inp = ("""
     * Create a subtrajectory from a larger CHARMM trajectory.
     * This is for <= c35.
     *
-    
+
     set version {version}
     if @version .ge. 36 then
         dimension chsize 500000 maxres 3000000
@@ -35,42 +35,42 @@ split_inp = ("""
     set toppar {toppar}
     set begin {start}
     set end {stop}
-    
+
     if @version .lt. 36 then
         read rtf  card name @toppar/top_all27_prot_na.rtf
         read para card {flex} name @toppar/par_all27_prot_na.prm
-        
+
         read rtf  card name @toppar/top_all27_lipid.rtf append
         read para card {flex} name @toppar/par_all27_lipid.prm append
-        
+
         read rtf  card name @toppar/top_all35_sugar.rtf append
         read para card {flex} name @toppar/par_all35_sugar.prm append
-        
+
         stream @toppar/stream/toppar_water_ions.str
     else
         read rtf  card name @toppar/top_all36_prot.rtf
         read para card {flex} name @toppar/par_all36_prot.prm
-        
+
         read rtf  card name @toppar/top_all36_na.rtf append
         read para card {flex} name @toppar/par_all36_na.prm append
-        
+
         read rtf  card name @toppar/top_all36_carb.rtf append
         read para card {flex} name @toppar/par_all36_carb.prm append
-        
+
         read rtf  card name @toppar/top_all36_lipid.rtf append
         read para card {flex} name @toppar/par_all36_lipid.prm append
-        
+
         read rtf  card name @toppar/top_all36_cgenff.rtf append
         read para card {flex} name @toppar/par_all36_cgenff.prm append
-        
+
         stream @toppar/toppar_water_ions.str
     endif
-    
+
     read psf card name {psf}
 
     set iu    20
     set ou    30
-    
+
     ! Load the trajectory
     open read  unit @iu file name {trajectory}
     open write unit @ou file name {outfile}
@@ -78,7 +78,7 @@ split_inp = ("""
     ! Gather information from the first trajectory assuming that all trajectories
     ! are similar.
     traj query unit @iu
-    
+
     if @start .gt. 1 then
         calc nother @start - 1
     else
@@ -86,7 +86,7 @@ split_inp = ("""
     endif
     traj first @iu skip ?SKIP begin @start stop @stop -
         iwrite @ou noth @nother
-        
+
     close @iu
     close @ou
     stop

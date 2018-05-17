@@ -133,8 +133,8 @@ from fluctmatch.analysis import (
         file_okay=True,
         resolve_path=True,
     ))
-def cli(logfile, ntrials, std, kpos, pcut, ressep, output, subset, transformation,
-        filename):
+def cli(logfile, ntrials, std, kpos, pcut, ressep, output, subset,
+        transformation, filename):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
