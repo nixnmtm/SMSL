@@ -248,58 +248,55 @@ def icList(Vpica, kpos, Csca, p_cut=0.95):
     degree of coevolution. Additionally returns the numeric value of the cutoff for each IC, and the
     pdf fit, which can be used for plotting/evaluation.
     icList, icsize, sortedpos, cutoff, pd  = icList(Vsca,Lsca,Lrand) """
-    # do the PDF/CDF fit, and assign cutoffs
+    #do the PDF/CDF fit, and assign cutoffs
     Npos = len(Vpica)
-    cutoff = []
-    scaled_pdf = []
-    all_fits = []
+    cutoff = list()
+    scaled_pdf = list()
+    all_fits = list()
     for k in range(kpos):
-        pd = t.fit(Vpica[:, k])
+        pd = t.fit(Vpica[:,k])
         all_fits.append(pd)
-        iqr = scoreatpercentile(Vpica[:, k], 75) - scoreatpercentile(
-            Vpica[:, k], 25)
-        binwidth = 2 * iqr * (len(Vpica[:, k])**(-0.33))
-        nbins = round((max(Vpica[:, k]) - min(Vpica[:, k])) / binwidth)
-        h_params = np.histogram(Vpica[:, k], nbins.astype(np.int))
+        iqr = scoreatpercentile(Vpica[:,k],75) - scoreatpercentile(Vpica[:,k],25)
+        binwidth=2*iqr*(len(Vpica[:,k])**(-0.33))
+        nbins=round((max(Vpica[:,k])-min(Vpica[:,k]))/binwidth)
+        h_params = np.histogram(Vpica[:,k], int(nbins))
         x_dist = np.linspace(min(h_params[1]), max(h_params[1]), num=100)
-        area_hist = Npos * (h_params[1][2] - h_params[1][1])
-        scaled_pdf.append(area_hist * (t.pdf(x_dist, pd[0], pd[1], pd[2])))
-        cd = t.cdf(x_dist, pd[0], pd[1], pd[2])
+        area_hist=Npos*(h_params[1][2]-h_params[1][1]);
+        scaled_pdf.append(area_hist*(t.pdf(x_dist,pd[0],pd[1],pd[2])))
+        cd = t.cdf(x_dist,pd[0],pd[1],pd[2])
         tmp = scaled_pdf[k].argmax()
-        if abs(max(Vpica[:, k])) > abs(min(Vpica[:, k])):
+        if abs(max(Vpica[:,k])) > abs(min(Vpica[:,k])):
             tail = cd[tmp:len(cd)]
         else:
             cd = 1 - cd
             tail = cd[0:tmp]
-        diff = abs(tail - p_cut)
+        diff = abs(tail - p_cut);
         x_pos = diff.argmin()
-        cutoff.append(x_dist[x_pos + tmp])
+        cutoff.append(x_dist[x_pos+tmp])
     # select the positions with significant contributions to each IC
-    ic_init = []
-    for k in range(kpos):
-        ic_init.append([i for i in range(Npos) if Vpica[i, k] > cutoff[k]])
+    ic_init = list()
+    for k in range(kpos): ic_init.append([i for i in range(Npos) if Vpica[i,k]> cutoff[k]])
     # construct the sorted, non-redundant iclist
-    sortedpos = []
-    icsize = []
-    ics = []
+    sortedpos = list()
+    icsize = list()
+    ics = list()
+    icpos_tmp = list()
     Csca_nodiag = Csca.copy()
-    for i in range(Npos):
-        Csca_nodiag[i, i] = 0
+    for i in range(Npos): Csca_nodiag[i,i]=0
     for k in range(kpos):
         icpos_tmp = list(ic_init[k])
         for kprime in [kp for kp in range(kpos) if (kp != k)]:
             tmp = [v for v in icpos_tmp if v in ic_init[kprime]]
             for i in tmp:
-                remsec = np.linalg.norm(Csca_nodiag[i, ic_init[k]]) \
-                         < np.linalg.norm(Csca_nodiag[i, ic_init[kprime]])
-                if remsec:
-                    icpos_tmp.remove(i)
-        sortedpos += sorted(icpos_tmp, key=lambda i: -Vpica[i, k])
+                remsec = np.linalg.norm(Csca_nodiag[i,ic_init[k]]) \
+                         < np.linalg.norm(Csca_nodiag[i,ic_init[kprime]])
+                if remsec: icpos_tmp.remove(i)
+        sortedpos += sorted(icpos_tmp, key=lambda i: -Vpica[i,k])
         icsize.append(len(icpos_tmp))
         s = Unit()
-        s.items = sorted(icpos_tmp, key=lambda i: -Vpica[i, k])
-        s.col = k / kpos
-        s.vect = -Vpica[s.items, k]
+        s.items = sorted(icpos_tmp, key=lambda i: -Vpica[i,k])
+        s.col = k/kpos
+        s.vect = -Vpica[s.items,k]
         ics.append(s)
     return ics, icsize, sortedpos, cutoff, scaled_pdf, all_fits
 
@@ -316,8 +313,7 @@ def basicICA(x, r, Niter):
       -  `w` = unmixing matrix
       -  `change` = record of incremental changes during the iterations.
 
-    **Note:** r and Niter should be adjusted to achieve convergence, which
-    should be assessed by visualizing "change" with plot(range(iter) ,change)
+    **Note:** r and Niter should be adjusted to achieve convergence, which should be assessed by visualizing 'change' with plot(range(iter) ,change)
 
     **Example:**
       >>> [w, change] = basicICA(x, r, Niter)
@@ -325,12 +321,13 @@ def basicICA(x, r, Niter):
     """
     [L, M] = x.shape
     w = np.eye(L)
-    change = []
+    change = list()
     for _ in range(Niter):
         w_old = np.copy(w)
         u = w.dot(x)
-        w += r * (M * np.eye(L) + (1 - 2 * (1. /
-                                            (1 + np.exp(-u)))).dot(u.T)).dot(w)
+        w += r * (
+                M * np.eye(L) + (1 - 2 * (1. / (1 + np.exp(-u)))).dot(u.T)).dot(
+            w)
         delta = (w - w_old).ravel()
         change.append(delta.dot(delta.T))
     return [w, change]
