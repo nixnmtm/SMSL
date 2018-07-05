@@ -124,7 +124,7 @@ class RTFWriter(topbase.TopologyWriterBase):
         # Write the bond, angle, dihedral, and improper dihedral lines.
         for key, value in self.bonds:
             attr, n_perline = value
-            fmt = key + n_perline * "%6s"
+            fmt = key + n_perline * "%10s"
             try:
                 bonds = getattr(atoms, attr)
                 if len(bonds) == 0:
