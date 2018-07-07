@@ -112,7 +112,7 @@ _CONVERT = dict(
     "--logfile",
     metavar="LOG",
     show_default=True,
-    default=path.join(os.getcwd(), "splittraj.log"),
+    default="splittraj.log",
     type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Log file",
 )
