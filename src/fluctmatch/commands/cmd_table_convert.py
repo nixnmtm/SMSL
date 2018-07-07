@@ -130,7 +130,10 @@ def cli(logfile, top1, top2, coord, table, outfile):
     cg = mda.Universe(top1, coord)
     fluctmatch = mda.Universe(top2, coord)
     convert = dict(zip(fluctmatch.atoms.names, cg.atoms.names))
-    resnames = dict(zip(cg.residues.resnums, cg.residues.resnames))
+    resnames = pd.DataFrame.from_records(
+        zip(cg.residues.segids, cg.residues.resnums, cg.residues.resnames),
+        columns=["segid", "res", "resn"]
+    ).set_index(["segid", "res"])
 
     with open(table, "rb") as tbl:
         logger.info("Loading {}.".format(table))
@@ -147,10 +150,14 @@ def cli(logfile, top1, top2, coord, table, outfile):
     constants["J"] = constants["J"].apply(lambda x: convert[x])
 
     # Create lists of corresponding residues
-    constants["resnI"] = constants["resI"].apply(
-        lambda x: resnames[x]).to_frame()
-    constants["resnJ"] = constants["resJ"].apply(
-        lambda x: resnames[x]).to_frame()
+    columns = ["segidI", "resI", "segidJ", "resJ"]
+    resnI = []
+    resnJ = []
+    for segidI, resI, segidJ, resJ in constants[columns].values:
+        resnI.append(resnames.loc[(segidI, resI),])
+        resnJ.append(resnames.loc[(segidJ, resJ),])
+    constants["resnI"] = pd.concat(resnI).values
+    constants["resnJ"] = pd.concat(resnJ).values
 
     # Concatenate the columns
     cols = ["segidI", "resI", "resnI", "I", "segidJ", "resJ", "resnJ", "J"]
