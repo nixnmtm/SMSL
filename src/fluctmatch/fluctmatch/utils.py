@@ -36,6 +36,7 @@ import numpy as np
 import pandas as pd
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
+from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch.data import charmm_split
 
@@ -295,8 +296,8 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     topology = kwargs.get("topology", "md.tpr")
     trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.xtc"))
     index = kwargs.get("index")
-    outfile = kwargs.get("outfile", "aa.xtc")
-    logfile = kwargs.get("logfile", "split.log")
+    outfile = path.join(subdir, kwargs.get("outfile", "aa.xtc"))
+    logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
 
     if index is not None:
         command = [
@@ -308,7 +309,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             "-n",
             index,
             "-o",
-            path.join(subdir, outfile),
+            outfile,
             "-b",
             "{:d}".format(start),
             "-e",
@@ -323,7 +324,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             "-f",
             trajectory,
             "-o",
-            path.join(subdir, outfile),
+            outfile,
             "-b",
             "{:d}".format(start),
             "-e",
@@ -333,7 +334,9 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     with mdutil.openany(fpath, "w") as temp:
         print(kwargs.get("system", 0), file=temp)
     with mdutil.openany(fpath, "r") as temp, \
-            mdutil.openany(path.join(subdir, logfile), mode="w") as log:
+        mdutil.openany(logfile, mode="w") as log:
+        logger.info("Writing trajectory to {}".format(outfile))
+        logger.info("Writing Gromacs output to {}".format(logfile))
         subprocess.check_call(
             command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)
@@ -377,7 +380,7 @@ def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
                         "/opt/local/charmm/c{:d}b1/toppar".format(version))
     trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.dcd"))
     outfile = path.join(subdir, kwargs.get("outfile", "aa.dcd"))
-    logfile = kwargs.get("logfile", "split.log")
+    logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
     inpfile = path.join(subdir, "split.inp")
 
     with mdutil.openany(inpfile, "w") as charmm_input:
