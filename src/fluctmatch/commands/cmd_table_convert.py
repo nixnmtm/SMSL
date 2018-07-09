@@ -114,7 +114,7 @@ def cli(logfile, top1, top2, coord, table, outfile):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": logfile,
+                "filename": path.join(os.getcwd(), logfile),
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",
