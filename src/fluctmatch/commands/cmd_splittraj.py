@@ -113,7 +113,7 @@ _CONVERT = dict(
     metavar="LOG",
     show_default=True,
     default="splittraj.log",
-    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    type=click.Path(exists=False, file_okay=True, resolve_path=False),
     help="Log file",
 )
 @click.option(
@@ -177,7 +177,7 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": logfile,
+                "filename": path.join(os.getcwd(), logfile),
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",
