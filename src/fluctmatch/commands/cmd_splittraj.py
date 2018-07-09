@@ -113,7 +113,7 @@ _CONVERT = dict(
     metavar="LOG",
     show_default=True,
     default="splittraj.log",
-    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    type=click.Path(exists=False, file_okay=True, resolve_path=False),
     help="Log file",
 )
 @click.option(
