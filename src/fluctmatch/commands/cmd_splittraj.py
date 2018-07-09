@@ -177,7 +177,7 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": logfile,
+                "filename": path.join(os.getcwd(), logfile),
                 "level": "INFO",
                 "mode": "w",
                 "formatter": "detailed",
