@@ -84,7 +84,7 @@ class IntcorReader(TopologyReaderBase):
         table = pd.DataFrame()
         with open(self.filename, "rb") as icfile, TextIOWrapper(
                 icfile, encoding="utf-8") as buf:
-            logger.info("Writing to {}".format(self.filename))
+            logger.info("Reading {}".format(self.filename))
             for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:
