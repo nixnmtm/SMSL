@@ -112,6 +112,10 @@ class ParamReader(TopologyReaderBase):
 class PARReader(ParamReader):
     format = "PAR"
 
+    def __init__(self, filename):
+        super().__init__(filename)
+        self.filename = util.filename(filename, ext="par")
+
 
 class ParamWriter(TopologyWriterBase):
     """Write a parameter dictionary to a CHARMM-formatted parameter file.
@@ -224,3 +228,6 @@ class ParamWriter(TopologyWriterBase):
 
 class PARWriter(ParamWriter):
     format = "PAR"
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
+        self.filename = util.filename(filename, ext="prm")
