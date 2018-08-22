@@ -60,13 +60,6 @@ class ParamReader(TopologyReaderBase):
         ANGLES=["I", "J", "K", "Ktheta", "theta0", "Kub", "S0"],
         DIHEDRALS=["I", "J", "K", "L", "Kchi", "n", "delta"],
         IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"])
-    _prmbuffers = dict(
-        ATOMS=StringIO(),
-        BONDS=StringIO(),
-        ANGLES=StringIO(),
-        DIHEDRALS=StringIO(),
-        IMPROPER=StringIO(),
-    )
     _dtypes = dict(
         ATOMS=dict(hdr=np.str, type=np.int, atom=np.str, mass=np.float,),
         BONDS=dict(I=np.str, J=np.str, Kb=np.float, b0=np.float),
@@ -93,6 +86,13 @@ class ParamReader(TopologyReaderBase):
 
     def __init__(self, filename):
         self.filename = util.filename(filename, ext="prm")
+        self._prmbuffers = dict(
+            ATOMS=StringIO(),
+            BONDS=StringIO(),
+            ANGLES=StringIO(),
+            DIHEDRALS=StringIO(),
+            IMPROPER=StringIO(),
+        )
 
     def read(self):
         """Parse the parameter file.
@@ -258,4 +258,4 @@ class PARWriter(ParamWriter):
     format = "PAR"
     def __init__(self, filename, **kwargs):
         super().__init__(filename, **kwargs)
-        self.filename = util.filename(filename, ext="prm")
+        self.filename = util.filename(filename, ext="par")
