@@ -201,7 +201,7 @@ class ParamWriter(TopologyWriterBase):
                 prmfile.write("\n".encode())
             prmfile.write("\n".encode())
 
-            if self._version >= 35 and parameters["ATOMS"].empty:
+            if self._version > 35 and parameters["ATOMS"].empty:
                 if atomgroup:
                     if np.issubdtype(atomgroup.types.dtype, np.int):
                         atom_types = atomgroup.types
@@ -221,12 +221,15 @@ class ParamWriter(TopologyWriterBase):
 
             for key in self._headers:
                 value = parameters[key]
-                if value.empty or (self._version < 35 and key == "ATOMS"):
+                if self._version < 35 and key == "ATOMS":
                     continue
                 prmfile.write(key.encode())
                 prmfile.write("\n".encode())
-                np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))
-                prmfile.write("\n".encode())
+                if value.empty:
+                    prmfile.write("\n".encode())
+                if not value.empty:
+                    np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))
+                    prmfile.write("\n".encode())
 
             nb_header = ("""
                 NONBONDED nbxmod  5 atom cdiel shift vatom vdistance vswitch -
