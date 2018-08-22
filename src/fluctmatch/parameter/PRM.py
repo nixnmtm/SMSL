@@ -29,7 +29,7 @@ from future.utils import (
 
 import textwrap
 import time
-from io import TextIOWrapper
+from io import (StringIO, TextIOWrapper)
 from os import environ
 
 import numpy as np
@@ -52,14 +52,44 @@ class ParamReader(TopologyReaderBase):
     _prmindex = dict(
         ATOMS=np.arange(1, 4),
         BONDS=np.arange(4),
-        ANGLES=np.arange(5),
+        ANGLES=np.arange(7),
         DIHEDRALS=np.arange(6))
     _prmcolumns = dict(
-        ATOMS=["type", "atom", "mass"],
+        ATOMS=["hdr", "type", "atom", "mass"],
         BONDS=["I", "J", "Kb", "b0"],
-        ANGLES=["I", "J", "K", "Ktheta", "theta0"],
+        ANGLES=["I", "J", "K", "Ktheta", "theta0", "Kub", "S0"],
         DIHEDRALS=["I", "J", "K", "L", "Kchi", "n", "delta"],
         IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"])
+    _prmbuffers = dict(
+        ATOMS=StringIO(),
+        BONDS=StringIO(),
+        ANGLES=StringIO(),
+        DIHEDRALS=StringIO(),
+        IMPROPER=StringIO(),
+    )
+    _dtypes = dict(
+        ATOMS=dict(hdr=np.str, type=np.int, atom=np.str, mass=np.float,),
+        BONDS=dict(I=np.str, J=np.str, Kb=np.float, b0=np.float),
+        ANGLES=dict(
+            I=np.str, J=np.str, K=np.str, Ktheta=np.float, theta0=np.float,
+            Kub=np.object, S0=np.object,
+        ),
+        DIHEDRALS=dict(
+            I=np.str, J=np.str, K=np.str, L=np.str,
+            Kchi=np.float, n=np.int, delta=np.float,
+        ),
+        IMPROPER=dict(
+            I=np.str, J=np.str, K=np.str, L=np.str,
+            Kchi=np.float, n=np.int, delta=np.float,
+        ),
+    )
+    _na_values = dict(
+        ATOMS=dict(type=-1, mass=0.0),
+        BONDS=dict(Kb=0.0, b0=0.0),
+        ANGLES=dict(Ktheta=0.0, theta0=0.0, Kub="", S0=""),
+        DIHEDRALS=dict(Kchi=0.0, n=0, delta=0.0),
+        IMPROPER=dict(Kchi=0.0, n=0, delta=0.0),
+    )
 
     def __init__(self, filename):
         self.filename = util.filename(filename, ext="prm")
@@ -71,41 +101,35 @@ class ParamReader(TopologyReaderBase):
         -------
         Dictionary with CHARMM parameters per key.
         """
-        parameters = dict(
-            ATOMS=[], BONDS=[], ANGLES=[], DIHEDRALS=[], IMPROPER=[])
+        parameters = dict.fromkeys(self._prmbuffers.keys())
         headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
         with open(self.filename, "rb") as prmfile, TextIOWrapper(
                 prmfile, encoding="utf-8") as buf:
             for line in buf:
-                line = line.split("!")[0].strip()
-                if line.startswith("*") or not line:
+                line = line.strip()
+                if line.startswith("*") or line.startswith("!") or not line:
                     continue  # ignore TITLE and empty lines
 
                 # Parse sections
                 if line in headers:
                     section = line
                     continue
-                elif line.startswith("NONBONDED") or line.startswith(
-                        "CMAP") or line.startswith("END"):
+                elif (line.startswith("NONBONDED") or
+                      line.startswith("CMAP") or
+                      line.startswith("END") or
+                      line.startswith("end")):
                     break
 
-                # Removes any Urey-Bradley values
-                field = line.split()
-                if section == "ATOMS":
-                    field = field[1:]
-                if section == "BONDS":
-                    field = field[:4]
-                if section == "ANGLES":
-                    field = field[:5]
-                if section == "DIHEDRALS" or section == "IMPROPER":
-                    field = field[:7]
-                parameters[section].append(field)
+                print(line, file=self._prmbuffers[section])
 
         for key, value in parameters.items():
-            parameters[key] = pd.DataFrame(
-                value, columns=self._prmcolumns[key])
-            parameters[key] = parameters[key].apply(
-                pd.to_numeric, errors="ignore")
+            self._prmbuffers[key].seek(0)
+            parameters[key] = pd.read_csv(
+                self._prmbuffers[key], header=None, names=self._prmcolumns[key],
+                skipinitialspace=True, delim_whitespace=True, comment="!",
+                dtype=self._dtypes[key]
+            )
+            parameters[key].fillna(self._na_values[key], inplace=True)
         return parameters
 
 
@@ -136,9 +160,9 @@ class ParamWriter(TopologyWriterBase):
 
     _headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
     _fmt = dict(
-        ATOMS="MASS %5d %-6s %9.5f",
+        ATOMS="%4s %5d %-6s %9.5f",
         BONDS="%-6s %-6s %10.4f%10.4f",
-        ANGLES="%-6s %-6s %-6s %8.2f%10.2f",
+        ANGLES="%-6s %-6s %-6s %8.2f%10.2f%10s%10s",
         DIHEDRALS="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",
         IMPROPER="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",
         NONBONDED="%-6s %5.1f %13.4f %10.4f",
@@ -204,11 +228,13 @@ class ParamWriter(TopologyWriterBase):
                 np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))
                 prmfile.write("\n".encode())
 
+            nb_header = ("""
+                NONBONDED nbxmod  5 atom cdiel shift vatom vdistance vswitch -
+                cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
+                """)
+            prmfile.write(textwrap.dedent(nb_header[1:]).encode())
+
             if self._nonbonded:
-                nb_header = ("""
-                    NONBONDED nbxmod  5 atom cdiel shift vatom vdistance vswitch -
-                    cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
-                    """)
                 atom_list = np.concatenate(
                     (parameters["BONDS"]["I"].values,
                      parameters["BONDS"]["J"].values),
@@ -217,7 +243,6 @@ class ParamWriter(TopologyWriterBase):
                 atom_list = pd.DataFrame(np.unique(atom_list))
                 nb_list = pd.DataFrame(np.zeros((atom_list.size, 3)))
                 nb_list = pd.concat([atom_list, nb_list], axis=1)
-                prmfile.write(textwrap.dedent(nb_header[1:]).encode())
                 np.savetxt(
                     prmfile,
                     nb_list,
