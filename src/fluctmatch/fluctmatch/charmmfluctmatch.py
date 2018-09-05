@@ -218,8 +218,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
             # Create and write initial internal coordinate files.
             logger.info("Determining the average bond distances...")
-            avg_bonds, std_bonds = fmutils.BondStats(
-                universe, func="both").run().result
+            avg_bonds = fmutils.BondAverage(universe).run().result
+            logger.info("Determining the bond distance fluctuations...")
+            std_bonds = fmutils.BondStd(universe, avg_bonds).run().result
             with mda.Writer(self.filenames["init_avg_ic"],
                             **self.kwargs) as table:
                 logger.info("Writing {}...".format(

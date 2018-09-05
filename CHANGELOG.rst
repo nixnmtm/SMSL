@@ -2,6 +2,13 @@
 Changelog
 =========
 
+3.3.5 (2018-07-09)
+------------------
+
+* splittraj now writes Gromacs log files in each data subdirectory
+* table_convert properly assigns residue names
+* Changed RTF column length to 10
+
 3.3.3 (2018-05-16)
 ------------------
 

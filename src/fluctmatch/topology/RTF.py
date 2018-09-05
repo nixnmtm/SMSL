@@ -170,7 +170,7 @@ class RTFWriter(topbase.TopologyWriterBase):
                 continue
         self.rtffile.write("\n".encode())
 
-    def write(self, universe):
+    def write(self, universe, decl=True):
         """Write a CHARMM-formatted RTF topology file.
 
         Parameters
@@ -178,6 +178,8 @@ class RTFWriter(topbase.TopologyWriterBase):
         universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
             A collection of atoms in a universe or atomgroup with bond
             definitions.
+        decl : boolean
+            Include the declaration (DECL) statements
         """
         self._atoms = universe.atoms
         with open(self.filename, "wb") as self.rtffile:
@@ -191,7 +193,8 @@ class RTFWriter(topbase.TopologyWriterBase):
             # Write the atom mass and declaration sections
             self._write_mass()
             self.rtffile.write("\n".encode())
-            self._write_decl()
+            if decl:
+                self._write_decl()
             self.rtffile.write("DEFA FIRS NONE LAST NONE\n".encode())
             self.rtffile.write("AUTOGENERATE ANGLES DIHEDRAL\n\n".encode())
 

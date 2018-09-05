@@ -177,4 +177,5 @@ def cli(
         write_traj=write_traj,
     )
     universe = mda.Universe(topology, trajectory)
+    logger.info("Writing CHARMM files.")
     fmutils.write_charmm_files(universe, **kwargs)

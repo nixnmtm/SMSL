@@ -57,13 +57,13 @@ class IntcorReader(TopologyReaderBase):
         # fortran_format = "(I9,1X,4(I5,1X,A8),F9.4,3F8.2,F9.4)"
         EXTENDED=("I9,1X,I5,1X,A8,I5,1X,A8,I5,1X,A8,I5,1X,A8,F9.4,3F8.2,F9.4"),
         # fortran_format = "(I5,4(1X,A4,1X,A4,1X,A4,"":""),F12.6,3F12.4,F12.6)"
-        STANDARD_RESID=
-        ("I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"
-         ),
+        STANDARD_RESID=(
+            "I5,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,1X,A4,1X,A4,1X,A4,A1,"
+            "1X,A4,1X,A4,1X,A4,A1,F12.6,3F12.4,F12.6"),
         # fortran_format = "(I10,4(1X,A8,1X,A8,1X,A8,"":""),F12.6,3F12.4,F12.6)"
-        EXTENDED_RESID=
-        ("I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,F12.6,3F12.4,F12.6"
-         ),
+        EXTENDED_RESID=(
+            "I10,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,A1,1X,A8,1X,A8,1X,A8,"
+            "A1,1X,A8,1X,A8,1X,A8,A1,F12.6,3F12.4,F12.6"),
     )
     cols = np.asarray([
         "segidI", "resI", "I", "segidJ", "resJ", "J", "segidK", "resK", "K",
@@ -84,7 +84,7 @@ class IntcorReader(TopologyReaderBase):
         table = pd.DataFrame()
         with open(self.filename, "rb") as icfile, TextIOWrapper(
                 icfile, encoding="utf-8") as buf:
-            logger.info("Writing to {}".format(self.filename))
+            logger.info("Reading {}".format(self.filename))
             for line in buf:
                 line = line.split("!")[0].strip()
                 if line.startswith("*") or not line:

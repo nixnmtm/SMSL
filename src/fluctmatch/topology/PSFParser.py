@@ -110,13 +110,13 @@ class PSF36Parser(PSFParser.PSFParser):
             top = self._parse_sec(psffile, ('NATOM', 1, 1, self._parseatoms))
             # Then possibly other sections
             sections = (
-                #("atoms", ("NATOM", 1, 1, self._parseatoms)),
+                # ("atoms", ("NATOM", 1, 1, self._parseatoms)),
                 (Bonds, ("NBOND", 2, 4, self._parsesection)),
                 (Angles, ("NTHETA", 3, 3, self._parsesection)),
                 (Dihedrals, ("NPHI", 4, 2, self._parsesection)),
                 (Impropers, ("NIMPHI", 4, 2, self._parsesection)),
-                #("donors", ("NDON", 2, 4, self._parsesection)),
-                #("acceptors", ("NACC", 2, 4, self._parsesection))
+                # ("donors", ("NDON", 2, 4, self._parsesection)),
+                # ("acceptors", ("NACC", 2, 4, self._parsesection))
             )
 
             try:
@@ -187,9 +187,6 @@ class PSF36Parser(PSFParser.PSFParser):
             NAMD="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
         )
         atom_parser = util.FORTRANReader(atom_parsers[self._format])
-        # once partitioned, assigned each component the correct type
-        set_type = lambda x: (int(x[0]) - 1, x[1] or "SYSTEM", int(x[2]), x[3],
-                              x[4], x[5], float(x[6]), float(x[7]))
 
         # Allocate arrays
         atomids = np.zeros(numlines, dtype=np.int32)

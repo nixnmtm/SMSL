@@ -24,21 +24,21 @@ from __future__ import (
 thermodynamics = ("""
     * Calculate thermodynamic qunatities for an ENM structure.
     *
-    
+
     {dimension}
 
     set version {version}
     bomlev -5 ! This is for CHARMM 39
-        
+
     ! Additional data
     set ndcd    1
     set temp    {temperature}
     set fileu   10
-    
+
     ! Open CHARMM topology and parameter file
     read rtf  card name "{topology_file}"
     read para card {flex} name "{fixed_prm}"
-    
+
     ! Open PSF and coordinate files
     if @version .ge. 39 then
         read psf card name "{xplor_psf_file}"
@@ -47,19 +47,19 @@ thermodynamics = ("""
     endif
     read coor card name "{crd_file}"
     coor copy comp
-    
+
     stream "{stream_file}"
-    
+
     skip all excl bond
     update inbfrq 0
-    
+
     ! Load the trajectory
     open read  unit @fileu file name {trajectory}
-    
+
     ! Gather information from the first trajectory assuming that all trajectories
     ! are similar.
     traj query unit @fileu
-    
+
     calc nmod = 3*?NATOM
     vibran nmodes @nmod
         coor dyna sele all end nopr first @fileu nunit @ndcd begin ?START -
@@ -69,6 +69,6 @@ thermodynamics = ("""
     end
     calc ts = ?stot * @temp
     close unit @fileu
-    
+
     stop
     """)

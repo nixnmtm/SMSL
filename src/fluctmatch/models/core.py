@@ -23,7 +23,6 @@ from future.utils import (
 )
 
 import logging
-import sys
 
 from fluctmatch import _MODELS
 from fluctmatch.models import *
@@ -59,8 +58,10 @@ def modeller(*args, **kwargs):
             "An error occurred while trying to create the universe.")
         reraise(e)
 
+    universe = []
     try:
-        universe = [_MODELS[model](*args, **kwargs) for model in models]
+        for model in models:
+            universe.append(model)
     except KeyError:
         msg = ("{0} is not an available model. "
                "Please try {1}".format(model, viewkeys(_MODELS)))
