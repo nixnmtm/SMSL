@@ -2,6 +2,13 @@
 Changelog
 =========
 
+3.4.0 (2018-09-05)
+------------------
+
+* Updated parameter file output
+* Changed coordinate analysis classes.
+* Fixed some bugs
+
 3.3.5 (2018-07-09)
 ------------------
 
