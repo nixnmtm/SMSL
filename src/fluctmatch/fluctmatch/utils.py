@@ -67,30 +67,29 @@ class AverageStructure(analysis.AnalysisBase):
         """
         super().__init__(atomgroup.universe.trajectory, **kwargs)
         self._ag = atomgroup
+        self._nframes = atomgroup.universe.trajectory.n_frames
 
     def _prepare(self):
-        self.result = []
+        self.result = np.zeros_like(self._ag.positions)
 
     def _single_frame(self):
-        self.result.append(self._ag.positions)
+        self.result += self._ag.positions
 
     def _conclude(self):
-        self.result = np.mean(self.result, axis=0)
+        self.result /= self._nframes
 
 
-class BondStats(analysis.AnalysisBase):
-    """Calculate either the average bond length or the fluctuation in bond lengths.
+class BondAverage(analysis.AnalysisBase):
+    """Calculate the average bond length.
 
     """
 
-    def __init__(self, atomgroup, func="mean", **kwargs):
+    def __init__(self, atomgroup, **kwargs):
         """
         Parameters
         ----------
         atomgroup : :class:`~MDAnalysis.Universe.AtomGroup`
             An AtomGroup
-        func : {"mean", "std", "both"}, optional
-            Calculate either the mean or the standard deviation of the bonds
         start : int, optional
             start frame of analysis
         stop : int, optional
@@ -102,35 +101,69 @@ class BondStats(analysis.AnalysisBase):
         """
         super().__init__(atomgroup.universe.trajectory, **kwargs)
         self._ag = atomgroup
-        if func == "mean":
-            self._func = (np.mean, )
-        elif func == "std":
-            self._func = (np.std, )
-        elif func == "both":
-            self._func = (np.mean, np.std)
-        else:
-            raise AttributeError("func must either be 'mean' or 'std'")
+        self._nframes = atomgroup.universe.trajectory.n_frames
 
     def _prepare(self):
-        self.result = []
+        self.result = np.zeros_like(self._ag.bonds.bonds())
 
     def _single_frame(self):
-        self.result.append(self._ag.bonds.bonds())
+        self.result += self._ag.bonds.bonds()
 
     def _conclude(self):
-        self.result = [func(self.result, axis=0) for func in self._func]
-        bonds = [
-            pd.concat(
-                [
-                    pd.Series(self._ag.bonds.atom1.names),
-                    pd.Series(self._ag.bonds.atom2.names),
-                    pd.Series(_),
-                ],
-                axis=1) for _ in self.result
-        ]
-        for _ in bonds:
-            _.columns = ["I", "J", "r_IJ"]
-        self.result = copy.deepcopy(bonds)
+        self.result = np.rec.fromarrays(
+            [
+                self._ag.bonds.atom1.names,
+                self._ag.bonds.atom2.names,
+                self.result / self._nframes
+            ],
+            names=["I", "J", "r_IJ"]
+        )
+        self.result = pd.DataFrame.from_records(self.result)
+
+
+class BondStd(analysis.AnalysisBase):
+    """Calculate the fluctuation in bond lengths.
+
+    """
+
+    def __init__(self, atomgroup, average, **kwargs):
+        """
+        Parameters
+        ----------
+        atomgroup : :class:`~MDAnalysis.Universe.AtomGroup`
+            An AtomGroup
+        average : float or ""lass:`~numpy.array`
+            Average bond length
+        start : int, optional
+            start frame of analysis
+        stop : int, optional
+            stop frame of analysis
+        step : int, optional
+            number of frames to skip between each analysed frame
+        verbose : bool, optional
+            Turn on verbosity
+        """
+        super().__init__(atomgroup.universe.trajectory, **kwargs)
+        self._ag = atomgroup
+        self._nframes = atomgroup.universe.trajectory.n_frames
+        self._average = average
+
+    def _prepare(self):
+        self.result = np.zeros_like(self._ag.bonds.bonds())
+
+    def _single_frame(self):
+        self.result += np.square(self._ag.bonds.bonds() - self._average)
+
+    def _conclude(self):
+        self.result = np.rec.fromarrays(
+            [
+                self._ag.bonds.atom1.names,
+                self._ag.bonds.atom2.names,
+                np.sqrt(self.result / self._nframes)
+            ],
+            names=["I", "J", "r_IJ"]
+        )
+        self.result = pd.DataFrame.from_records(self.result)
 
 
 def write_charmm_files(universe,
