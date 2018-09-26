@@ -30,7 +30,6 @@ init = ("""
 
     ! Additional information
     set fileu   10
-    set fluctu  20
 
     ! Open CHARMM topology and parameter file
     read rtf card name "{topology_file}"
@@ -72,7 +71,7 @@ init = ("""
     write ic card resid name {init_fluct_ic}
     * Internal coordinate fluctuations
     
-    close unit @fluctu
+    close unit @fileu
     
     stop
 """)
