@@ -212,7 +212,7 @@ def cli(
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
 
     logger.info("Initializing the parameters.")
-    cfm.initialize(restart=restart)
+    cfm.initialize(nma_exec=nma_exec, restart=restart)
     logger.info("Running fluctuation matching.")
     cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles)
     logger.info("Fluctuation matching successfully completed.")
