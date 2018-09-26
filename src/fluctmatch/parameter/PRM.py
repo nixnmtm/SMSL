@@ -130,6 +130,8 @@ class ParamReader(TopologyReaderBase):
                 dtype=self._dtypes[key]
             )
             parameters[key].fillna(self._na_values[key], inplace=True)
+        if not parameters["ATOMS"].empty:
+            parameters["ATOMS"].drop("hdr", axis=1, inplace=True)
         return parameters
 
 
@@ -160,7 +162,7 @@ class ParamWriter(TopologyWriterBase):
 
     _headers = ("ATOMS", "BONDS", "ANGLES", "DIHEDRALS", "IMPROPER")
     _fmt = dict(
-        ATOMS="%4s %5d %-6s %9.5f",
+        ATOMS="MASS %5d %-6s %9.5f",
         BONDS="%-6s %-6s %10.4f%10.4f",
         ANGLES="%-6s %-6s %-6s %8.2f%10.2f%10s%10s",
         DIHEDRALS="%-6s %-6s %-6s %-6s %12.4f%3d%9.2f",

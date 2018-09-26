@@ -2,6 +2,12 @@
 Changelog
 =========
 
+3.4.1 (2018-09-26)
+* Switched to CHARMM for initial setup
+* Fixed initialization method when restarting
+* Fixed some bugs related to merging CG universes
+* Added DC35 to nucleic acid selection
+
 3.4.0 (2018-09-05)
 ------------------
 

@@ -357,8 +357,9 @@ def Merge(*args):
     logger.warning("This might take a while depending upon the number of "
                    "trajectory frames.")
     if not all([
-            u.universe.trajectory.n_frames == args[0]
-            .universe.trajectory.n_frames for u in args
+        u.universe.trajectory.n_frames ==
+        args[0].universe.trajectory.n_frames
+        for u in args
     ]):
         logger.error("The trajectories are not the same length.")
         raise ValueError("The trajectories are not the same length.")

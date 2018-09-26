@@ -240,6 +240,7 @@ def write_charmm_files(universe,
         with mda.Writer(
                 native_str(filenames["traj_file"]),
                 universe.atoms.n_atoms,
+                istart=None,
                 remarks="Written by fluctmatch.") as trj:
             logger.info("Writing the trajectory {}...".format(
                 filenames["traj_file"]))

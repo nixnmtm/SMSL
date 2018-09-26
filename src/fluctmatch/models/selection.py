@@ -166,7 +166,7 @@ class AdditionalNucleicSelection(selection.NucleicSelection):
 
     def __init__(self, parser, tokens):
         super().__init__(parser, tokens)
-        self.nucl_res = np.concatenate((self.nucl_res, ["OXG", "HPX"]), axis=0)
+        self.nucl_res = np.concatenate((self.nucl_res, ["OXG", "HPX", "DC35"]), axis=0)
 
     def apply(self, group):
         mask = np.in1d(group.resnames, self.nucl_res)

@@ -58,10 +58,8 @@ def modeller(*args, **kwargs):
             "An error occurred while trying to create the universe.")
         reraise(e)
 
-    universe = []
     try:
-        for model in models:
-            universe.append(model)
+        universe = [_MODELS[model](*args, **kwargs) for model in models]
     except KeyError:
         msg = ("{0} is not an available model. "
                "Please try {1}".format(model, viewkeys(_MODELS)))

@@ -24,7 +24,7 @@ from future.builtins import dict
 
 import logging
 
-__version__ = "3.4.0"
+__version__ = "3.4.1"
 
 _MODELS = dict()
 _DESCRIBE = dict()
