@@ -120,7 +120,7 @@ class FluctMatch(with_metaclass(abc.ABCMeta, object)):
             pass
 
     @abc.abstractmethod
-    def initialize(self, restart=False):
+    def initialize(self, nma_exec=None, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
 
         Parameters

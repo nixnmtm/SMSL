@@ -64,6 +64,7 @@ from MDAnalysis.coordinates.core import reader
 from fluctmatch.fluctmatch import base as fmbase
 from fluctmatch.fluctmatch import utils as fmutils
 from fluctmatch.fluctmatch.data import (
+    charmm_init,
     charmm_nma,
     charmm_thermo,
 )
@@ -152,6 +153,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         super().__init__(*args, **kwargs)
         self.dynamic_params = dict()
         self.filenames = dict(
+            init_input=path.join(self.outdir, "fluctinit.inp"),
+            init_log=path.join(self.outdir, "fluctinit.log"),
             init_avg_ic=path.join(self.outdir, "init.average.ic"),
             init_fluct_ic=path.join(self.outdir, "init.fluct.ic"),
             avg_ic=path.join(self.outdir, "average.ic"),
@@ -177,6 +180,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             thermo_input=path.join(self.outdir, "thermo.inp"),
             thermo_log=path.join(self.outdir, "thermo.log"),
             thermo_data=path.join(self.outdir, "thermo.dat"),
+            traj_file=self.args[1] if len(self.args) > 1 else path.join(self.outdir, "cg.dcd")
         )
 
         # Boltzmann constant
@@ -204,45 +208,58 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         table = pd.concat([table, data["r_IJ"]], axis=1)
         return table.reset_index()[hdr]
 
-    def initialize(self, restart=False):
+    def initialize(self, nma_exec=None, restart=False):
         """Create an elastic network model from a basic coarse-grain model.
 
         Parameters
         ----------
+        nma_exec : str
+            executable file for normal mode analysis
         restart : bool, optional
             Reinitialize the object by reading files instead of doing initial
             calculations.
         """
         if not restart:
-            universe = mda.Universe(*self.args)
+            # Write CHARMM input file.
+            if not path.exists(self.filenames["init_input"]):
+                version = self.kwargs.get("charmm_version", 41)
+                dimension = (
+                    "dimension chsize 1000000" if version >= 36 else "")
+                with open(
+                    self.filenames["init_input"], mode="wb") as charmm_file:
+                    logger.info("Writing CHARMM input file.")
+                    charmm_inp = charmm_init.init.format(
+                        flex="flex" if version else "",
+                        version=version,
+                        dimension=dimension,
+                        **self.filenames)
+                    charmm_inp = textwrap.dedent(charmm_inp[1:])
+                    charmm_file.write(charmm_inp.encode())
 
-            # Create and write initial internal coordinate files.
-            logger.info("Determining the average bond distances...")
-            avg_bonds = fmutils.BondAverage(universe).run().result
-            logger.info("Determining the bond distance fluctuations...")
-            std_bonds = fmutils.BondStd(universe, avg_bonds).run().result
-            with mda.Writer(self.filenames["init_avg_ic"],
-                            **self.kwargs) as table:
-                logger.info("Writing {}...".format(
-                    self.filenames["init_avg_ic"]))
-                avg_table = self._create_ic_table(universe, avg_bonds)
-                table.write(avg_table)
-
-            logger.info("Determining the fluctuation of bond distances...")
-            with mda.Writer(self.filenames["init_fluct_ic"],
-                            **self.kwargs) as table:
-                logger.info("Writing {}...".format(
-                    self.filenames["init_fluct_ic"]))
-                fluct_table = self._create_ic_table(universe, std_bonds)
-                table.write(fluct_table)
+            charmm_exec = (os.environ.get("CHARMMEXEC", util.which("charmm"))
+                           if nma_exec is None else nma_exec)
+            with open(self.filenames["init_log"], "w") as log_file:
+                subprocess.check_call(
+                    [charmm_exec, "-i", self.filenames["init_input"]],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                )
 
             # Write the parameter files.
+            with reader(self.filenames["init_fluct_ic"]) as icfile:
+                std_bonds = icfile.read().set_index(self.bond_def)
+            with reader(self.filenames["init_avg_ic"]) as icfile:
+                avg_bonds = icfile.read().set_index(self.bond_def)
+            target = pd.concat([std_bonds["r_IJ"], avg_bonds["r_IJ"]], axis=1)
+            target.reset_index(inplace=True)
+
             logger.info("Calculating the initial CHARMM parameters...")
-            target = pd.concat([std_bonds, avg_bonds], axis=1).reset_index()
-            self.target.update(
-                prmutils.create_empty_parameters(universe, **self.kwargs))
+            universe = mda.Universe(
+                self.filenames["xplor_psf_file"], self.filenames["crd_file"]
+            )
+            self.target = prmutils.create_empty_parameters(universe, **self.kwargs)
             target.columns = self.target["BONDS"].columns
-            self.target["BONDS"] = target
+            self.target["BONDS"] = target.copy(deep=True)
             self.parameters = copy.deepcopy(self.target)
             self.parameters["BONDS"]["Kb"] = (
                 self.BOLTZ / self.parameters["BONDS"]["Kb"].apply(np.square))
@@ -257,6 +274,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     self.filenames["dynamic_prm"]))
                 prm.write(self.dynamic_params)
         else:
+            if not path.exists(self.filenames["fixed_prm"]):
+                self.initialize(nma_exec, restart=False)
             try:
                 # Read the parameter files.
                 logger.info("Loading parameter and internal coordinate files.")
@@ -313,7 +332,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         # Read the parameters
         if not self.parameters:
             try:
-                self.initialize(restart=True)
+                self.initialize(nma_exec, restart=True)
             except IOError:
                 raise_with_traceback(
                     (IOError("Some files are missing. Unable to restart.")))
