@@ -3,6 +3,8 @@ Changelog
 =========
 
 3.4.1 (2018-09-26)
+------------------
+
 * Switched to CHARMM for initial setup
 * Fixed initialization method when restarting
 * Fixed some bugs related to merging CG universes
