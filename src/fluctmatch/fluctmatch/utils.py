@@ -23,7 +23,6 @@ from __future__ import (
 from future.builtins import (dict, super)
 from future.utils import (PY2, native_str)
 
-import copy
 import logging
 import os
 import subprocess
@@ -36,7 +35,6 @@ import numpy as np
 import pandas as pd
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
-from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch.data import charmm_split
 
@@ -237,16 +235,16 @@ def write_charmm_files(universe,
 
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
+        universe.trajectory.rewind()
         with mda.Writer(
                 native_str(filenames["traj_file"]),
                 universe.atoms.n_atoms,
-                istart=None,
+            istart=universe.trajectory.time,
                 remarks="Written by fluctmatch.") as trj:
             logger.info("Writing the trajectory {}...".format(
                 filenames["traj_file"]))
             logger.warning("This may take a while depending upon the size and "
                            "length of the trajectory.")
-            universe.trajectory.rewind()
             with click.progressbar(universe.trajectory) as bar:
                 for ts in bar:
                     trj.write(ts)
@@ -336,6 +334,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     if index is not None:
         command = [
             "gmx",
+            "trjconv",
             "-s",
             topology,
             "-f",
