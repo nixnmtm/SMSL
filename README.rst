@@ -93,8 +93,13 @@ Installation
 ============
 
 ::
+    Installing fluctMatch tool
 
-    pip install fluctmatch
+    1. Toggle to the respective tag release
+    2. Download it as a zip file
+    3. pip install {zip file}
+    
+    pip install fluctmatch (may not work always)
 
 Documentation
 =============
