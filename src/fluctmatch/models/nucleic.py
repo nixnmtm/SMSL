@@ -245,4 +245,103 @@ class Nucleic6(ModelBase):
         self.atoms.charges = 0.
 
     def _set_masses(self):
-        self.atoms.masses = self.atu.select_atoms("name C4'")[0].mass
+        # self.atoms.masses = self.atu.select_atoms("name C4'")[0].mass
+        self.atoms.masses = 1.0
+
+class Nucleic6SM(ModelBase):
+    """
+    
+    Nucleic6SiteMass:
+    A universe accounting for six sites involved with hydrogen bonding, mass defined based on sites(not constant 1)
+    
+    """
+    model = "NUC6SM"
+    describe = "Phosphate, C2', C4', and 3 sites on the nucleotide"
+    _mapping = OrderedDict()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._mapping["P"] = "name P H5T"
+        self._mapping["C4'"] = "name C4'"
+        self._mapping["C2'"] = "name C2'"
+        self._mapping["H1"] = ("(resname ADE DA* RA* and name N6) or "
+                               "(resname OXG GUA DG* RG* and name O6) or "
+                               "(resname CYT DC* RC* and name N4) or "
+                               "(resname THY URA DT* RU* and name O4)")
+        self._mapping["H2"] = (
+            "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
+            "(resname CYT DC* RC* THY URA DT* RU* and name N3)")
+        self._mapping["H3"] = (
+            "(resname ADE DA* RA* and name H2) or "
+            "(resname OXG GUA DG* RG* and name N2) or "
+            "(resname CYT DC* RC* THY URA DT* RU* and name O2)")
+
+        kwargs["mapping"] = self._mapping
+        self._initialize(*args, **kwargs)
+        self._set_charges()
+        self._set_masses()
+
+    def _add_bonds(self):
+        bonds = []
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name P").ix,
+                s.atoms.select_atoms("name C4'").ix)
+        ])
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name C4'").ix,
+                s.atoms.select_atoms("name C2'").ix)
+        ])
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name C2'").ix,
+                s.atoms.select_atoms("name H1").ix)
+        ])
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name H1").ix,
+                s.atoms.select_atoms("name H2").ix)
+        ])
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name H2").ix,
+                s.atoms.select_atoms("name H3").ix)
+        ])
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name C4'").ix[:-1],
+                s.atoms.select_atoms("name P").ix[1:])
+        ])
+        self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
+        self._generate_from_topology()
+
+    def _set_charges(self):
+        self.atoms.charges = 0.
+
+    def _set_masses(self):
+        p_atu = self.atu.select_atoms(self._mapping["P"]).split("residue")
+        sugar_atu = self.atu.select_atoms(self._mapping["C4'"]).split("residue")
+        sugar2_atu = self.atu.select_atoms(self._mapping["C2'"]).split("residue")
+        nucl_atu = self.atu.select_atoms(("(resname ADE DA* RA* and name N6) or "
+                                          "(resname OXG GUA DG* RG* and name O6) or "
+                                          "(resname CYT DC* RC* and name N4) or "
+                                          "(resname THY URA DT* RU* and name O4)")).split("residue")
+        nucl2_atu = self.atu.select_atoms(("(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
+                                           "(resname CYT DC* RC* THY URA DT* RU* and name N3)")).split("residue")
+        nucl3_atu = self.atu.select_atoms(("(resname ADE DA* RA* and name H2) or "
+                                           "(resname OXG GUA DG* RG* and name N2) or "
+                                           "(resname CYT DC* RC* THY URA DT* RU* and name O2)")).split("residue")
+
+        self.atoms.select_atoms("name P").masses = np.array(
+            [_.total_mass() for _ in p_atu])
+        self.atoms.select_atoms("name C4'").masses = np.array(
+            [_.total_mass() for _ in sugar_atu])
+        self.atoms.select_atoms("name C2'").masses = np.array(
+            [_.total_mass() for _ in sugar2_atu])
+        self.atoms.select_atoms("name H1").masses = np.array(
+            [_.total_mass() for _ in nucl_atu])
+        self.atoms.select_atoms("name H2").masses = np.array(
+            [_.total_mass() for _ in nucl2_atu])
+        self.atoms.select_atoms("name H3").masses = np.array(
+            [_.total_mass() for _ in nucl3_atu])
