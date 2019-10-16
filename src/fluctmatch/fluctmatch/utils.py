@@ -31,6 +31,7 @@ import textwrap
 from os import path
 
 import click
+import math
 import numpy as np
 import pandas as pd
 import MDAnalysis as mda
@@ -234,12 +235,16 @@ def write_charmm_files(universe,
         psf.write(universe)
 
     # Write the new trajectory in Gromacs XTC format.
+    if math.isclose(universe.trajectory.time, 1.0):
+        istart = universe.trajectory.time
+    else:
+        istart = 1.0
     if write_traj:
         universe.trajectory.rewind()
         with mda.Writer(
-                native_str(filenames["traj_file"]),
-                universe.atoms.n_atoms,
-            istart=universe.trajectory.time,
+            native_str(filenames["traj_file"]),
+            universe.atoms.n_atoms,
+            istart=istart,
                 remarks="Written by fluctmatch.") as trj:
             logger.info("Writing the trajectory {}...".format(
                 filenames["traj_file"]))
@@ -333,7 +338,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
 
     if index is not None:
         command = [
-            "gmx",
+            gromacs_exec,
             "trjconv",
             "-s",
             topology,
