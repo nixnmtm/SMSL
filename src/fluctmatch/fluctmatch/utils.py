@@ -235,12 +235,16 @@ def write_charmm_files(universe,
         psf.write(universe)
 
     # Write the new trajectory in Gromacs XTC format.
-    if math.isclose(universe.trajectory.time, 1.0):
-        istart = universe.trajectory.time
-    else:
-        istart = 1.0
     if write_traj:
         universe.trajectory.rewind()
+        if math.isclose(universe.trajectory.time, 1.0, rel_tol=1e-6):
+            istart = universe.trajectory.time
+        elif math.isclose(universe.trajectory.time, 0.0, rel_tol=1e-6):
+            istart = universe.trajectory.next().time  # if 0.0, then next time will be 1.0000000328495406
+        else:
+            logger.warning("Starting frame of the trajectory is not 1, "
+                           "Please do check it.")
+
         with mda.Writer(
             native_str(filenames["traj_file"]),
             universe.atoms.n_atoms,
