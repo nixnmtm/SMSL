@@ -385,6 +385,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         st = time.time()
 
         for i in range(n_cycles):
+            ct = time.time()
             self.error["step"] = i + 1
             with open(self.filenames["charmm_log"], "w") as log_file:
                 subprocess.check_call(
@@ -449,7 +450,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     fmt=native_str("%10d%10.6f%10.6f%10.6f", ),
                     delimiter=native_str(""),
                 )
-
+            logger.info("Fluctuation matching cycle {} completed in {:.6f}".format(
+                i, time.time() - ct))
             if (self.error[self.error.columns[1]] < tol).bool():
                 break
 
