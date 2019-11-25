@@ -46,9 +46,9 @@ class Enm(ModelBase):
     describe = "Elastic network model"
 
     def __init__(self, *args, **kwargs):
+        self._rmin = kwargs.pop("rmin", 0.)
+        self._rmax = kwargs.pop("rmax", 10.)
         super().__init__(*args, **kwargs)
-        self._rmin = kwargs.get("rmin", 0.)
-        self._rmax = kwargs.get("rmax", 10.)
         self._initialize(*args, **kwargs)
 
     def __repr__(self):
@@ -91,8 +91,10 @@ class Enm(ModelBase):
                               (distmat <= self._rmax))
         else:
             a0, a1 = np.where((distmat > self._rmin) & (distmat <= self._rmax))
-        bonds = topologyattrs.Bonds(
-            set([(x, y) for x, y in zip(a0, a1) if y > x]))
+        skeleton_bonds = set([(skeleton[0].ix, skeleton[1].ix) for skeleton in self.atu.bonds])
+        rmax_bonds = set([(x, y) for x, y in zip(a0, a1) if y > x])
+        all_bonds = skeleton_bonds.union(rmax_bonds)
+        bonds = topologyattrs.Bonds(all_bonds)
         self._topology.add_TopologyAttr(bonds)
         self._generate_from_topology()
 

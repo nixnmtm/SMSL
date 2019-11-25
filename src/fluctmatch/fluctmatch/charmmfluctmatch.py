@@ -421,8 +421,13 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             optimized *= self.BOLTZ * self.KFACTOR
             vib_ic[bond_values[0]] = (self.parameters["BONDS"][bond_values[0]]
                                       - optimized[bond_values[0]])
-            vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
-                vib_ic[bond_values[0]] >= 0., 0.))
+
+            if i <= 149:
+                vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
+                    vib_ic[bond_values[0]] >= 0., 0.))
+            else:      # After 150 cycles, values less than 0.001 are made 0.
+                vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
+                    vib_ic[bond_values[0]] >= 1e-3, 0.))
 
             # r.m.s.d. between previous and current force constant
             diff = self.dynamic_params["BONDS"] - vib_ic

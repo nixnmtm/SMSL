@@ -230,14 +230,15 @@ def cli(
         return
 
     kwargs = dict()
+
+    kwargs.update(dict(rmin=rmin, rmax=rmax,))
+
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
 
     kwargs.update(
         dict(
             outdir=outdir,
             prefix=prefix,
-            rmin=rmin,
-            rmax=rmax,
             charmm_version=charmm_version,
             extended=extended,
             resid=not resid,

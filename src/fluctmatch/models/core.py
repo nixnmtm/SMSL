@@ -62,7 +62,7 @@ def modeller(*args, **kwargs):
         universe = [_MODELS[model](*args, **kwargs) for model in models]
     except KeyError:
         msg = ("{0} is not an available model. "
-               "Please try {1}".format(model, viewkeys(_MODELS)))
+               "Please try {1}".format(models, viewkeys(_MODELS)))
         logger.exception(msg)
         raise_with_traceback(KeyError(msg))
     else:
