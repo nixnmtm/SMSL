@@ -78,7 +78,9 @@ class ParamTable(object):
                  prefix="fluctmatch",
                  tbltype="Kb",
                  ressep=3,
-                 datadir=path.curdir):
+                 datadir=path.curdir,
+                 start=None,
+                 end=None):
         """
         Parameters
         ----------
@@ -100,6 +102,8 @@ class ParamTable(object):
             intcor="fluct.ic",
             param=".".join((self._prefix, "dist", "prm")),
         )
+        self.start = start
+        self.end = end
 
     def __add__(self, other):
         return self.table.add(other.table, fill_value=0.0)
@@ -152,6 +156,19 @@ class ParamTable(object):
             Print each directory as it is being processed
         """
         directories = glob.iglob(path.join(self._datadir, "*"))
+
+        if self.start is not None and self.end is not None:
+            directories = []
+            for dirs in glob.iglob(path.join(self._datadir, "*")):
+                basename = path.basename(dirs)
+                try:
+                    number = int(basename)
+                except ValueError:
+                    continue  # not numeric
+                if self.start <= number <= self.end:
+                    # process file
+                    directories.append(path.join(self._datadir, str(number)))
+
         create_table = functools.partial(
             _create_table,
             intcor=self._filenames["intcor"],
@@ -172,6 +189,10 @@ class ParamTable(object):
 
         self._complete_table()
         self.table.set_index(_index["general"], inplace=True)
+        print(self.table.shape)
+        # Nix, drop values with 0.0 in all columns of a row, Finalized to use hereafter
+        self.table = self.table.where(self.table != 0.).dropna(how="all")
+        print(self.table.shape)
         self.table.fillna(0., inplace=True)
         self.table.sort_index(kind="mergesort", inplace=True)
 
