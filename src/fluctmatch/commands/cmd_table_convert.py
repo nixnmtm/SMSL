@@ -63,15 +63,6 @@ import MDAnalysis as mda
     help="Topology file",
 )
 @click.option(
-    "-f",
-    "coord",
-    metavar="FILE",
-    default=path.join(os.getcwd(), "cg.dcd"),
-    show_default=True,
-    type=click.Path(exists=True, file_okay=True, resolve_path=True),
-    help="Coordinate file",
-)
-@click.option(
     "-t",
     "--table",
     metavar="FILE",
@@ -89,7 +80,7 @@ import MDAnalysis as mda
     type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Table file",
 )
-def cli(logfile, top1, top2, coord, table, outfile):
+def cli(logfile, top1, top2, table, outfile):
     # Setup logger
     logging.config.dictConfig({
         "version": 1,
@@ -127,8 +118,8 @@ def cli(logfile, top1, top2, coord, table, outfile):
     })
     logger = logging.getLogger(__name__)
 
-    cg = mda.Universe(top1, coord)
-    fluctmatch = mda.Universe(top2, coord)
+    cg = mda.Universe(top1)
+    fluctmatch = mda.Universe(top2)
     convert = dict(zip(fluctmatch.atoms.names, cg.atoms.names))
     resnames = pd.DataFrame.from_records(
         zip(cg.residues.segids, cg.residues.resnums, cg.residues.resnames),
