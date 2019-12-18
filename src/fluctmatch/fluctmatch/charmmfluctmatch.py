@@ -303,7 +303,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 raise_with_traceback(
                     (IOError("Some files are missing. Unable to restart.")))
 
-    def run(self, nma_exec=None, tol=1.e-4, n_cycles=250):
+    def run(self, nma_exec=None, tol=1.e-4, n_cycles=300, low_bound=0.):
         """Perform a self-consistent fluctuation matching.
 
         Parameters
@@ -314,6 +314,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             error tolerance
         n_cycles : int, optional
             number of fluctuation matching cycles
+        low_bound  : float, optional
+            lowest Kb values to reduce noise
         """
         # Find CHARMM executable
         charmm_exec = (os.environ.get("CHARMMEXEC", util.which("charmm"))
@@ -376,12 +378,13 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     data, [
                         self.error_hdr,
                     ],
-                    fmt=native_str("%10s"),
+                    fmt=native_str("%15s"),   # Nix
                     delimiter=native_str(""))
         self.error["step"] += 1
 
         # Run simulation
-        logger.info("Starting fluctuation matching")
+        logger.info(f"Starting fluctuation matching--{n_cycles} iterations to run")
+        logger.info(f"Lower bound after 85% iteration is set to {low_bound}")
         st = time.time()
 
         for i in range(n_cycles):
@@ -421,13 +424,12 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             optimized *= self.BOLTZ * self.KFACTOR
             vib_ic[bond_values[0]] = (self.parameters["BONDS"][bond_values[0]]
                                       - optimized[bond_values[0]])
-
-            if i <= 149:
+            vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
+                vib_ic[bond_values[0]] >= 0., 0.))
+            if i > int(n_cycles*0.85):
+                logger.info(f"Fluctuation matching cycle {i}: low bound is {low_bound}")
                 vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
-                    vib_ic[bond_values[0]] >= 0., 0.))
-            else:      # After 150 cycles, values less than 0.001 are made 0.
-                vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
-                    vib_ic[bond_values[0]] >= 1e-3, 0.))
+                    vib_ic[bond_values[0]] >= low_bound, 0.))
 
             # r.m.s.d. between previous and current force constant
             diff = self.dynamic_params["BONDS"] - vib_ic
@@ -452,7 +454,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 np.savetxt(
                     error_file,
                     self.error,
-                    fmt=native_str("%10d%10.6f%10.6f%10.6f", ),
+                    fmt=native_str("%15d%15.6f%15.6f%15.6f", ),   # Nix
                     delimiter=native_str(""),
                 )
             logger.info("Fluctuation matching cycle {} completed in {:.6f}".format(
