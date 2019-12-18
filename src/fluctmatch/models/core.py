@@ -59,6 +59,9 @@ def modeller(*args, **kwargs):
         reraise(e)
 
     try:
+        # remove rmax and rmin as it is used only in ENM
+        kwargs.pop("rmin")
+        kwargs.pop("rmax")
         universe = [_MODELS[model](*args, **kwargs) for model in models]
     except KeyError:
         msg = ("{0} is not an available model. "
