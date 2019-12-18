@@ -95,12 +95,30 @@ from fluctmatch.analysis import paramtable
     "--verbose",
     is_flag=True,
 )
-def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose):
+@click.option(
+    "-s",
+    "--start",
+    metavar="START",
+    default=None,
+    show_default=True,
+    type=click.IntRange(0, None, clamp=True),
+    help="Start from given window directory")
+@click.option(
+    "-e",
+    "--end",
+    metavar="END",
+    default=None,
+    show_default=True,
+    type=click.IntRange(0, None, clamp=True),
+    help="End at given window directory")
+def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end):
     pt = paramtable.ParamTable(
         prefix=prefix,
         tbltype=tbltype,
         ressep=ressep,
         datadir=data_dir,
+        start=start,
+        end=end
     )
     # Setup logger
     logging.config.dictConfig({
