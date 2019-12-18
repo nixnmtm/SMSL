@@ -92,7 +92,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     "--rmax",
     metavar="DIST",
     type=click.FLOAT,
-    default=10.0,
+    default=7.6,   # Nix, to check rmax setter
     show_default=True,
     help="Maximum distance between bonds",
 )
@@ -247,6 +247,7 @@ def cli(
             nonbonded=not nonbonded,
             write_traj=write_traj,
         ))
+
     if mass:
         logger.info("Setting all bead masses to 1.0.")
         universe.atoms.mass = 1.0
