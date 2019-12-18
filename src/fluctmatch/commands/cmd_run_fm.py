@@ -94,9 +94,19 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "n_cycles",
     metavar="NCYCLES",
     type=click.IntRange(1, None, clamp=True),
-    default=250,
+    default=300,
     show_default=True,
     help="Number of simulation cycles",
+)
+@click.option(
+    "-m",
+    "--minval",
+    "low_bound",
+    metavar="LOW_BOUND",
+    type=click.FLOAT,
+    default=2.e-2,
+    show_default=True,
+    help="Lower bound Kb value. Less than this values is set 0"
 )
 @click.option(
     "--tol",
@@ -156,6 +166,7 @@ def cli(
         nma_exec,
         temperature,
         n_cycles,
+        low_bound,
         tol,
         prefix,
         charmm_version,
@@ -214,5 +225,5 @@ def cli(
     logger.info("Initializing the parameters.")
     cfm.initialize(nma_exec=nma_exec, restart=restart)
     logger.info("Running fluctuation matching.")
-    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles)
+    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles, low_bound=low_bound)
     logger.info("Fluctuation matching successfully completed.")
