@@ -285,7 +285,7 @@ class Polar(ModelBase):
                 bead = res.select_atoms(selection)
             else:
                 bead = res.select_atoms(
-                    selection.get(res, "hsidechain and not name H*"))
+                    selection.get(res.resnames[0], "hsidechain and not name H*"))
             if bead:
                 _beads.append(bead)
                 atomnames.append(name)
