@@ -153,7 +153,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         super().__init__(*args, **kwargs)
         self.dynamic_params = dict()
         self.filenames = dict(
-            ind_file=path.join(self.outdir, "index.txt"),
             init_input=path.join(self.outdir, "fluctinit.inp"),
             init_log=path.join(self.outdir, "fluctinit.log"),
             init_avg_ic=path.join(self.outdir, "init.average.ic"),
@@ -181,7 +180,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             thermo_input=path.join(self.outdir, "thermo.inp"),
             thermo_log=path.join(self.outdir, "thermo.log"),
             thermo_data=path.join(self.outdir, "thermo.dat"),
-            traj_file=self.args[1] if len(self.args) > 1 else path.join(self.outdir, "cg.dcd")
+            traj_file=self.args[1] if len(self.args) > 1 else path.join(self.outdir, "cg.dcd"),
+            bond_convergence=path.join(self.outdir, "bond_convergence.txt")
         )
 
         # Boltzmann constant
@@ -498,10 +498,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 if converged.sum() == 0:
                     logger.info("All bonds converged, exiting")
                     break
-        # Write all bonds convergence list
         fluct_conv = pd.concat(fdiff, axis=1).round(6)
         fluct_conv.columns = [j for j in range(1, i+2)]
-        fluct_conv.to_csv("bonds_convergence.txt") 
+        fluct_conv.to_csv(self.filenames["bond_convergence"]) 
         logger.info("Fluctuation matching completed in {:.6f}".format(
             time.time() - st))
         self.target["BONDS"].reset_index(inplace=True)
