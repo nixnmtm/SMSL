@@ -28,27 +28,39 @@ from os import path
 
 import click
 from MDAnalysis.lib.util import which
+from fluctmatch.fluctmatch import tune_topology
+from fluctmatch.fluctmatch import atomfluc_rmsf
 from fluctmatch.fluctmatch import charmmfluctmatch
 
 
-@click.command("run_fm", short_help="Run fluctuation matching.")
+@click.command("tune_fluc", short_help="Run Atomic Fluc")
 @click.option(
-    "-s",
-    "topology",
-    metavar="FILE",
-    default=path.join(os.getcwd(), "md.tpr"),
+    "--rcut",
+    "--rcut",
+    metavar="RMSF CUT",
+    type=click.FLOAT,
+    default=0.,
     show_default=True,
-    type=click.Path(exists=False, file_okay=True, resolve_path=True),
-    help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
+    help="RMSF Difference (abs(afQHA-afNMA)) cutoff",
 )
 @click.option(
-    "-f",
-    "trajectory",
-    metavar="FILE",
-    default=path.join(os.getcwd(), "md.xtc"),
+    "--dcut",
+    "--dcut",
+    metavar="DISTANCE CUT",
+    type=click.FLOAT,
+    default=6.5,
     show_default=True,
-    type=click.Path(exists=False, file_okay=True, resolve_path=True),
-    help="Trajectory file (e.g. xtc trr dcd)",
+    help="Trimming the topology to distance cut off, "
+         "usually atleast 1 Ang less than the overall rmax",
+)
+@click.option(
+    "--kbcut",
+    "--kbcut",
+    metavar="Force Constant CUT",
+    type=click.FLOAT,
+    default=0.,
+    show_default=True,
+    help="Trimming the bonds only if kb greater than kbcut",
 )
 @click.option(
     "-l",
@@ -88,34 +100,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     show_default=True,
     help="Temperature of simulation",
 )
-@click.option(
-    "-n",
-    "--ncycles",
-    "n_cycles",
-    metavar="NCYCLES",
-    type=click.IntRange(1, None, clamp=True),
-    default=400,
-    show_default=True,
-    help="Number of simulation cycles",
-)
-@click.option(
-    "-m",
-    "--minval",
-    "low_bound",
-    metavar="LOW_BOUND",
-    type=click.FLOAT,
-    default=0.0,
-    show_default=True,
-    help="Lower bound Kb value. Less than this values is set 0"
-)
-@click.option(
-    "--tol",
-    metavar="TOL",
-    type=click.FLOAT,
-    default=1.e-3,
-    show_default=True,
-    help="Fluct diff tolerance level between simulations",
-)
+
 @click.option(
     "-p",
     "--prefix",
@@ -156,24 +141,52 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 @click.option(
     "--restart",
     is_flag=True,
-    help="Restart simulation",
+    help="Restart Fluctuation Matching using the trimmed topology",
 )
-def cli(
-        topology,
-        trajectory,
+@click.option(
+    "-n",
+    "--ncycles",
+    "n_cycles",
+    metavar="NCYCLES",
+    type=click.IntRange(1, None, clamp=True),
+    default=300,
+    show_default=True,
+    help="Number of simulation cycles",
+)
+@click.option(
+    "-m",
+    "--minval",
+    "low_bound",
+    metavar="LOW_BOUND",
+    type=click.FLOAT,
+    default=0.,
+    show_default=True,
+    help="Lower bound Kb value. Less than this values is set 0"
+)
+@click.option(
+    "--tol",
+    metavar="TOL",
+    type=click.FLOAT,
+    default=1.e-3,
+    show_default=True,
+    help="Fluct difference tolerance between simulations",
+)
+def cli(rcut,
+        dcut,
+        kbcut,
         logfile,
         outdir,
         nma_exec,
         temperature,
-        n_cycles,
-        low_bound,
-        tol,
         prefix,
         charmm_version,
         extended,
         resid,
         nonbonded,
         restart,
+        n_cycles,
+        tol,
+        low_bound,
 ):
     logging.config.dictConfig({
         "version": 1,
@@ -212,6 +225,7 @@ def cli(
     logger = logging.getLogger(__name__)
 
     kwargs = dict(
+
         prefix=prefix,
         outdir=outdir,
         temperature=temperature,
@@ -219,11 +233,43 @@ def cli(
         extended=extended,
         resid=resid,
         nonbonded=nonbonded,
-    )
-    cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
 
+    )
+
+    logger.info("Tuning FM topology Started")
+    # Run atomic fluctuations of NMA and QHA using CHARMM
+    af = atomfluc_rmsf.AtomicFluctuations(**kwargs)
+    af.run_atomic_fluct(charmm_exec=nma_exec)
+    logger.info("Computing fluctuation difference")
+    fluct_diff = af.get_rmsf_diff_qha_nma()
+
+    kwargs.update(dict(
+        rcut=rcut,
+        dcut=dcut,
+        kbcut=kbcut)
+    )
+
+    # Tuning Topology based on distance cutoff
+    logger.info("Trimming bondlists based on dcut")
+    tunefm = tune_topology.TopologyTuning(**kwargs)
+    tunefm.tune_topology(fluct_diff)
+
+    # Run FM in trimmed folder
+
+    writedir = os.path.join(outdir, "trimmed")
+
+    kwargs.update(
+        dict(restart=restart,
+             tol=tol,
+             n_cycles=n_cycles,
+             low_bound=low_bound,
+             outdir=writedir)
+    )
+
+    #  Run Fluctuation Matching for the trimmed topolgy untill bonds converge
+    cfm = charmmfluctmatch.CharmmFluctMatch(**kwargs)
     logger.info("Initializing the parameters.")
     cfm.initialize(nma_exec=nma_exec, restart=restart)
-    logger.info("Running fluctuation matching.")
+    logger.info("Running fluctuation matching with new trimmed topology")
     cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles, low_bound=low_bound)
     logger.info("Fluctuation matching successfully completed.")

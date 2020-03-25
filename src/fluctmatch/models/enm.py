@@ -50,7 +50,7 @@ class Enm(ModelBase):
         self._rmax = kwargs.pop("rmax", 10.)
         super().__init__(*args, **kwargs)
         self._initialize(*args, **kwargs)
-
+        print("in init:", self._rmax)
     def __repr__(self):
         message = "<CG Universe with {} beads".format(self.atoms.n_atoms)
         try:
@@ -84,12 +84,14 @@ class Enm(ModelBase):
             self._add_impropers()
 
     def _add_bonds(self):
+        print(self.atu.bonds)
         positions = fmutils.AverageStructure(self.atu.atoms).run().result
         distmat = distance_array(positions, positions, backend="OpenMP")
         if self._rmin > 0.:
             a0, a1 = np.where((distmat >= self._rmin) &
                               (distmat <= self._rmax))
         else:
+            print(self._rmax)
             a0, a1 = np.where((distmat > self._rmin) & (distmat <= self._rmax))
         skeleton_bonds = set([(skeleton[0].ix, skeleton[1].ix) for skeleton in self.atu.bonds])
         rmax_bonds = set([(x, y) for x, y in zip(a0, a1) if y > x])

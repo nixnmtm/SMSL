@@ -49,7 +49,7 @@ nma = ("""
     endif
     read coor card name "{crd_file}"
     coor copy comp
-
+     
     skip all excl bond
     update inbfrq 0
 
@@ -66,7 +66,7 @@ nma = ("""
     write coor card name "{nma_crd}"
 
     stream "{stream_file}"
-
+    
     ic fill
     write ic unit @fileu card resid name "{avg_ic}"
 

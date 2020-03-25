@@ -36,6 +36,7 @@ import numpy as np
 import pandas as pd
 import MDAnalysis as mda
 import MDAnalysis.analysis.base as analysis
+from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch.data import charmm_split
 
@@ -237,18 +238,10 @@ def write_charmm_files(universe,
     # Write the new trajectory in Gromacs XTC format.
     if write_traj:
         universe.trajectory.rewind()
-        if math.isclose(universe.trajectory.time, 1.0, rel_tol=1e-6):
-            istart = universe.trajectory.time
-        elif math.isclose(universe.trajectory.time, 0.0, rel_tol=1e-6):
-            istart = universe.trajectory.next().time  # if 0.0, then next time will be 1.0000000328495406
-        else:
-            logger.warning("Starting frame of the trajectory is not 1, "
-                           "Please do check it.")
-
         with mda.Writer(
             native_str(filenames["traj_file"]),
             universe.atoms.n_atoms,
-            istart=istart,
+            istart=1.0,
                 remarks="Written by fluctmatch.") as trj:
             logger.info("Writing the trajectory {}...".format(
                 filenames["traj_file"]))
@@ -342,7 +335,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
 
     if index is not None:
         command = [
-            gromacs_exec,
+            "gmx",
             "trjconv",
             "-s",
             topology,

@@ -245,15 +245,11 @@ class Nucleic6(ModelBase):
         self.atoms.charges = 0.
 
     def _set_masses(self):
-        # self.atoms.masses = self.atu.select_atoms("name C4'")[0].mass
-        self.atoms.masses = 1.0
+        self.atoms.masses = 1.0  # Nix
 
+# Nix Test
 class Nucleic6SM(ModelBase):
-    """
-    
-    Nucleic6SiteMass:
-    A universe accounting for six sites involved with hydrogen bonding, mass defined based on sites(not constant 1)
-    
+    """Nuclei6SiteMass - A universe accounting for six sites involved with hydrogen bonding and mass determined fromatoms seleted for each site(not constant 1).
     """
     model = "NUC6SM"
     describe = "Phosphate, C2', C4', and 3 sites on the nucleotide"

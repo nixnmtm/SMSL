@@ -62,7 +62,7 @@ def create_empty_parameters(universe, **kwargs):
 
     # Atoms
     types = (universe.atoms.types
-             if np.issubdtype(universe.atoms.types.dtype, np.signedinteger) else
+             if np.issubdtype(universe.atoms.types.dtype, np.signedinteger) else # Nix added to Master branch
              np.arange(universe.atoms.n_atoms) + 1)
     atoms = [types, universe.atoms.names, universe.atoms.masses]
     parameters["ATOMS"] = pd.concat([pd.DataFrame(_) for _ in atoms], axis=1)

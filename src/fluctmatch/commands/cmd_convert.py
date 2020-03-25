@@ -230,7 +230,7 @@ def cli(
         return
 
     kwargs = dict()
-
+    
     kwargs.update(dict(rmin=rmin, rmax=rmax,))
 
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)

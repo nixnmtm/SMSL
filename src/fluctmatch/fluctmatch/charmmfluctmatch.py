@@ -153,6 +153,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         super().__init__(*args, **kwargs)
         self.dynamic_params = dict()
         self.filenames = dict(
+            ind_file=path.join(self.outdir, "index.txt"),
             init_input=path.join(self.outdir, "fluctinit.inp"),
             init_log=path.join(self.outdir, "fluctinit.log"),
             init_avg_ic=path.join(self.outdir, "init.average.ic"),
@@ -219,7 +220,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             Reinitialize the object by reading files instead of doing initial
             calculations.
         """
-        if not restart:
+        self.restart = restart
+        if not self.restart:
             # Write CHARMM input file.
             if not path.exists(self.filenames["init_input"]):
                 version = self.kwargs.get("charmm_version", 41)
@@ -252,7 +254,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 avg_bonds = icfile.read().set_index(self.bond_def)
             target = pd.concat([std_bonds["r_IJ"], avg_bonds["r_IJ"]], axis=1)
             target.reset_index(inplace=True)
-
             logger.info("Calculating the initial CHARMM parameters...")
             universe = mda.Universe(
                 self.filenames["xplor_psf_file"], self.filenames["crd_file"]
@@ -274,6 +275,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     self.filenames["dynamic_prm"]))
                 prm.write(self.dynamic_params)
         else:
+            print("FM Restarted")
             if not path.exists(self.filenames["fixed_prm"]):
                 self.initialize(nma_exec, restart=False)
             try:
@@ -288,22 +290,25 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 with reader(self.filenames["init_avg_ic"]) as init_avg:
                     avg_table = init_avg.read().set_index(
                         self.bond_def)["r_IJ"]
+
                 with reader(self.filenames["init_fluct_ic"]) as init_fluct:
                     fluct_table = (init_fluct.read().set_index(
                         self.bond_def)["r_IJ"])
                 table = pd.concat([fluct_table, avg_table], axis=1)
-
+                
                 # Set the target fluctuation values.
                 logger.info("Files loaded successfully...")
                 self.target = copy.deepcopy(self.parameters)
                 self.target["BONDS"].set_index(self.bond_def, inplace=True)
-                table.columns = self.target["BONDS"].columns
+                cols = self.target["BONDS"].columns
+                table.columns = cols
                 self.target["BONDS"] = table.copy(deep=True).reset_index()
+
             except (FileNotFoundError, IOError):
                 raise_with_traceback(
                     (IOError("Some files are missing. Unable to restart.")))
 
-    def run(self, nma_exec=None, tol=1.e-4, n_cycles=300, low_bound=0.):
+    def run(self, nma_exec=None, tol=1.e-3, n_cycles=300, low_bound=0.):
         """Perform a self-consistent fluctuation matching.
 
         Parameters
@@ -311,7 +316,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         nma_exec : str
             executable file for normal mode analysis
         tol : float, optional
-            error tolerance
+            fluct difference tolerance
         n_cycles : int, optional
             number of fluctuation matching cycles
         low_bound  : float, optional
@@ -344,7 +349,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             version = self.kwargs.get("charmm_version", 41)
             dimension = ("dimension chsize 1000000" if version >= 36 else "")
             with open(
-                    self.filenames["charmm_input"], mode="wb") as charmm_file:
+                self.filenames["charmm_input"], mode="wb") as charmm_file:
                 logger.info("Writing CHARMM input file.")
                 charmm_inp = charmm_nma.nma.format(
                     temperature=self.temperature,
@@ -378,15 +383,23 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     data, [
                         self.error_hdr,
                     ],
-                    fmt=native_str("%15s"),   # Nix
+                    fmt=native_str("%15s"),  # Nix
                     delimiter=native_str(""))
         self.error["step"] += 1
 
+        # Initiate an all true index data, for preserving bond convergence 
+        if not self.restart:
+            temp = ~self.target["BONDS"]["Kb"].isna()
+            temp = temp.reset_index()
+            self.converge_bnd_list = temp.iloc[:,2]
+
+        # Start self-consistent iteration for Fluctuation Matching
         # Run simulation
         logger.info(f"Starting fluctuation matching--{n_cycles} iterations to run")
-        logger.info(f"Lower bound after 85% iteration is set to {low_bound}")
+        if low_bound != 0.:
+            logger.info(f"Lower bound after 75% iteration is set to {low_bound}")
         st = time.time()
-
+        fdiff = []
         for i in range(n_cycles):
             ct = time.time()
             self.error["step"] = i + 1
@@ -400,16 +413,29 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             self.parameters["BONDS"].set_index(self.bond_def, inplace=True)
 
             # Read the average bond distance.
-            with reader(self.filenames["avg_ic"]) as intcor:
-                avg_ic = intcor.read().set_index(self.bond_def)["r_IJ"]
-
+            with reader(self.filenames["avg_ic"]) as icavg:
+                avg_ic = icavg.read().set_index(self.bond_def)["r_IJ"]
+            
             # Read the bond fluctuations.
-            with reader(self.filenames["fluct_ic"]) as intcor:
-                fluct_ic = intcor.read().set_index(self.bond_def)["r_IJ"]
+            with reader(self.filenames["fluct_ic"]) as icfluct:
+                fluct_ic = icfluct.read().set_index(self.bond_def)["r_IJ"]
 
             vib_ic = pd.concat([fluct_ic, avg_ic], axis=1)
             vib_ic.columns = bond_values
-
+            logger.info(f"Checking for bondlist convergence")
+            fluct_diff = np.abs(vib_ic[bond_values[0]] - self.target["BONDS"][bond_values[0]])
+            fdiff.append(fluct_diff)
+            fluct_diff = fluct_diff.reset_index()
+            tmp = self.parameters["BONDS"][bond_values[0]].reset_index()
+            
+            if not self.restart:
+                self.converge_bnd_list &= ((fluct_diff.iloc[:, 2] > tol) & (tmp.iloc[:, 2] > 0))
+            else:
+                if i == 0:
+                    self.converge_bnd_list = ((fluct_diff.iloc[:, 2] > tol) & (tmp.iloc[:, 2] > 0))
+                else:
+                    self.converge_bnd_list &= ((fluct_diff.iloc[:, 2] > tol) & (tmp.iloc[:, 2] > 0))
+            
             # Calculate the r.m.s.d. between fluctuation and distances
             # compared with the target values.
             vib_error = self.target["BONDS"] - vib_ic
@@ -422,14 +448,16 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             target = self.target["BONDS"].apply(np.reciprocal).apply(np.square)
             optimized -= target
             optimized *= self.BOLTZ * self.KFACTOR
+            
+            # update  bond list
             vib_ic[bond_values[0]] = (self.parameters["BONDS"][bond_values[0]]
                                       - optimized[bond_values[0]])
-            vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
-                vib_ic[bond_values[0]] >= 0., 0.))
-            if i > int(n_cycles*0.85):
+            vib_ic[bond_values[0]] = (
+                vib_ic[bond_values[0]].where(vib_ic[bond_values[0]] >= 0., 0.))  # set negative to zero
+
+            if low_bound > 0. and i > int(n_cycles*0.75):
                 logger.info(f"Fluctuation matching cycle {i}: low bound is {low_bound}")
-                vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(
-                    vib_ic[bond_values[0]] >= low_bound, 0.))
+                vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(vib_ic[bond_values[0]] >= low_bound, 0.))
 
             # r.m.s.d. between previous and current force constant
             diff = self.dynamic_params["BONDS"] - vib_ic
@@ -438,9 +466,10 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             self.error[self.error.columns[1]] = diff.values[0]
 
             # Update the parameters and write to file.
-            self.parameters["BONDS"][bond_values[0]] = (
-                vib_ic[bond_values[0]].copy(deep=True))
-            self.dynamic_params["BONDS"] = vib_ic.copy(deep=True)
+            self.parameters["BONDS"][bond_values[0]] = vib_ic[bond_values[0]]
+            self.dynamic_params["BONDS"][bond_values[0]] = vib_ic[bond_values[0]]
+            self.dynamic_params["BONDS"][bond_values[1]] = vib_ic[bond_values[1]]
+
             self.parameters["BONDS"].reset_index(inplace=True)
             self.dynamic_params["BONDS"].reset_index(inplace=True)
             with mda.Writer(self.filenames["fixed_prm"], **self.kwargs) as prm:
@@ -448,24 +477,35 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             with mda.Writer(self.filenames["dynamic_prm"],
                             **self.kwargs) as prm:
                 prm.write(self.dynamic_params)
-
+             
             # Update the error values.
             with open(self.filenames["error_data"], "ab") as error_file:
                 np.savetxt(
                     error_file,
                     self.error,
-                    fmt=native_str("%15d%15.6f%15.6f%15.6f", ),   # Nix
+                    fmt=native_str("%15d%15.6f%15.6f%15.6f", ),  # Nix
                     delimiter=native_str(""),
                 )
             logger.info("Fluctuation matching cycle {} completed in {:.6f}".format(
                 i, time.time() - ct))
-            if (self.error[self.error.columns[1]] < tol).bool():
-                break
-
+            logger.info(f"{self.converge_bnd_list.sum()} not converged out of {len(self.converge_bnd_list)}")
+             
+            if self.converge_bnd_list.sum() <= len(self.converge_bnd_list)*0.003:
+                # if bonds to converge is less than 0.3% of total bonds, use relative difference as criteria
+                # as it takes more than 100 iterations for these 0.3%  bonds to converge.
+                relative_diff = (fluct_diff.iloc[:, 2] - tol)/tol
+                converged = self.converge_bnd_list & ((relative_diff < 10) & (tmp.iloc[:, 2] > 0))
+                if converged.sum() == 0:
+                    logger.info("All bonds converged, exiting")
+                    break
+        # Write all bonds convergence list
+        fluct_conv = pd.concat(fdiff, axis=1).round(6)
+        fluct_conv.columns = [j for j in range(1, i+2)]
+        fluct_conv.to_csv("bonds_convergence.txt") 
         logger.info("Fluctuation matching completed in {:.6f}".format(
             time.time() - st))
         self.target["BONDS"].reset_index(inplace=True)
-
+        
     def calculate_thermo(self, nma_exec=None):
         """Calculate the thermodynamic properties of the trajectory.
 
@@ -493,7 +533,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             dimension = ("dimension chsize 500000 maxres 3000000"
                          if version >= 36 else "")
             with open(
-                    self.filenames["thermo_input"], mode="wb") as charmm_file:
+                self.filenames["thermo_input"], mode="wb") as charmm_file:
                 logger.info("Writing CHARMM input file.")
                 charmm_inp = charmm_thermo.thermodynamics.format(
                     trajectory=path.join(self.outdir, self.args[-1]),
