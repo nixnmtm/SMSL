@@ -31,9 +31,10 @@ from MDAnalysis.lib.util import which
 from fluctmatch.fluctmatch import tune_topology
 from fluctmatch.fluctmatch import atomfluc_rmsf
 from fluctmatch.fluctmatch import charmmfluctmatch
+from shutil import copyfile
 
 
-@click.command("tune_fluc", short_help="Run Atomic Fluc")
+@click.command("tune_fluc", short_help="Run fluctuation matching with tuned topology")
 @click.option(
     "--rcut",
     "--rcut",
@@ -48,7 +49,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "--dcut",
     metavar="DISTANCE CUT",
     type=click.FLOAT,
-    default=6.5,
+    default=6.0,
     show_default=True,
     help="Trimming the topology to distance cut off, "
          "usually atleast 1 Ang less than the overall rmax",
@@ -257,6 +258,9 @@ def cli(rcut,
     # Run FM in trimmed folder
 
     writedir = os.path.join(outdir, "trimmed")
+    src = path.join(outdir, "fluctmatch.cor")
+    dst = path.join(writedir, "fluctmatch.cor")
+    copyfile(src, dst)
 
     kwargs.update(
         dict(restart=restart,

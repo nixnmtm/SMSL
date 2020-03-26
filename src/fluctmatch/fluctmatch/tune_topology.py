@@ -32,7 +32,7 @@ class TopologyTuning(object):
         self.outdir = kwargs.get("outdir", os.getcwd())
         self.prefix = kwargs.get("prefix", "fluctmatch")
         self.rmsf_cutoff = kwargs.pop("rcut", 0.)
-        self.dist_cutoff = kwargs.pop("dcut", 6.5)
+        self.dist_cutoff = kwargs.pop("dcut", 6.0)
         self.kb_cutoff = kwargs.pop("kbcut", 0.)
 
         self.pair_idx = ["I", "J"]

@@ -489,12 +489,13 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.info("Fluctuation matching cycle {} completed in {:.6f}".format(
                 i, time.time() - ct))
             logger.info(f"{self.converge_bnd_list.sum()} not converged out of {len(self.converge_bnd_list)}")
-             
             if self.converge_bnd_list.sum() <= len(self.converge_bnd_list)*0.003:
                 # if bonds to converge is less than 0.3% of total bonds, use relative difference as criteria
                 # as it takes more than 100 iterations for these 0.3%  bonds to converge.
                 relative_diff = (fluct_diff.iloc[:, 2] - tol)/tol
                 converged = self.converge_bnd_list & ((relative_diff < 10) & (tmp.iloc[:, 2] > 0))
+                logger.info(f"Relative difference: {converged.sum()} "
+                            f"not converged out of {len(self.converge_bnd_list)}")
                 if converged.sum() == 0:
                     logger.info("All bonds converged, exiting")
                     break

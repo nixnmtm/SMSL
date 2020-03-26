@@ -44,7 +44,6 @@ class AtomicFluctuations(object):
         self.prefix = self.kwargs.get("prefix", "fluctmatch")
         self.temperature = self.kwargs.get("temperature", 300.0)
 
-        self.outdir = self.outdir
         self.filenames = dict(
             qha_input=path.join(self.outdir, "afqha.inp"),
             nma_input=path.join(self.outdir, "afnma.inp"),
