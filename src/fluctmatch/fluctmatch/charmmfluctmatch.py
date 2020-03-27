@@ -295,7 +295,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     fluct_table = (init_fluct.read().set_index(
                         self.bond_def)["r_IJ"])
                 table = pd.concat([fluct_table, avg_table], axis=1)
-                
+
                 # Set the target fluctuation values.
                 logger.info("Files loaded successfully...")
                 self.target = copy.deepcopy(self.parameters)
@@ -387,11 +387,11 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     delimiter=native_str(""))
         self.error["step"] += 1
 
-        # Initiate an all true index data, for preserving bond convergence 
+        # Initiate an all true index data, for preserving bond convergence
         if not self.restart:
             temp = ~self.target["BONDS"]["Kb"].isna()
             temp = temp.reset_index()
-            self.converge_bnd_list = temp.iloc[:,2]
+            self.converge_bnd_list = temp.iloc[:, 2]
 
         # Start self-consistent iteration for Fluctuation Matching
         # Run simulation
@@ -415,7 +415,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             # Read the average bond distance.
             with reader(self.filenames["avg_ic"]) as icavg:
                 avg_ic = icavg.read().set_index(self.bond_def)["r_IJ"]
-            
+
             # Read the bond fluctuations.
             with reader(self.filenames["fluct_ic"]) as icfluct:
                 fluct_ic = icfluct.read().set_index(self.bond_def)["r_IJ"]
@@ -427,7 +427,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             fdiff.append(fluct_diff)
             fluct_diff = fluct_diff.reset_index()
             tmp = self.parameters["BONDS"][bond_values[0]].reset_index()
-            
+
             if not self.restart:
                 self.converge_bnd_list &= ((fluct_diff.iloc[:, 2] > tol) & (tmp.iloc[:, 2] > 0))
             else:
@@ -435,7 +435,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                     self.converge_bnd_list = ((fluct_diff.iloc[:, 2] > tol) & (tmp.iloc[:, 2] > 0))
                 else:
                     self.converge_bnd_list &= ((fluct_diff.iloc[:, 2] > tol) & (tmp.iloc[:, 2] > 0))
-            
+
             # Calculate the r.m.s.d. between fluctuation and distances
             # compared with the target values.
             vib_error = self.target["BONDS"] - vib_ic
@@ -448,14 +448,14 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             target = self.target["BONDS"].apply(np.reciprocal).apply(np.square)
             optimized -= target
             optimized *= self.BOLTZ * self.KFACTOR
-            
+
             # update  bond list
             vib_ic[bond_values[0]] = (self.parameters["BONDS"][bond_values[0]]
                                       - optimized[bond_values[0]])
             vib_ic[bond_values[0]] = (
                 vib_ic[bond_values[0]].where(vib_ic[bond_values[0]] >= 0., 0.))  # set negative to zero
 
-            if low_bound > 0. and i > int(n_cycles*0.75):
+            if low_bound > 0. and i > int(n_cycles * 0.75):
                 logger.info(f"Fluctuation matching cycle {i}: low bound is {low_bound}")
                 vib_ic[bond_values[0]] = (vib_ic[bond_values[0]].where(vib_ic[bond_values[0]] >= low_bound, 0.))
 
@@ -477,7 +477,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             with mda.Writer(self.filenames["dynamic_prm"],
                             **self.kwargs) as prm:
                 prm.write(self.dynamic_params)
-             
+
             # Update the error values.
             with open(self.filenames["error_data"], "ab") as error_file:
                 np.savetxt(
@@ -489,23 +489,31 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.info("Fluctuation matching cycle {} completed in {:.6f}".format(
                 i, time.time() - ct))
             logger.info(f"{self.converge_bnd_list.sum()} not converged out of {len(self.converge_bnd_list)}")
-            if self.converge_bnd_list.sum() <= len(self.converge_bnd_list)*0.003:
+
+            if self.converge_bnd_list.sum() <= len(self.converge_bnd_list.values.tolist()) * 0.003:
                 # if bonds to converge is less than 0.3% of total bonds, use relative difference as criteria
                 # as it takes more than 100 iterations for these 0.3%  bonds to converge.
-                relative_diff = (fluct_diff.iloc[:, 2] - tol)/tol
-                converged = self.converge_bnd_list & ((relative_diff < 10) & (tmp.iloc[:, 2] > 0))
-                logger.info(f"Relative difference: {converged.sum()} "
-                            f"not converged out of {len(self.converge_bnd_list)}")
-                if converged.sum() == 0:
-                    logger.info("All bonds converged, exiting")
+                relative_diff = (fluct_diff.iloc[:, 2] - tol) / tol
+
+                ### To know the late converged bonds uncomment the below 5 lines ###
+
+                # late_converged = pd.DataFrame()
+                # indx = self.converge_bnd_list[self.converge_bnd_list].index.values
+                # late_converged = pd.concat([fluct_diff.loc[indx], relative_diff.loc[indx]], axis=1)
+                # late_converged.columns = ["I", "J", "fluct_diff_Kb", "relative_diff_kb"]
+                # print(late_converged)
+
+                self.converge_bnd_list = self.converge_bnd_list & (relative_diff > 5)
+                if self.converge_bnd_list.sum() == 0:
+                    logger.info("Checking relative difference: All bonds converged, exiting")
                     break
         fluct_conv = pd.concat(fdiff, axis=1).round(6)
-        fluct_conv.columns = [j for j in range(1, i+2)]
-        fluct_conv.to_csv(self.filenames["bond_convergence"]) 
+        fluct_conv.columns = [j for j in range(1, i + 2)]
+        fluct_conv.to_csv(self.filenames["bond_convergence"])
         logger.info("Fluctuation matching completed in {:.6f}".format(
             time.time() - st))
         self.target["BONDS"].reset_index(inplace=True)
-        
+
     def calculate_thermo(self, nma_exec=None):
         """Calculate the thermodynamic properties of the trajectory.
 
