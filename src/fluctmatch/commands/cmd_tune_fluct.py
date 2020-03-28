@@ -34,7 +34,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 from shutil import copyfile
 
 
-@click.command("tune_fluc", short_help="Run fluctuation matching with tuned topology")
+@click.command("tune_fluc", short_help="Tune topology and run fluctmatch")
 @click.option(
     "--rcut",
     "--rcut",
@@ -257,7 +257,7 @@ def cli(rcut,
 
     # Run FM in trimmed folder
 
-    writedir = os.path.join(outdir, "trimmed")
+    writedir = os.path.join(outdir, f"trimmed_{dcut}")
     src = path.join(outdir, "fluctmatch.cor")
     dst = path.join(writedir, "fluctmatch.cor")
     copyfile(src, dst)

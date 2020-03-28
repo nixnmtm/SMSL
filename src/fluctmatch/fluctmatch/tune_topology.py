@@ -53,7 +53,7 @@ class TopologyTuning(object):
 
         # Attempt to create the necessary subdirectory
         try:
-            self.writedir = os.path.join(self.outdir, "trimmed")
+            self.writedir = os.path.join(self.outdir, f"trimmed_{self.dist_cutoff}")
             os.makedirs(self.writedir)
         except FileExistsError:
             # directory already exists
