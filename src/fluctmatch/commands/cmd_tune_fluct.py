@@ -36,6 +36,24 @@ from shutil import copyfile
 
 @click.command("tune_fluc", short_help="Tune topology and run fluctmatch")
 @click.option(
+    "-s",
+    "topology",
+    metavar="FILE",
+    default=path.join(os.getcwd(), "md.tpr"),
+    show_default=True,
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
+)
+@click.option(
+    "-f",
+    "trajectory",
+    metavar="FILE",
+    default=path.join(os.getcwd(), "md.xtc"),
+    show_default=True,
+    type=click.Path(exists=False, file_okay=True, resolve_path=True),
+    help="Trajectory file (e.g. xtc trr dcd)",
+)
+@click.option(
     "--rcut",
     "--rcut",
     metavar="RMSF CUT",
@@ -101,7 +119,6 @@ from shutil import copyfile
     show_default=True,
     help="Temperature of simulation",
 )
-
 @click.option(
     "-p",
     "--prefix",
@@ -150,7 +167,7 @@ from shutil import copyfile
     "n_cycles",
     metavar="NCYCLES",
     type=click.IntRange(1, None, clamp=True),
-    default=300,
+    default=200,
     show_default=True,
     help="Number of simulation cycles",
 )
@@ -172,7 +189,9 @@ from shutil import copyfile
     show_default=True,
     help="Fluct difference tolerance between simulations",
 )
-def cli(rcut,
+def cli(topology,
+        trajectory,
+        rcut,
         dcut,
         kbcut,
         logfile,
@@ -188,7 +207,7 @@ def cli(rcut,
         n_cycles,
         tol,
         low_bound,
-):
+        ):
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,  # this fixes the problem
@@ -200,7 +219,7 @@ def cli(rcut,
             "detailed": {
                 "class": "logging.Formatter",
                 "format":
-                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                    "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
                 "datefmt": "%m-%d-%y %H:%M",
             },
         },
@@ -226,7 +245,6 @@ def cli(rcut,
     logger = logging.getLogger(__name__)
 
     kwargs = dict(
-
         prefix=prefix,
         outdir=outdir,
         temperature=temperature,
@@ -239,7 +257,7 @@ def cli(rcut,
 
     logger.info("Tuning FM topology Started")
     # Run atomic fluctuations of NMA and QHA using CHARMM
-    af = atomfluc_rmsf.AtomicFluctuations(**kwargs)
+    af = atomfluc_rmsf.AtomicFluctuations(topology, trajectory, **kwargs)
     af.run_atomic_fluct(charmm_exec=nma_exec)
     logger.info("Computing fluctuation difference")
     fluct_diff = af.get_rmsf_diff_qha_nma()
@@ -252,7 +270,7 @@ def cli(rcut,
 
     # Tuning Topology based on distance cutoff
     logger.info("Trimming bondlists based on dcut")
-    tunefm = tune_topology.TopologyTuning(**kwargs)
+    tunefm = tune_topology.TopologyTuning(trajectory, **kwargs)
     tunefm.tune_topology(fluct_diff)
 
     # Run FM in trimmed folder
@@ -271,7 +289,7 @@ def cli(rcut,
     )
 
     #  Run Fluctuation Matching for the trimmed topolgy untill bonds converge
-    cfm = charmmfluctmatch.CharmmFluctMatch(**kwargs)
+    cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
     logger.info("Initializing the parameters.")
     cfm.initialize(nma_exec=nma_exec, restart=restart)
     logger.info("Running fluctuation matching with new trimmed topology")

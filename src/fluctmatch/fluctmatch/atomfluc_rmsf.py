@@ -38,12 +38,14 @@ class AtomicFluctuations(object):
 
 
     """
-    def __init__(self, **kwargs):
+    def __init__(self, topology, trajectory, **kwargs):
         self.kwargs = kwargs
         self.outdir = self.kwargs.get("outdir", os.getcwd())
         self.prefix = self.kwargs.get("prefix", "fluctmatch")
         self.temperature = self.kwargs.get("temperature", 300.0)
+        self.trajectory = trajectory
 
+        self.outdir = self.outdir
         self.filenames = dict(
             qha_input=path.join(self.outdir, "afqha.inp"),
             nma_input=path.join(self.outdir, "afnma.inp"),
@@ -69,8 +71,7 @@ class AtomicFluctuations(object):
                                                      "cor"))),
             nma_vib=path.join(self.outdir, ".".join((self.prefix, "vib"))),
             nmacor_file=path.join(self.outdir, "nma_mode1.cor"),
-
-            traj_file=path.join(self.outdir, "cg.dcd"),
+            traj_file=self.trajectory,
         )
 
     def run_atomic_fluct(self, charmm_exec=None):

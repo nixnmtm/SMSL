@@ -94,7 +94,7 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     "n_cycles",
     metavar="NCYCLES",
     type=click.IntRange(1, None, clamp=True),
-    default=400,
+    default=350,
     show_default=True,
     help="Number of simulation cycles",
 )

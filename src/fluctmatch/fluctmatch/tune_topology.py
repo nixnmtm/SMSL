@@ -1,6 +1,4 @@
-
 from future.utils import (PY2, native_str)
-
 
 import os.path as path
 import os
@@ -17,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class TopologyTuning(object):
-
     """
     Tune Topology based on the fluctuation difference, distance cutoff and force constant.
 
@@ -27,14 +24,14 @@ class TopologyTuning(object):
 
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, trajectory, **kwargs):
 
         self.outdir = kwargs.get("outdir", os.getcwd())
         self.prefix = kwargs.get("prefix", "fluctmatch")
         self.rmsf_cutoff = kwargs.pop("rcut", 0.)
-        self.dist_cutoff = kwargs.pop("dcut", 6.0)
+        self.dist_cutoff = kwargs.pop("dcut", 6.5)
         self.kb_cutoff = kwargs.pop("kbcut", 0.)
-
+        self.trajectory = trajectory
         self.pair_idx = ["I", "J"]
 
         self.filenames = dict(
@@ -46,7 +43,7 @@ class TopologyTuning(object):
             xplor_psf_file=path.join(self.outdir, ".".join((self.prefix, "xplor", "psf"))),
             stream_file=path.join(self.outdir, ".".join((self.prefix, "stream"))),
             topology_file=path.join(self.outdir, ".".join((self.prefix, "rtf"))),
-            traj_file=path.join(self.outdir, "cg.dcd"),
+            traj_file=self.trajectory,
         )
 
         self.universe = mda.Universe(self.filenames["xplor_psf_file"], self.filenames["traj_file"])
