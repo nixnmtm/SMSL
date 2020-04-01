@@ -80,7 +80,9 @@ class ParamTable(object):
                  ressep=3,
                  datadir=path.curdir,
                  start=None,
-                 end=None):
+                 end=None,
+                 trimmed=False,
+                 trimcut=None):
         """
         Parameters
         ----------
@@ -92,6 +94,14 @@ class ParamTable(object):
             Number of residues to exclude from interactions.
         datadir : str, optional
             Directory with data subdirectories
+        start : str, optional
+            Start data directory
+        end : str, optional
+            End data directory
+        trimmed : bool, optional
+            Look for trimmed folder
+        trimcut : float, optional
+            trimmed flag requires trim cutoff value
         """
         self._prefix = prefix
         self._tbltype = tbltype
@@ -104,6 +114,8 @@ class ParamTable(object):
         )
         self.start = start
         self.end = end
+        self.trimmed = trimmed
+        self.trimcut = trimcut
 
     def __add__(self, other):
         return self.table.add(other.table, fill_value=0.0)
@@ -157,6 +169,10 @@ class ParamTable(object):
         """
         directories = glob.iglob(path.join(self._datadir, "*"))
 
+        if self.trimmed is True:
+            if self.trimcut is None:
+                raise ValueError('trimmed flag requires trimcut, please check ')
+
         if self.start is not None and self.end is not None:
             directories = []
             for dirs in glob.iglob(path.join(self._datadir, "*")):
@@ -167,7 +183,11 @@ class ParamTable(object):
                     continue  # not numeric
                 if self.start <= number <= self.end:
                     # process file
-                    directories.append(path.join(self._datadir, str(number)))
+                    if self.trimmed:
+                        pathbase = path.join(str(number), f"trimmed_{self.trimcut}")
+                        directories.append(path.join(self._datadir, pathbase))
+                    else:
+                        directories.append(path.join(self._datadir, str(number)))
 
         create_table = functools.partial(
             _create_table,

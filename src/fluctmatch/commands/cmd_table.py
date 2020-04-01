@@ -111,14 +111,37 @@ from fluctmatch.analysis import paramtable
     show_default=True,
     type=click.IntRange(0, None, clamp=True),
     help="End at given window directory")
-def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end):
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+)
+@click.option(
+    "--trimmed",
+    metavar="TRIMMED",
+    type=click.BOOL,
+    default=False,
+    show_default=True,
+    help="Read from trimmed folder",
+)
+@click.option(
+    "--trimcut",
+    metavar="TRIMMED CUTOFF",
+    type=click.FLOAT,
+    default=None,
+    show_default=True,
+    help="If trimmed True, need trimmed cutoff",
+)
+def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end, trimmed, trimcut):
     pt = paramtable.ParamTable(
         prefix=prefix,
         tbltype=tbltype,
         ressep=ressep,
         datadir=data_dir,
         start=start,
-        end=end
+        end=end,
+        trimmed=trimmed,
+        trimcut=trimcut
     )
     # Setup logger
     logging.config.dictConfig({
