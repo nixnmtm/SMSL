@@ -212,3 +212,4 @@ def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end,
             )
             output.write(table.encode())
             logger.info("Table successfully written.")
+

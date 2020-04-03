@@ -45,6 +45,7 @@ def _create_table(directory,
                   intcor="average.ic",
                   parmfile="fluctmatch.dist.prm",
                   tbltype="Kb",
+                  trimmed=False,
                   verbose=False):
     if path.isdir(directory):
         if verbose:
@@ -63,9 +64,14 @@ def _create_table(directory,
         table = pd.concat([ic_table, prm_table], axis=1)
         table.reset_index(inplace=True)
         table = table.set_index(_index["general"])[tbltype].to_frame()
-        table.columns = [
-            path.basename(directory),
-        ]
+        if trimmed:
+            table.columns = [
+                path.basename(path.dirname(directory)),
+            ]
+        else:
+            table.columns = [
+                path.basename(directory),
+            ]
         return table
 
 
@@ -167,11 +173,13 @@ class ParamTable(object):
         verbose : bool, optional
             Print each directory as it is being processed
         """
-        directories = glob.iglob(path.join(self._datadir, "*"))
 
-        if self.trimmed is True:
+        if self.trimmed:
             if self.trimcut is None:
                 raise ValueError('trimmed flag requires trimcut, please check ')
+            directories = glob.iglob(path.join(self._datadir, f"*/trimmed_{self.trimcut}"))
+        else:
+            directories = glob.iglob(path.join(self._datadir, "*"))
 
         if self.start is not None and self.end is not None:
             directories = []
@@ -181,6 +189,7 @@ class ParamTable(object):
                     number = int(basename)
                 except ValueError:
                     continue  # not numeric
+
                 if self.start <= number <= self.end:
                     # process file
                     if self.trimmed:
@@ -194,6 +203,7 @@ class ParamTable(object):
             intcor=self._filenames["intcor"],
             parmfile=self._filenames["param"],
             tbltype=self._tbltype,
+            trimmed=self.trimmed,
             verbose=verbose,
         )
         pool = mp.Pool()
@@ -285,3 +295,4 @@ class ParamTable(object):
         table = table.reindex(
             index=table.index, columns=np.sort(table.columns))
         return table
+
