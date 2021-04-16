@@ -43,6 +43,7 @@ from fluctmatch.models.solvent import (
     Tip3p,
     Dma,
 )
+from fluctmatch.models.drug import PolarN3
 
 __all__ = [
     "Calpha",
@@ -57,6 +58,7 @@ __all__ = [
     "SolventIons",
     "BioIons",
     "NobleAtoms",
+    "PolarN3"
 ]
 
 logger = logging.getLogger(__name__)
