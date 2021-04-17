@@ -36,7 +36,7 @@ class PolarN3(ModelBase):
     """Create a universe consisting of N, C and polar heavy atoms in N3 biomimmetic drug.
     """
     model = "POLARN3"
-    describe = "c.o.m./c.o.g. of N, C, and polar sidechains of protein"
+    describe = "c.o.m./c.o.g. of N, O, and polar sidechains of the drug"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -72,15 +72,10 @@ class PolarN3(ModelBase):
     def _add_bonds(self):
         bonds = []
 
-        for i in range(1, 6):
+        nlen = 6  # Number of residues in N3
+        for i in range(1, nlen+1):
 
-            if i == 6:
-                bonds.extend([
-                    _ for s in self.segments for _ in zip(
-                        s.atoms.select_atoms(f"name O6").ix,
-                        s.atoms.select_atoms(f"name CB6").ix)
-                ])
-            else:
+            if i < 6:
                 bonds.extend([
                     _ for s in self.segments for _ in zip(
                         s.atoms.select_atoms(f"name N{i}").ix,
@@ -96,18 +91,25 @@ class PolarN3(ModelBase):
                         s.atoms.select_atoms(f"name O{i}").ix,
                         s.atoms.select_atoms(f"name CB{i}").ix)
                 ])
+
             if i < 5:
                 bonds.extend([
                     _ for s in self.segments for _ in zip(
                         s.atoms.select_atoms(f"name O{i}").ix,
                         s.atoms.select_atoms(f"name N{i+1}").ix)
                 ])
-            if i == 5:
-                bonds.extend([
-                    _ for s in self.segments for _ in zip(
-                        s.atoms.select_atoms(f"name O{i}").ix,
-                        s.atoms.select_atoms(f"name O{i + 1}").ix)
-                ])
+
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms(f"name O5").ix,
+                s.atoms.select_atoms(f"name O6").ix)
+        ])
+
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms(f"name O6").ix,
+                s.atoms.select_atoms(f"name CB6").ix)
+        ])
 
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
@@ -121,7 +123,8 @@ class PolarN3(ModelBase):
         CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_mass()
         CA_map["CA5"] = 0.
 
-        for i in range(1, 7):
+        nlen = 6
+        for i in range(1, nlen+1):
             if i == 6:
                 self.atoms.select_atoms(f"name O{i}").masses = self.atu.select_atoms(
                     self._mapping[f"O{i}"]).total_mass()/self.atu.segments.n_segments
