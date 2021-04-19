@@ -118,9 +118,9 @@ class PolarN3A(ModelBase):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
-        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_mass()
-        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_mass()
-        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_mass()
+        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_mass()/2
+        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_mass()/2
+        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_mass()/2
         CA_map["CA5"] = 0.
 
         nlen = 6
@@ -142,9 +142,9 @@ class PolarN3A(ModelBase):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
-        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_charge()
-        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_charge()
-        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_charge()
+        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_charge()/2
+        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_charge()/2
+        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_charge()/2
         CA_map["CA5"] = 0.
 
         nlen = 6
@@ -271,9 +271,9 @@ class PolarN3B(ModelBase):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
-        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_mass()
-        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_mass()
-        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_mass()
+        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_mass()/2
+        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_mass()/2
+        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_mass()/2
         CA_map["CA5"] = 0.
 
         nlen = 6
@@ -290,14 +290,17 @@ class PolarN3B(ModelBase):
                     self._mapping[f"O{i}"]).total_mass() + CA_map[f"CA{i}"])/self.atu.segments.n_segments
                 self.atoms.select_atoms(f"name CB{i}").masses = self.atu.select_atoms(
                     self._mapping[f"CB{i}"]).total_mass()/self.atu.segments.n_segments
+                if i == 5:
+                    self.atoms.select_atoms(f"name CS{i}").masses = self.atu.select_atoms(
+                        self._mapping[f"CS{i}"]).total_mass() / self.atu.segments.n_segments
 
     def _set_charges(self):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
-        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_charge()
-        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_charge()
-        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_charge()
+        CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_charge()/2
+        CA_map["CA3"] = 0.5 * self.atu.select_atoms("resname N3P and name CA12").total_charge()/2
+        CA_map["CA4"] = 0.5 * self.atu.select_atoms("resname N3P and name CA13").total_charge()/2
         CA_map["CA5"] = 0.
 
         nlen = 6
@@ -314,3 +317,6 @@ class PolarN3B(ModelBase):
                     self._mapping[f"O{i}"]).total_charge() + CA_map[f"CA{i}"])/self.atu.segments.n_segments
                 self.atoms.select_atoms(f"name CB{i}").charges = self.atu.select_atoms(
                     self._mapping[f"CB{i}"]).total_charge()/self.atu.segments.n_segments
+                if i == 5:
+                    self.atoms.select_atoms(f"name CS{i}").charges = self.atu.select_atoms(
+                        self._mapping[f"CS{i}"]).total_charge() / self.atu.segments.n_segments
