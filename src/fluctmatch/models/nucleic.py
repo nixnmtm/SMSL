@@ -186,7 +186,7 @@ class Nucleic6(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "name P H5T"
+        self._mapping["P"] = "name P O5'"
         self._mapping["C4'"] = "name C4'"
         self._mapping["C2'"] = "name C2'"
         self._mapping["H1"] = ("(resname ADE DA* RA* and name N6) or "
@@ -197,7 +197,7 @@ class Nucleic6(ModelBase):
             "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name N3)")
         self._mapping["H3"] = (
-            "(resname ADE DA* RA* and name H2) or "
+            "(resname ADE DA* RA* and name N3) or "
             "(resname OXG GUA DG* RG* and name N2) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name O2)")
 
@@ -247,9 +247,11 @@ class Nucleic6(ModelBase):
     def _set_masses(self):
         self.atoms.masses = 1.0  # Nix
 
+
 # Nix Test
 class Nucleic6SM(ModelBase):
-    """Nuclei6SiteMass - A universe accounting for six sites involved with hydrogen bonding and mass determined fromatoms seleted for each site(not constant 1).
+    """Nuclei6SiteMass - A universe accounting for six sites involved with hydrogen bonding and mass determined from
+    atoms seleted for each site (not constant 1).
     """
     model = "NUC6SM"
     describe = "Phosphate, C2', C4', and 3 sites on the nucleotide"
@@ -257,7 +259,7 @@ class Nucleic6SM(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "name P H5T"
+        self._mapping["P"] = "name P O5'"
         self._mapping["C4'"] = "name C4'"
         self._mapping["C2'"] = "name C2'"
         self._mapping["H1"] = ("(resname ADE DA* RA* and name N6) or "
@@ -268,7 +270,7 @@ class Nucleic6SM(ModelBase):
             "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name N3)")
         self._mapping["H3"] = (
-            "(resname ADE DA* RA* and name H2) or "
+            "(resname ADE DA* RA* and name N3) or "
             "(resname OXG GUA DG* RG* and name N2) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name O2)")
 
