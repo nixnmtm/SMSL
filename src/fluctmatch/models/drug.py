@@ -116,6 +116,7 @@ class PolarN3A(ModelBase):
 
     def _set_masses(self):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
+        # /2 is due to two segments
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
         CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_mass()/2
@@ -140,6 +141,7 @@ class PolarN3A(ModelBase):
 
     def _set_charges(self):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
+        # /2 is due to two segments
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
         CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_charge()/2
@@ -264,11 +266,14 @@ class PolarN3B(ModelBase):
                 s.atoms.select_atoms(f"name CB6").ix)
         ])
 
+
+
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         self._generate_from_topology()
 
     def _set_masses(self):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
+        # /2 is due to two segments
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
         CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_mass()/2
@@ -296,6 +301,7 @@ class PolarN3B(ModelBase):
 
     def _set_charges(self):
         # sharing the mass of atom CA to atoms O and N as in protein Polar CG model for amino acids in N3 drug
+        # /2 is due to two segments
         CA_map = OrderedDict()
         CA_map["CA1"] = 0.
         CA_map["CA2"] = 0.5 * self.atu.select_atoms("resname N3P and name CA11").total_charge()/2
