@@ -259,7 +259,8 @@ class Nucleic6SM(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "name P" or "name O5'"
+        self._mapping["P"] = ("(resname D*5 and name O5') or "
+                              "(name P)")
         self._mapping["C4'"] = "name C4'"
         self._mapping["C2'"] = "name C2'"
         self._mapping["H1"] = ("(resname ADE DA* RA* and name N6) or "
