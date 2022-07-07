@@ -45,7 +45,8 @@ _CONVERT = dict(
 
 
 @click.command(
-    "splittraj", short_help="Split a trajectory using Gromacs or CHARMM.")
+    "splittraj", short_help="Split a trajectory using Gromacs or CHARMM, "
+                            "the trajectory input expects to have atleast 5 floating point precision (i.e.) -ndec=5")
 @click.option(
     "--type",
     "program",
