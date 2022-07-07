@@ -259,7 +259,7 @@ class Nucleic6SM(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["P"] = "name P O5'"
+        self._mapping["P"] = "name P" or "name O5'"
         self._mapping["C4'"] = "name C4'"
         self._mapping["C2'"] = "name C2'"
         self._mapping["H1"] = ("(resname ADE DA* RA* and name N6) or "
@@ -270,7 +270,7 @@ class Nucleic6SM(ModelBase):
             "(resname ADE DA* RA* OXG GUA DG* RG* and name N1) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name N3)")
         self._mapping["H3"] = (
-            "(resname ADE DA* RA* and name N3) or "
+            "(resname ADE DA* RA* and name C2) or "
             "(resname OXG GUA DG* RG* and name N2) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name O2)")
 
