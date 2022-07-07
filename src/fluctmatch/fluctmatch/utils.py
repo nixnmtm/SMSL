@@ -332,10 +332,11 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     index = kwargs.get("index")
     outfile = path.join(subdir, kwargs.get("outfile", "aa.xtc"))
     logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
+    precision = kwargs.get("precision", 5)
 
     if index is not None:
         command = [
-            "gmx",
+            gromacs_exec,
             "trjconv",
             "-s",
             topology,
@@ -349,6 +350,8 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             "{:d}".format(start),
             "-e",
             "{:d}".format(stop),
+            "-ndec",
+            "{:d}".format(precision),
         ]
     else:
         command = [
@@ -364,6 +367,8 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             "{:d}".format(start),
             "-e",
             "{:d}".format(stop),
+            "-ndec",
+            "{:d}".format(precision),
         ]
     fd, fpath = tempfile.mkstemp(text=True)
     with mdutil.openany(fpath, "w") as temp:

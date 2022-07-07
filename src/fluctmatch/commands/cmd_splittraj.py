@@ -45,7 +45,8 @@ _CONVERT = dict(
 
 
 @click.command(
-    "splittraj", short_help="Split a trajectory using Gromacs or CHARMM.")
+    "splittraj", short_help="Split a trajectory using Gromacs or CHARMM, "
+                            "the trajectory input expects to have atleast 5 floating point precision (i.e.) -ndec=5")
 @click.option(
     "--type",
     "program",
@@ -152,8 +153,17 @@ _CONVERT = dict(
     type=click.IntRange(2, None, clamp=True),
     help="Size of each subtrajectory",
 )
+@click.option(
+    "-p",
+    "precision",
+    metavar="PRECISION",
+    default=5,
+    show_default=True,
+    type=click.IntRange(1, None, clamp=True),
+    help="XTC number of decimal precision",
+)
 def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
-        system, start, stop, window_size):
+        system, start, stop, window_size, precision):
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,  # this fixes the problem
@@ -218,6 +228,7 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
         outfile=outfile,
         logfile=logfile,
         system=system,
+        precision=precision,
     )
 
     # Run multiple instances simultaneously
