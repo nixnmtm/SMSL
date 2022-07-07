@@ -336,7 +336,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
 
     if index is not None:
         command = [
-            "gmx",
+            gromacs_exec,
             "trjconv",
             "-s",
             topology,
