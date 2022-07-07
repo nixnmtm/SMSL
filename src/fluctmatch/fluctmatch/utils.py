@@ -349,7 +349,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             "{:d}".format(start),
             "-e",
             "{:d}".format(stop),
-            "-ndec", 5
+            "-ndec", 5,
         ]
     else:
         command = [
@@ -365,7 +365,7 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             "{:d}".format(start),
             "-e",
             "{:d}".format(stop),
-            "-ndec", 5
+            "-ndec", 5,
         ]
     fd, fpath = tempfile.mkstemp(text=True)
     with mdutil.openany(fpath, "w") as temp:
