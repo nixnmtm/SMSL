@@ -40,7 +40,7 @@ class Water(ModelBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mapping["OW"] = "water"
+        self._mapping["OW"] = "name OH2"
 
         kwargs["guess_bonds"] = False
         kwargs["mapping"] = self._mapping
