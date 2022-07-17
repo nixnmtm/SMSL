@@ -347,13 +347,13 @@ class DNA6S(ModelBase):
         self.atoms.select_atoms("name B3").masses = np.array(
             [_.total_mass() for _ in B3_atu])
 
-# not done
+
 class RNA7S(ModelBase):
-    """DNA 6 site with mass - A universe accounting for six sites involved with hydrogen bonding and mass determined from
-    atoms selected for each site (not constant 1).
+    """RNA 7 site with mass - A universe accounting for seven sites involved with hydrogen bonding and mass determined
+    from atoms selected for each site (not constant 1).
     """
     model = "RNA7S"
-    describe = "Phosphate, RB, R, and 3 sites on the Base"
+    describe = "Phosphate, R, RO, RB, and 3 sites on the Base"
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
@@ -361,6 +361,7 @@ class RNA7S(ModelBase):
         self._mapping["P"] = ("(resname DC5 DA5 DT5 DG5 and name O5') or "
                               "(name P)")
         self._mapping["R"] = "name C1' C2' C3' C4' O4'"
+        self._mapping["RO"] = "name O2'"
         self._mapping["RB"] = (
             "(resname ADE DA* RA* OXG GUA DG* RG* and name N9) or "
             "(resname CYT DC* RC* THY URA DT* RU* and name N1)")
@@ -395,6 +396,11 @@ class RNA7S(ModelBase):
         ])
         bonds.extend([
             _ for s in self.segments for _ in zip(
+                s.atoms.select_atoms("name R").ix,
+                s.atoms.select_atoms("name RO").ix)
+        ])
+        bonds.extend([
+            _ for s in self.segments for _ in zip(
                 s.atoms.select_atoms("name RB").ix,
                 s.atoms.select_atoms("name B1").ix)
         ])
@@ -422,6 +428,7 @@ class RNA7S(ModelBase):
     def _set_masses(self):
         P_atu = self.atu.select_atoms(self._mapping["P"]).split("residue")
         R_atu = self.atu.select_atoms(self._mapping["R"]).split("residue")
+        RO_atu = self.atu.select_atoms(self._mapping["RO"]).split("residue")
         RB_atu = self.atu.select_atoms(self._mapping["RB"]).split("residue")
         B1_atu = self.atu.select_atoms(("(resname ADE DA* RA* and name N6) or "
                                         "(resname OXG GUA DG* RG* and name O6) or "
@@ -437,6 +444,8 @@ class RNA7S(ModelBase):
             [_.total_mass() for _ in P_atu])
         self.atoms.select_atoms("name R").masses = np.array(
             [_.total_mass() for _ in R_atu])
+        self.atoms.select_atoms("name RO").masses = np.array(
+            [_.total_mass() for _ in RO_atu])
         self.atoms.select_atoms("name RB").masses = np.array(
             [_.total_mass() for _ in RB_atu])
         self.atoms.select_atoms("name B1").masses = np.array(
