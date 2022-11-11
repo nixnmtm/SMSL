@@ -70,7 +70,7 @@ Elastic network model using fluctuation matching.
 Introduction
 ============
 
-Fluctuation matching is a different approach to protein structural analysis.
+SMSL is a different approach to parameterize the multiscale models for protein structural analysis.
 Typically, an elastic network model (ENM) creates springs between coarse-grain
 sites and then uses normal mode analysis (NMA) to determine the vibrational
 information that occurs within the structure; most ENMs emply study proteins
@@ -93,18 +93,13 @@ Installation
 ============
 
 ::
-    Installing fluctMatch tool
+    Installing SMSL tool
 
     1. Toggle to the respective tag release
     2. Download it as a zip file
     3. pip install {zip file}
     
-    pip install fluctmatch (may not work always)
-
-Documentation
-=============
-
-https://python-fluctmatch.readthedocs.io/
+    pip install SMSL
 
 Development
 ===========
