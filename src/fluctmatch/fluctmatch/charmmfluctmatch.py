@@ -9,11 +9,13 @@
 #
 # Please cite your use of fluctmatch in published work:
 #
-# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
-# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
-# Simulation. Meth Enzymology. 578 (2016), 327-342,
-# doi:10.1016/bs.mie.2016.05.024.
+# Nixon Raj, Timothy Click, Haw Yang, Jhih-Wei Chua
+# Mechanical couplings of protein backbone and side chains exhibit
+# scale-free network properties and specific hotspots for function
+# Computational and Structural Biotechnology Journal, Volume 19, 2021, Pages 5309-5320
+# https://doi.org/10.1016/j.csbj.2021.09.004.
 #
+
 """Fluctuation matching using CHARMM.
 
 Notes
@@ -26,6 +28,20 @@ atom, `MAXATC` describes the maximum number of atom types, and `MAXCB`
 determines the maximum number of bond parameters in the CHARMM parameter
 file. Additionally, `CHSIZE` may need to be increased if using an earlier
 version (< c36).
+
+Modified by Nixon Raj:
+---------------------
+Fluctuation matching sensitivity increased by adding bondwise convergence
+instead of overall Root MEan Squared Error. Please look into the the "relative difference" part of the code.
+In brief,
+1. each bond is check for convergence, if certain bonds are taking long time for convergence then
+2. the percentage of the number of bonds yet to converged is taken into account.
+3. If this percentage is less that 0.3% of the total number of bonds in the system, then
+4. Relative difference is implemented:
+    4.1. Relative difference between (Fluct_diff: difference of previous step and target) and (tol:tolerance)
+5. If relative difference is very low (< 0.00005) then these bonds are skipped as it is almost converged.
+
+NOTE: The bonds that causes these long time convergence issues are mostly found in the flexible regions of the protein
 
 """
 

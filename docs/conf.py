@@ -24,9 +24,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 project = u'fluctmatch'
 year = u'2014-2017'
-author = u'Timothy Click'
+author = u'Nixon Raj'
 copyright = '{0}, {1}'.format(year, author)
-version = release = u'3.4.1'
+version = release = u'3.5.1'
 
 pygments_style = 'trac'
 templates_path = ['.']

@@ -5,6 +5,15 @@ Changelog
 3.4.1 (2018-09-26)
 ------------------
 
+* Added TuneFluct for trimming the constrained bonds
+* TuneFluct includes automated QHA and NMA
+* Increased sensitivity (bondwise convergence) in FM
+* Added two CG sites DNA6S and RNA7S in nucleic acids
+
+
+3.4.1 (2018-09-26)
+------------------
+
 * Switched to CHARMM for initial setup
 * Fixed initialization method when restarting
 * Fixed some bugs related to merging CG universes

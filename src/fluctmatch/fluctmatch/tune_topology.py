@@ -1,3 +1,21 @@
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# fluctmatch --- https://github.com/tclick/python-fluctmatch
+# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the New BSD license.
+#
+# Please cite your use of fluctmatch in published work:
+#
+# Nixon Raj, Timothy Click, Haw Yang, Jhih-Wei Chua
+# Mechanical couplings of protein backbone and side chains exhibit
+# scale-free network properties and specific hotspots for function
+# Computational and Structural Biotechnology Journal, Volume 19, 2021, Pages 5309-5320
+# https://doi.org/10.1016/j.csbj.2021.09.004.
+#
+
 from future.utils import (PY2, native_str)
 
 import os.path as path
@@ -119,7 +137,7 @@ class TopologyTuning(object):
         with mda.Writer(self.write_filenames["dynamic_prm"], **kwargs) as dynamic_param:
             dynamic_param.write(dyn_params)
 
-        """ for matching the shape of initial and current parameter files for force constant calculation, 
+        """ for matching the shape of initial and current parameter files for force constant calculation,
             the atom pairs trimmed in parameter files should also be trimmed in ic files """
 
         cols = np.asarray([

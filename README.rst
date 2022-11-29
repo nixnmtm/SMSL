@@ -1,69 +1,7 @@
 ========
 Overview
 ========
-
-.. start-badges
-
-.. list-table::
-    :stub-columns: 1
-
-    * - docs
-      - |docs|
-    * - tests
-      - | |travis| |appveyor| |requires|
-        | |coveralls| |codecov|
-    * - package
-      - | |version| |wheel| |supported-versions| |supported-implementations|
-        | |commits-since|
-
-.. |docs| image:: https://readthedocs.org/projects/python-fluctmatch/badge/?style=flat
-    :target: https://readthedocs.org/projects/python-fluctmatch
-    :alt: Documentation Status
-
-.. |travis| image:: https://travis-ci.org/tclick/python-fluctmatch.svg?branch=master
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/tclick/python-fluctmatch
-
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/github/tclick/python-fluctmatch?branch=master&svg=true
-    :alt: AppVeyor Build Status
-    :target: https://ci.appveyor.com/project/tclick/python-fluctmatch
-
-.. |requires| image:: https://requires.io/github/tclick/python-fluctmatch/requirements.svg?branch=master
-    :alt: Requirements Status
-    :target: https://requires.io/github/tclick/python-fluctmatch/requirements/?branch=master
-
-.. |coveralls| image:: https://coveralls.io/repos/tclick/python-fluctmatch/badge.svg?branch=master&service=github
-    :alt: Coverage Status
-    :target: https://coveralls.io/r/tclick/python-fluctmatch
-
-.. |codecov| image:: https://codecov.io/github/tclick/python-fluctmatch/coverage.svg?branch=master
-    :alt: Coverage Status
-    :target: https://codecov.io/github/tclick/python-fluctmatch
-
-.. |version| image:: https://img.shields.io/pypi/v/fluctmatch.svg
-    :alt: PyPI Package latest release
-    :target: https://pypi.python.org/pypi/fluctmatch
-
-.. |commits-since| image:: https://img.shields.io/github/commits-since/tclick/python-fluctmatch/v3.4.1.svg
-    :alt: Commits since latest release
-    :target: https://github.com/tclick/python-fluctmatch/compare/v3.4.1...master
-
-.. |wheel| image:: https://img.shields.io/pypi/wheel/fluctmatch.svg
-    :alt: PyPI Wheel
-    :target: https://pypi.python.org/pypi/fluctmatch
-
-.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/fluctmatch.svg
-    :alt: Supported versions
-    :target: https://pypi.python.org/pypi/fluctmatch
-
-.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/fluctmatch.svg
-    :alt: Supported implementations
-    :target: https://pypi.python.org/pypi/fluctmatch
-
-
-.. end-badges
-
-Elastic network model using fluctuation matching.
+Elastic network model using Structure Mechanics Statistical Learning.
 
 * Free software: BSD license
 
@@ -73,12 +11,12 @@ Introduction
 SMSL is a different approach to parameterize the multiscale models for protein structural analysis.
 Typically, an elastic network model (ENM) creates springs between coarse-grain
 sites and then uses normal mode analysis (NMA) to determine the vibrational
-information that occurs within the structure; most ENMs emply study proteins
-representing each residue at the C-alpha position. Fluctuation matching has been
-programmed to incorporate more molecules of interest, including nucleic acids,
+information that occurs within the structure; most ENMs employ study proteins
+representing each residue at the C-alpha position. SMSL tool has been
+programmed to incorporate different multiscale models for more molecules of interest, including nucleic acids,
 solvent, and ions. Residues can either be represented on the alpha-carbon; an
-alpha-carbon and the sidechain; or the amino group, carboxyl group, and
-sidechain.
+alpha-carbon and the sidechain; or the amino N, carboxyl O, and
+chemically specific atoms of sidechain.
 
 Previous versions of fluctuation matching strictly employed CHARMM for all
 calculations (average structure, initial bond statistics, and NMA). Furthermore,
@@ -89,17 +27,46 @@ models, additions to analysis, and implementation of other MD packages. Because
 MDAnalysis 0.16.2+ has also been employed (compared with 0.10.0 for fluctmatch
 2.0), greater improvements have been made in the efficiency of the code.
 
+PLease Cite:
+1. N. Raj, T. Click, H. Yang and J.-W. Chu, Comput. Struct.Biotechnol. J., 2021, 19, 5309–5320
+
+2. N. Raj, T. Click, H. Yang and J.-W. Chu, Chem. Sci. RSC,Chem. Sci., 2022,13, 3688-3696.
+https://doi.org/10.1039/D1SC06184D
+
+========
+Overview
+========
+
+.. start-badges
+
+ * - docs
+   - |docs|
+ * - tests
+   - |requires|
+
+.. |docs| image:: https://readthedocs.org/projects/python-fluctmatch/badge/?style=flat
+    :target: https://readthedocs.org/projects/python-fluctmatch
+    :alt: Documentation Status
+
+.. |requires| image:: https://requires.io/github/nixnmtm/SMSL/requirements.txt?branch=master
+    :alt: Requirements Status
+    :target: https://requires.io/github/nixnmtm/SMSL/requirements.txt?branch=master
+
+.. end-badges
+
 Installation
 ============
 
 ::
-    Installing SMSL tool
 
-    1. Toggle to the respective tag release
-    2. Download it as a zip file
-    3. pip install {zip file}
-    
-    pip install SMSL
+1. Create a conda environment:
+    (requirements.txt will install all the require packages)
+conda create --name [env name] --file requirements.txt
+
+2. conda activate [env name]
+
+3. Download the Master branch in .zip format
+4. pip install [zip file]
 
 Development
 ===========
@@ -124,3 +91,4 @@ Note, to combine the coverage data from all the tox environments run:
       - ::
 
             PYTEST_ADDOPTS=--cov-append tox
+

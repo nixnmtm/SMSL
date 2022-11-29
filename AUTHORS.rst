@@ -2,7 +2,6 @@
 Authors
 =======
 
-* Timothy Click - www.github.com/tclick
 * Nixon Raj
-* Yizao Chen
+* Timothy Click
 * Jhih-Wei Chu
