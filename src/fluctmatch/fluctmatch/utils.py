@@ -14,12 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
+
 from future.builtins import (dict, super)
 from future.utils import (PY2, native_str)
 
@@ -381,64 +376,54 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)
 
+def split_mda(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
+    """Create a subtrajectory from a trajectory using MDAnalysis.
 
-def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
-    """Create a subtrajectory from a CHARMM trajectory.
-
-    Parameters
-    ----------
-    info : :class:`collections.namedTuple`
-        Contains information about the data subdirectory and start and
-        stop frames
-    data_dir : str, optional
-        Location of the main data directory
-    toppar : str, optional
-        Directory containing CHARMM topology/parameter files
-    trajectory : str, optional
-        A CHARMM trajectory file (e.g., dcd)
-    outfile : str, optional
-        A CHARMM trajectory file (e.g., dcd)
-    logfile : str, optional
-        Log file for output of command
-    charmm_version : int
-        Version of CHARMM
+    This mirrors the current GMX backend semantics by selecting frames
+    based on trajectory time: start <= ts.time <= stop.
     """
-    # Trajectory splitting information
     subdir, start, stop = info
     subdir = path.join(data_dir, "{}".format(subdir))
-    charmm_exec = mdutil.which("charmm")
 
-    # Attempt to create the necessary subdirectory
     try:
         os.makedirs(subdir)
     except OSError:
         pass
 
-    # Various filenames
-    version = kwargs.get("charmm_version", 41)
-    toppar = kwargs.get("toppar",
-                        "/opt/local/charmm/c{:d}b1/toppar".format(version))
-    trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.dcd"))
-    outfile = path.join(subdir, kwargs.get("outfile", "aa.dcd"))
+    topology = kwargs.get("topology", "md.tpr")
+    trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.xtc"))
+    outfile = path.join(subdir, kwargs.get("outfile", "aa.xtc"))
     logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
-    inpfile = path.join(subdir, "split.inp")
+    precision = kwargs.get("precision", 5)
 
-    with mdutil.openany(inpfile, "w") as charmm_input:
-        charmm_inp = charmm_split.split_inp.format(
-            toppar=toppar,
-            trajectory=trajectory,
-            outfile=outfile,
-            version=version,
-            start=start,
-            stop=stop,
-        )
-        charmm_inp = textwrap.dedent(charmm_inp[1:])
-        print(charmm_inp, file=charmm_input)
-    command = [
-        charmm_exec,
-        "-i",
-        inpfile,
-        "-o",
-        path.join(subdir, logfile),
-    ]
-    subprocess.check_call(command)
+    u = mda.Universe(topology, trajectory)
+    ag = u.atoms
+
+    n_written = 0
+    first_time = None
+    last_time = None
+    times = []
+
+    with mda.Writer(native_str(outfile), ag.n_atoms, precision=precision) as W:
+        for ts in u.trajectory:
+            t = ts.time
+            if start <= t <= stop:
+                W.write(ag)
+                n_written += 1
+                times.append(float(t))
+                if first_time is None:
+                    first_time = float(t)
+                last_time = float(t)
+
+    with mdutil.openany(logfile, mode="w") as log:
+        print("Backend: MDAnalysis", file=log)
+        print("Topology: {}".format(topology), file=log)
+        print("Trajectory: {}".format(trajectory), file=log)
+        print("Output: {}".format(outfile), file=log)
+        print("Start: {}".format(start), file=log)
+        print("Stop: {}".format(stop), file=log)
+        print("Frames written: {}".format(n_written), file=log)
+        if n_written:
+            print("First time: {:.6f}".format(first_time), file=log)
+            print("Last time: {:.6f}".format(last_time), file=log)
+            print("Times: {}".format(", ".join("{:.6f}".format(x) for x in times)), file=log)

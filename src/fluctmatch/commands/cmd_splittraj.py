@@ -38,10 +38,10 @@ import click
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch import utils
 
-_CONVERT = dict(
-    GMX=utils.split_gmx,
-    CHARMM=utils.split_charmm,
-)
+_CONVERT = {
+    "MDA": utils.split_mda,
+    "GMX": utils.split_gmx,
+}
 
 
 @click.command(
@@ -51,8 +51,8 @@ _CONVERT = dict(
     "--type",
     "program",
     type=click.Choice(viewkeys(_CONVERT)),
-    default="GMX",
-    help="Split using an external MD program")
+    default="MDA",
+    help="Split using MDAnalysis or Gromacs")
 @click.option(
     "-s",
     "topology",
@@ -60,13 +60,6 @@ _CONVERT = dict(
     default=path.join(os.getcwd(), "md.tpr"),
     type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
-)
-@click.option(
-    "--toppar",
-    metavar="DIR",
-    default=path.join(os.getcwd(), "toppar"),
-    type=click.Path(exists=False, file_okay=False, resolve_path=True),
-    help="Location of CHARMM topology/parameter files",
 )
 @click.option(
     "-f",
@@ -162,7 +155,7 @@ _CONVERT = dict(
     type=click.IntRange(1, None, clamp=True),
     help="XTC number of decimal precision",
 )
-def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
+def cli(program, topology, trajectory, data, index, outfile, logfile,
         system, start, stop, window_size, precision):
     logging.config.dictConfig({
         "version": 1,
@@ -205,11 +198,6 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
                      "If installed, please ensure that it is in your path.")
         raise OSError("Gromacs 5.0+ is required. "
                       "If installed, please ensure that it is in your path.")
-    if program == "CHARMM" and mdutil.which("charmm") is None:
-        logger.error("CHARMM is required. If installed, "
-                     "please ensure that it is in your path.")
-        raise OSError("CHARMM is required. If installed, "
-                      "please ensure that it is in your path.")
 
     half_size = window_size // 2
     beg = start - half_size if start >= window_size else start
@@ -222,7 +210,6 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
         _CONVERT[program],
         data_dir=data,
         topology=topology,
-        toppar=toppar,
         trajectory=trajectory,
         index=index,
         outfile=outfile,

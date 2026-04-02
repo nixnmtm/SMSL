@@ -8,14 +8,6 @@
 # Released under the New BSD license.
 #
 
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str
-
 import MDAnalysis as mda
 from numpy import testing
 from fluctmatch.models import protein
@@ -48,7 +40,7 @@ def test_calpha_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites not equal."),
+        err_msg="Number of sites not equal.",
         verbose=True,
     )
 
@@ -64,7 +56,7 @@ def test_calpha_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -74,7 +66,7 @@ def test_calpha_trajectory():
     testing.assert_equal(
         cg_universe.trajectory.n_frames,
         aa_universe.trajectory.n_frames,
-        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        err_msg="All-atom and coarse-grain trajectories unequal.",
         verbose=True,
     )
 
@@ -87,7 +79,7 @@ def test_caside_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites not equal."),
+        err_msg="Number of sites not equal.",
         verbose=True,
     )
 
@@ -106,7 +98,7 @@ def test_caside_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -116,7 +108,7 @@ def test_caside_trajectory():
     testing.assert_equal(
         cg_universe.trajectory.n_frames,
         aa_universe.trajectory.n_frames,
-        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        err_msg="All-atom and coarse-grain trajectories unequal.",
         verbose=True,
     )
 
@@ -152,7 +144,7 @@ def test_polar_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         expected,
-        err_msg=native_str("Number of Polar sites not equal."),
+        err_msg="Number of Polar sites not equal.",
         verbose=True,
     )
 
@@ -181,7 +173,7 @@ def test_polar_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -191,6 +183,6 @@ def test_polar_trajectory():
     testing.assert_equal(
         cg_universe.trajectory.n_frames,
         aa_universe.trajectory.n_frames,
-        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        err_msg="All-atom and coarse-grain trajectories unequal.",
         verbose=True,
     )
