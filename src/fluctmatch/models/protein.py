@@ -1,18 +1,7 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding: utf-8 -*-
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 #
-# fluctmatch --- https://github.com/tclick/python-fluctmatch
-# Copyright (c) 2013-2017 The fluctmatch Development Team and contributors
-# (see the file AUTHORS for the full list of names)
-#
-# Released under the New BSD license.
-#
-# Please cite your use of fluctmatch in published work:
-#
-# Timothy H. Click, Nixon Raj, and Jhih-Wei Chu.
-# Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics
-# Simulation. Meth Enzymology. 578 (2016), 327-342,
-# doi:10.1016/bs.mie.2016.05.024.
+# SMSL - https://github.com/nixnmtm/SMSL
 #
 from __future__ import (
     absolute_import,
@@ -20,27 +9,28 @@ from __future__ import (
     print_function,
     unicode_literals,
 )
-from future.builtins import (
-    dict,
-    zip,
-)
-from future.utils import viewitems
 
-import itertools
+from future.builtins import dict, zip
 from collections import OrderedDict
 
-from MDAnalysis.core import (
-    topology,
-    topologyattrs,
-)
+import numpy as np
+import MDAnalysis as mda
+from MDAnalysis.core import topology, topologyattrs
 from MDAnalysis.topology import base as topbase
+
 from fluctmatch.models.base import ModelBase
 from fluctmatch.models.selection import *
 
 
+def _safe_total_charge(ag):
+    try:
+        return ag.total_charge()
+    except AttributeError:
+        return 0.0
+
+
 class Calpha(ModelBase):
-    """Create a universe defined by the protein C-alpha.
-    """
+    """Create a universe defined by the protein C-alpha."""
     model = "CALPHA"
     describe = "C-alpha of a protein"
     _mapping = OrderedDict()
@@ -55,35 +45,60 @@ class Calpha(ModelBase):
         self._set_masses()
         self._set_charges()
 
-        # Update the masses and charges
-
     def _add_bonds(self):
         bonds = []
-        bonds.extend([
-            _ for s in self.segments for _ in zip(
-                s.atoms.select_atoms("calpha").ix,
-                s.atoms.select_atoms("calpha").ix[1:])
-        ])
-        self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
-        self._generate_from_topology()
+        bonds.extend(
+            [
+                _
+                for s in self.segments
+                for _ in zip(
+                    s.atoms.select_atoms("name CA").ix,
+                    s.atoms.select_atoms("name CA").ix[1:],
+                )
+            ]
+        )
+        if bonds:
+            self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
+        mda.Universe.__init__(self, self._topology)
 
     def _set_masses(self):
-        ca_atu = self.atu.select_atoms("protein").split("residue")
-        self.atoms.select_atoms("calpha").masses = np.array(
-            [_.total_mass() for _ in ca_atu])
+        ca_masses = [
+            res.atoms.total_mass()
+            for res in self.atu.select_atoms("protein").residues
+            if res.atoms.select_atoms("name CA").n_atoms > 0
+        ]
+        self.atoms.select_atoms("name CA").masses = np.asarray(ca_masses)
+
+        ion_masses = [
+            ion.total_mass()
+            for ion in self.atu.select_atoms("bioion").split("residue")
+            if ion.n_atoms > 0
+        ]
+        if self.atoms.select_atoms("name ions").n_atoms > 0:
+            self.atoms.select_atoms("name ions").masses = np.asarray(ion_masses)
 
     def _set_charges(self):
-        ca_atu = self.atu.select_atoms("protein").split("residue")
         try:
-            self.atoms.select_atoms("calpha").charges = np.array(
-                [_.total_charge() for _ in ca_atu])
+            ca_charges = [
+                res.atoms.total_charge()
+                for res in self.atu.select_atoms("protein").residues
+                if res.atoms.select_atoms("name CA").n_atoms > 0
+            ]
+            self.atoms.select_atoms("name CA").charges = np.asarray(ca_charges)
+
+            ion_charges = [
+                ion.total_charge()
+                for ion in self.atu.select_atoms("bioion").split("residue")
+                if ion.n_atoms > 0
+            ]
+            if self.atoms.select_atoms("name ions").n_atoms > 0:
+                self.atoms.select_atoms("name ions").charges = np.asarray(ion_charges)
         except AttributeError:
             pass
 
 
 class Caside(ModelBase):
-    """Create a universe consisting of the C-alpha and sidechains of a protein.
-    """
+    """Create a universe consisting of the C-alpha and sidechains of a protein."""
     model = "CASIDE"
     describe = "C-alpha and sidechain (c.o.m./c.o.g.) of protein"
     _mapping = OrderedDict()
@@ -101,121 +116,93 @@ class Caside(ModelBase):
 
     def _add_bonds(self):
         bonds = []
-        bonds.extend([
-            _ for s in self.segments for _ in zip(
-                s.atoms.select_atoms("calpha").ix,
-                s.atoms.select_atoms("calpha").ix[1:])
-        ])
         bonds.extend(
-            [(r.atoms.select_atoms("calpha").ix[0],
-              r.atoms.select_atoms("cbeta").ix[0]) for r in self.residues
-             if (r.resname != "GLY"
-                 and r.resname in selection.ProteinSelection.prot_res)])
-        self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
-        self._generate_from_topology()
+            [
+                _
+                for s in self.segments
+                for _ in zip(
+                    s.atoms.select_atoms("name CA").ix,
+                    s.atoms.select_atoms("name CA").ix[1:],
+                )
+            ]
+        )
+        bonds.extend(
+            [
+                (
+                    r.atoms.select_atoms("name CA").ix[0],
+                    r.atoms.select_atoms("name CB").ix[0],
+                )
+                for r in self.residues
+                if r.atoms.select_atoms("name CA").n_atoms > 0
+                and r.atoms.select_atoms("name CB").n_atoms > 0
+            ]
+        )
+        if bonds:
+            self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
+        mda.Universe.__init__(self, self._topology)
 
     def _set_masses(self):
-        ca_atu = self.atu.select_atoms("hbackbone").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-        self.atoms.select_atoms("calpha").masses = np.array(
-            [_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("cbeta").masses = np.array(
-            [_.total_mass() for _ in cb_atu])
+        ca_masses = []
+        cb_masses = []
+
+        for r in self.atu.select_atoms("protein").residues:
+            ca_bead = r.atoms.select_atoms("name CA")
+            cb_bead = r.atoms.select_atoms("name CB")
+
+            bb = r.atoms.select_atoms("hbackbone")
+            sc = r.atoms.select_atoms("hsidechain")
+
+            if ca_bead.n_atoms > 0 and bb.n_atoms > 0:
+                ca_masses.append(bb.total_mass())
+
+            if cb_bead.n_atoms > 0 and sc.n_atoms > 0:
+                cb_masses.append(sc.total_mass())
+
+        self.atoms.select_atoms("name CA").masses = np.asarray(ca_masses)
+        self.atoms.select_atoms("name CB").masses = np.asarray(cb_masses)
+
+        ion_masses = [
+            ion.total_mass()
+            for ion in self.atu.select_atoms("bioion").split("residue")
+            if ion.n_atoms > 0
+        ]
+        if self.atoms.select_atoms("name ions").n_atoms > 0:
+            self.atoms.select_atoms("name ions").masses = np.asarray(ion_masses)
 
     def _set_charges(self):
-        ca_atu = self.atu.select_atoms("hbackbone").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
         try:
-            self.atoms.select_atoms("calpha").charges = np.array(
-                [_.total_charge() for _ in ca_atu])
-        except AttributeError:
-            pass
-        try:
-            self.atoms.select_atoms("cbeta").charges = np.array(
-                [_.total_charge() for _ in cb_atu])
-        except AttributeError:
-            pass
+            ca_charges = []
+            cb_charges = []
 
+            for r in self.atu.select_atoms("protein").residues:
+                ca_bead = r.atoms.select_atoms("name CA")
+                cb_bead = r.atoms.select_atoms("name CB")
 
-class Ncsc(ModelBase):
-    """Create a universe consisting of the amine, carboxyl, and sidechain regions.
-    """
-    model = "NCSC"
-    describe = "c.o.m./c.o.g. of N, O, and sidechain of protein"
-    _mapping = OrderedDict()
+                bb = r.atoms.select_atoms("hbackbone")
+                sc = r.atoms.select_atoms("hsidechain")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._mapping["N"] = "protein and name N"
-        self._mapping["CB"] = "hsidechain and not name H*"
-        self._mapping["O"] = "protein and name O OT1 OT2 OXT"
-        self._mapping["ions"] = "bioion"
+                if ca_bead.n_atoms > 0 and bb.n_atoms > 0:
+                    ca_charges.append(bb.total_charge())
 
-        kwargs["mapping"] = self._mapping
-        self._initialize(*args, **kwargs)
-        self._set_masses()
-        self._set_charges()
+                if cb_bead.n_atoms > 0 and sc.n_atoms > 0:
+                    cb_charges.append(sc.total_charge())
 
-    def _add_bonds(self):
-        bonds = []
-        bonds.extend([
-            _ for s in self.segments for _ in zip(
-                s.atoms.select_atoms("name N").ix,
-                s.atoms.select_atoms("name O").ix)
-        ])
-        bonds.extend(
-            [(r.atoms.select_atoms("name N").ix[0],
-              r.atoms.select_atoms("cbeta").ix[0]) for r in self.residues
-             if (r.resname != "GLY"
-                 and r.resname in selection.ProteinSelection.prot_res)])
-        bonds.extend(
-            [(r.atoms.select_atoms("cbeta").ix[0],
-              r.atoms.select_atoms("name O").ix[0]) for r in self.residues
-             if (r.resname != "GLY"
-                 and r.resname in selection.ProteinSelection.prot_res)])
-        bonds.extend([
-            _ for s in self.segments for _ in zip(
-                s.atoms.select_atoms("name O").ix,
-                s.atoms.select_atoms("name N").ix[1:])
-        ])
-        self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
-        self._generate_from_topology()
+            self.atoms.select_atoms("name CA").charges = np.asarray(ca_charges)
+            self.atoms.select_atoms("name CB").charges = np.asarray(cb_charges)
 
-    def _set_masses(self):
-        n_atu = self.atu.select_atoms("amine").split("residue")
-        o_atu = self.atu.select_atoms("carboxyl").split("residue")
-        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-
-        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("name N").masses = np.array(
-            [_.total_mass() for _ in n_atu]) + ca_masses
-        self.atoms.select_atoms("cbeta").masses = np.array(
-            [_.total_mass() for _ in cb_atu])
-        self.atoms.select_atoms("name O").masses = np.array(
-            [_.total_mass() for _ in o_atu]) + ca_masses
-
-    def _set_charges(self):
-        n_atu = self.atu.select_atoms("amine").split("residue")
-        o_atu = self.atu.select_atoms("carboxyl").split("residue")
-        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-
-        try:
-            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
-            self.atoms.select_atoms("name N").charges = np.array(
-                [_.total_charge() for _ in n_atu]) + ca_charges
-            self.atoms.select_atoms("name O").charges = np.array(
-                [_.total_charge() for _ in o_atu]) + ca_charges
-            self.atoms.select_atoms("cbeta").charges = np.array(
-                [_.total_charge() for _ in cb_atu])
+            ion_charges = [
+                ion.total_charge()
+                for ion in self.atu.select_atoms("bioion").split("residue")
+                if ion.n_atoms > 0
+            ]
+            if self.atoms.select_atoms("name ions").n_atoms > 0:
+                self.atoms.select_atoms("name ions").charges = np.asarray(ion_charges)
         except AttributeError:
             pass
 
 
 class Polar(ModelBase):
-    """Create a universe consisting of the amine, carboxyl, and polar regions.
-    """
+    """Create a universe consisting of the amine, carboxyl, and polar regions."""
     model = "POLAR"
     describe = "c.o.m./c.o.g. of N, C, and polar sidechains of protein"
     _mapping = OrderedDict()
@@ -255,20 +242,11 @@ class Polar(ModelBase):
         self._set_masses()
         self._set_charges()
 
+    def _cb_selection(self, resname):
+        return self._mapping["CB"].get(resname, None)
+
     def _apply_map(self, mapping):
-        """Apply the mapping scheme to the beads.
-
-        Parameters
-        ----------
-        mapping : dict
-            Mapping definitions per bead/
-
-        Returns
-        -------
-        :class:`~MDAnalysis.core.topology.Topology` defining the new universe.
-        """
-        # Allocate arrays
-        _beads = []
+        beads = []
         atomnames = []
         atomids = []
         resids = []
@@ -277,127 +255,206 @@ class Polar(ModelBase):
         charges = []
         masses = []
 
-        residues = self.atu.atoms.split("residue")
-        select_residues = enumerate(
-            itertools.product(residues, viewitems(mapping)))
-        for i, (res, (name, selection)) in select_residues:
-            if name != "CB":
-                bead = res.select_atoms(selection)
-            else:
-                bead = res.select_atoms(
-                    selection.get(res.resnames[0], "hsidechain and not name H*"))
-            if bead:
-                _beads.append(bead)
-                atomnames.append(name)
+        i = 0
+
+        for res in self.atu.select_atoms("protein").residues:
+            # N bead
+            n_bead = res.atoms.select_atoms(mapping["N"])
+            if n_bead.n_atoms > 0:
+                beads.append(n_bead)
+                atomnames.append("N")
                 atomids.append(i)
-                resids.append(bead.resids[0])
-                resnames.append(bead.resnames[0])
-                segids.append(bead.segids[0].split("_")[-1])
-                try:
-                    charges.append(bead.total_charge())
-                except AttributeError:
-                    charges.append(0.)
-                masses.append(bead.total_mass())
+                resids.append(n_bead.resids[0])
+                resnames.append(n_bead.resnames[0])
+                segids.append(n_bead.segids[0].split("_")[-1])
+                charges.append(0.0)
+                masses.append(0.0)
+                i += 1
 
-        _beads = np.array(_beads)
-        n_atoms = len(_beads)
+            # CB bead
+            cb_sel = self._cb_selection(res.resname)
+            if cb_sel is not None:
+                cb_bead = res.atoms.select_atoms(cb_sel)
+                if cb_bead.n_atoms > 0:
+                    beads.append(cb_bead)
+                    atomnames.append("CB")
+                    atomids.append(i)
+                    resids.append(cb_bead.resids[0])
+                    resnames.append(cb_bead.resnames[0])
+                    segids.append(cb_bead.segids[0].split("_")[-1])
+                    charges.append(0.0)
+                    masses.append(0.0)
+                    i += 1
 
-        # Atom
-        # _beads = topattrs._Beads(_beads)
-        vdwradii = np.zeros_like(atomids)
-        vdwradii = topologyattrs.Radii(vdwradii)
+            # O bead
+            o_bead = res.atoms.select_atoms(mapping["O"])
+            if o_bead.n_atoms > 0:
+                beads.append(o_bead)
+                atomnames.append("O")
+                atomids.append(i)
+                resids.append(o_bead.resids[0])
+                resnames.append(o_bead.resnames[0])
+                segids.append(o_bead.segids[0].split("_")[-1])
+                charges.append(0.0)
+                masses.append(0.0)
+                i += 1
+
+        # ions
+        for ion in self.atu.select_atoms(mapping["ions"]).split("residue"):
+            if ion.n_atoms > 0:
+                beads.append(ion)
+                atomnames.append("ion")
+                atomids.append(i)
+                resids.append(ion.resids[0])
+                resnames.append(ion.resnames[0])
+                segids.append(ion.segids[0].split("_")[-1])
+                charges.append(0.0)
+                masses.append(0.0)
+                i += 1
+
+        beads = np.asarray(beads, dtype=object)
+        n_atoms = len(beads)
+
+        vdwradii = topologyattrs.Radii(np.zeros(n_atoms, dtype=float))
         atomids = topologyattrs.Atomids(np.asarray(atomids))
-        atomnames = topologyattrs.Atomnames(
-            np.asarray(atomnames, dtype=np.object))
-        atomtypes = topologyattrs.Atomtypes(
-            np.asarray(np.arange(n_atoms) + 100))
-        charges = topologyattrs.Charges(np.asarray(charges))
-        masses = topologyattrs.Masses(np.asarray(masses))
+        atomnames = topologyattrs.Atomnames(np.asarray(atomnames, dtype=object))
+        atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms) + 100))
+        charges = topologyattrs.Charges(np.asarray(charges, dtype=float))
+        masses = topologyattrs.Masses(np.asarray(masses, dtype=float))
 
-        # Residue
-        # resids, resnames
-        segids = np.asarray(segids, dtype=np.object)
+        segids = np.asarray(segids, dtype=object)
         resids = np.asarray(resids)
-        resnames = np.asarray(resnames, dtype=np.object)
-        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids, ), (resids, resnames, segids))
+        resnames = np.asarray(resnames, dtype=object)
 
-        # transform from atom:Rid to atom:Rix
+        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
+            (resids,), (resids, resnames, segids)
+        )
+
         residueids = topologyattrs.Resids(new_resids)
         residuenums = topologyattrs.Resnums(new_resids.copy())
         residuenames = topologyattrs.Resnames(new_resnames)
 
-        # Segment
-        segidx, (perseg_segids, ) = topbase.change_squash((new_segids, ),
-                                                          (new_segids, ))
+        segidx, (perseg_segids,) = topbase.change_squash((new_segids,), (new_segids,))
         segids = topologyattrs.Segids(perseg_segids)
 
-        # Setup topology
         top = topology.Topology(
             len(atomids),
             len(new_resids),
             len(segids),
             attrs=[
-                atomids, atomnames, atomtypes, charges, masses, vdwradii,
-                residueids, residuenums, residuenames, segids
+                atomids,
+                atomnames,
+                atomtypes,
+                charges,
+                masses,
+                vdwradii,
+                residueids,
+                residuenums,
+                residuenames,
+                segids,
             ],
             atom_resindex=residx,
-            residue_segindex=segidx)
+            residue_segindex=segidx,
+        )
         return top
 
     def _add_bonds(self):
         bonds = []
-        bonds.extend([
-            _ for s in self.segments for _ in zip(
-                s.atoms.select_atoms("name N").ix,
-                s.atoms.select_atoms("name O").ix)
-        ])
-        bonds.extend(
-            [(r.atoms.select_atoms("name N").ix[0],
-              r.atoms.select_atoms("cbeta").ix[0]) for r in self.residues
-             if (r.resname != "GLY"
-                 and r.resname in selection.ProteinSelection.prot_res)])
-        bonds.extend(
-            [(r.atoms.select_atoms("cbeta").ix[0],
-              r.atoms.select_atoms("name O").ix[0]) for r in self.residues
-             if (r.resname != "GLY"
-                 and r.resname in selection.ProteinSelection.prot_res)])
-        bonds.extend([
-            _ for s in self.segments for _ in zip(
-                s.atoms.select_atoms("name O").ix,
-                s.atoms.select_atoms("name N").ix[1:])
-            if s.residues.n_residues > 1
-        ])
-        self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
-        self._generate_from_topology()
+
+        for s in self.segments:
+            n_ix = s.atoms.select_atoms("name N").ix
+            o_ix = s.atoms.select_atoms("name O").ix
+            bonds.extend(zip(n_ix, o_ix))
+            if len(n_ix) > 1 and len(o_ix) > 1:
+                bonds.extend(zip(o_ix[:-1], n_ix[1:]))
+
+        for r in self.residues:
+            n = r.atoms.select_atoms("name N")
+            cb = r.atoms.select_atoms("name CB")
+            o = r.atoms.select_atoms("name O")
+
+            if n.n_atoms > 0 and cb.n_atoms > 0:
+                bonds.append((n.ix[0], cb.ix[0]))
+            if cb.n_atoms > 0 and o.n_atoms > 0:
+                bonds.append((cb.ix[0], o.ix[0]))
+
+        if bonds:
+            self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
+        mda.Universe.__init__(self, self._topology)
 
     def _set_masses(self):
-        n_atu = self.atu.select_atoms("amine").split("residue")
-        o_atu = self.atu.select_atoms("carboxyl").split("residue")
-        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
+        n_masses = []
+        cb_masses = []
+        o_masses = []
 
-        ca_masses = 0.5 * np.array([_.total_mass() for _ in ca_atu])
-        self.atoms.select_atoms("name N").masses = np.array(
-            [_.total_mass() for _ in n_atu]) + ca_masses
-        self.atoms.select_atoms("cbeta").masses = np.array(
-            [_.total_mass() for _ in cb_atu])
-        self.atoms.select_atoms("name O").masses = np.array(
-            [_.total_mass() for _ in o_atu]) + ca_masses
+        for r in self.atu.select_atoms("protein").residues:
+            n_bead = r.atoms.select_atoms("protein and name N")
+            o_bead = r.atoms.select_atoms("protein and name O OT1 OT2 OXT")
+
+            n = r.atoms.select_atoms("amine")
+            ca = r.atoms.select_atoms("hcalpha")
+            o = r.atoms.select_atoms("carboxyl")
+
+            cb_sel = self._cb_selection(r.resname)
+            cb = r.atoms.select_atoms(cb_sel) if cb_sel is not None else r.atoms[:0]
+
+            if n_bead.n_atoms > 0 and n.n_atoms > 0 and ca.n_atoms > 0:
+                n_masses.append(n.total_mass() + 0.5 * ca.total_mass())
+
+            if cb.n_atoms > 0:
+                cb_masses.append(cb.total_mass())
+
+            if o_bead.n_atoms > 0 and o.n_atoms > 0 and ca.n_atoms > 0:
+                o_masses.append(o.total_mass() + 0.5 * ca.total_mass())
+
+        self.atoms.select_atoms("name N").masses = np.asarray(n_masses)
+        self.atoms.select_atoms("name CB").masses = np.asarray(cb_masses)
+        self.atoms.select_atoms("name O").masses = np.asarray(o_masses)
+
+        ion_masses = [
+            ion.total_mass()
+            for ion in self.atu.select_atoms("bioion").split("residue")
+            if ion.n_atoms > 0
+        ]
+        if self.atoms.select_atoms("name ion").n_atoms > 0:
+            self.atoms.select_atoms("name ion").masses = np.asarray(ion_masses)
 
     def _set_charges(self):
-        n_atu = self.atu.select_atoms("amine").split("residue")
-        o_atu = self.atu.select_atoms("carboxyl").split("residue")
-        ca_atu = self.atu.select_atoms("hcalpha").split("residue")
-        cb_atu = self.atu.select_atoms("hsidechain").split("residue")
-
         try:
-            ca_charges = 0.5 * np.array([_.total_charge() for _ in ca_atu])
-            self.atoms.select_atoms("name N").charges = np.array(
-                [_.total_charge() for _ in n_atu]) + ca_charges
-            self.atoms.select_atoms("name O").charges = np.array(
-                [_.total_charge() for _ in o_atu]) + ca_charges
-            self.atoms.select_atoms("cbeta").charges = np.array(
-                [_.total_charge() for _ in cb_atu])
+            n_charges = []
+            cb_charges = []
+            o_charges = []
+
+            for r in self.atu.select_atoms("protein").residues:
+                n_bead = r.atoms.select_atoms("protein and name N")
+                o_bead = r.atoms.select_atoms("protein and name O OT1 OT2 OXT")
+
+                n = r.atoms.select_atoms("amine")
+                ca = r.atoms.select_atoms("hcalpha")
+                o = r.atoms.select_atoms("carboxyl")
+
+                cb_sel = self._cb_selection(r.resname)
+                cb = r.atoms.select_atoms(cb_sel) if cb_sel is not None else r.atoms[:0]
+
+                if n_bead.n_atoms > 0 and n.n_atoms > 0 and ca.n_atoms > 0:
+                    n_charges.append(n.total_charge() + 0.5 * ca.total_charge())
+
+                if cb.n_atoms > 0:
+                    cb_charges.append(cb.total_charge())
+
+                if o_bead.n_atoms > 0 and o.n_atoms > 0 and ca.n_atoms > 0:
+                    o_charges.append(o.total_charge() + 0.5 * ca.total_charge())
+
+            self.atoms.select_atoms("name N").charges = np.asarray(n_charges)
+            self.atoms.select_atoms("name CB").charges = np.asarray(cb_charges)
+            self.atoms.select_atoms("name O").charges = np.asarray(o_charges)
+
+            ion_charges = [
+                ion.total_charge()
+                for ion in self.atu.select_atoms("bioion").split("residue")
+                if ion.n_atoms > 0
+            ]
+            if self.atoms.select_atoms("name ion").n_atoms > 0:
+                self.atoms.select_atoms("name ion").charges = np.asarray(ion_charges)
         except AttributeError:
             pass
