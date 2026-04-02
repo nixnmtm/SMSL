@@ -17,12 +17,7 @@
 # The original code is from Richard J. Gowers.
 # https://github.com/richardjgowers/MDAnalysis-coarsegraining
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
+
 from future.builtins import super, zip
 from future.utils import (
     raise_with_traceback,
@@ -41,11 +36,19 @@ from MDAnalysis.core import (
     topology,
     topologyattrs,
 )
+
+try:
+    from MDAnalysis.guesser.default_guesser import DefaultGuesser
+except ImportError:  # fallback for older MDAnalysis
+    DefaultGuesser = None
+    from MDAnalysis.topology import guessers
+
 from MDAnalysis.lib.util import asiterable
 from MDAnalysis.topology import base as topbase
 from MDAnalysis.topology import guessers
 from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models import trajectory
+from fluctmatch.models import selection
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +165,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         sidechain.
         """
         # Coarse grained Universe
-        # Make a blank Universe for myself.
-        super().__init__()
-
+        
         self._com = kwargs.pop("com", True)
 
         # Atomistic Universe
@@ -172,6 +173,10 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
             self.atu = mda.Universe(*args, **kwargs)
         except (IOError, OSError, ValueError):
             raise_with_traceback(RuntimeError("Failed to create a universe."))
+        
+        super().__init__(self.atu._topology)
+        if getattr(self.atu, "trajectory", None) is not None:
+            self.trajectory = self.atu.trajectory
 
     def __repr__(self):
         message = "<CG Universe with {} beads".format(len(self.atoms))
@@ -184,6 +189,18 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
             message += ">"
         return message
 
+    def _get_default_guesser(self):
+        if DefaultGuesser is None:
+            return None
+
+        for obj in (self, self.atoms, self._topology, None):
+            try:
+                return DefaultGuesser(obj)
+            except TypeError:
+                continue
+        return DefaultGuesser()
+
+
     def _initialize(self, *args, **kwargs):
         try:
             mapping = kwargs.pop("mapping")
@@ -191,8 +208,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
             raise ValueError("CG mapping has not been defined.")
 
         # Fake up some beads
-        self._topology = self._apply_map(mapping)
-        self._generate_from_topology()
+        new_topology = self._apply_map(mapping)
+        mda.Universe.__init__(self, new_topology)
+
         self._add_bonds()
         if kwargs.get("guess_angles", True):
             self._add_angles()
@@ -202,25 +220,17 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         # This replaces load_new in a traditional Universe
         try:
             self.trajectory = trajectory._Trajectory(
-                self.atu, mapping, n_atoms=self.atoms.n_atoms, com=self._com)
+                self,
+                mapping=mapping,
+                n_atoms=self.atoms.n_atoms,
+                com=self._com,
+            )
         except (IOError, TypeError) as exc:
             raise_with_traceback(
                 RuntimeError("Unable to open {}".format(
                     self.atu.trajectory.filename)))
 
     def _apply_map(self, mapping):
-        """Apply the mapping scheme to the beads.
-
-        Parameters
-        ----------
-        mapping : dict
-            Mapping definitions per bead/
-
-        Returns
-        -------
-        :class:`~MDAnalysis.core.topology.Topology` defining the new universe.
-        """
-        # Allocate arrays
         _beads = []
         atomnames = []
         atomids = []
@@ -230,68 +240,74 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         charges = []
         masses = []
 
-        residues = self.atu.atoms.split("residue")
-        select_residues = enumerate(
-            itertools.product(residues, viewitems(mapping)))
-        for i, (res, (name, selection)) in select_residues:
-            bead = res.select_atoms(selection)
-            if bead:
+        # Build each mapped selection once on the full atomistic universe
+        selected_cache = {
+            name: self.atu.select_atoms(selection)
+            for name, selection in viewitems(mapping)
+        }
+        for name, selection in viewitems(mapping):
+            print(name, selection)
+        for res in self.atu.residues:
+            for name, selected in viewitems(selected_cache):
+                bead = selected.intersection(res.atoms)
+                if bead.n_atoms == 0:
+                    continue
+
                 _beads.append(bead)
                 atomnames.append(name)
-                atomids.append(i)
-                resids.append(bead.resids[0])
-                resnames.append(bead.resnames[0])
-                segids.append(bead.segids[0].split("_")[-1])
+                atomids.append(len(atomids))
+                resids.append(int(bead.resids[0]))
+                resnames.append(str(bead.resnames[0]))
+                segids.append(str(bead.segids[0]).split("_")[-1])
+
                 try:
-                    charges.append(bead.total_charge())
+                    charges.append(float(bead.total_charge()))
                 except AttributeError:
-                    charges.append(0.)
-                masses.append(bead.total_mass())
+                    charges.append(0.0)
 
-        _beads = np.array(_beads)
+                masses.append(float(bead.total_mass()))
+
         n_atoms = len(_beads)
+        if n_atoms == 0:
+            raise ValueError("Mapping produced zero coarse-grained beads.")
 
-        # Atom
-        # _beads = topattrs._Beads(_beads)
-        vdwradii = np.zeros_like(atomids)
-        vdwradii = topologyattrs.Radii(vdwradii)
-        atomids = topologyattrs.Atomids(np.asarray(atomids))
-        atomnames = topologyattrs.Atomnames(
-            np.asarray(atomnames, dtype=np.object))
-        atomtypes = topologyattrs.Atomtypes(
-            np.asarray(np.arange(n_atoms) + 100))
-        charges = topologyattrs.Charges(np.asarray(charges))
-        masses = topologyattrs.Masses(np.asarray(masses))
+        atomids_arr = np.asarray(atomids, dtype=np.int32)
+        atomnames_arr = np.asarray(atomnames, dtype=object)
+        atomtypes_arr = np.arange(n_atoms, dtype=np.int32) + 100
+        charges_arr = np.asarray(charges, dtype=float)
+        masses_arr = np.asarray(masses, dtype=float)
+        vdwradii_arr = np.zeros(n_atoms, dtype=float)
 
-        # Residue
-        # resids, resnames
-        segids = np.asarray(segids, dtype=np.object)
-        resids = np.asarray(resids, dtype=np.int32)
-        resnames = np.asarray(resnames, dtype=np.object)
-        residx, (new_resids, new_resnames,
-                 perres_segids) = topbase.change_squash(
-                     (resids, resnames, segids), (resids, resnames, segids))
+        segids_arr = np.asarray(segids, dtype=object)
+        resids_arr = np.asarray(resids, dtype=np.int32)
+        resnames_arr = np.asarray(resnames, dtype=object)
 
-        # transform from atom:Rid to atom:Rix
-        residueids = topologyattrs.Resids(new_resids)
-        residuenums = topologyattrs.Resnums(new_resids.copy())
-        residuenames = topologyattrs.Resnames(new_resnames)
+        residx, (new_resids, new_resnames, perres_segids) = topbase.change_squash(
+            (resids_arr, resnames_arr, segids_arr),
+            (resids_arr, resnames_arr, segids_arr),
+        )
 
-        # Segment
         segidx, perseg_segids = topbase.squash_by(perres_segids)[:2]
-        segids = topologyattrs.Segids(perseg_segids)
 
-        # Setup topology
         top = topology.Topology(
-            len(atomids),
-            len(new_resids),
-            len(segids),
+            n_atoms=n_atoms,
+            n_res=len(new_resids),
+            n_seg=len(perseg_segids),
             attrs=[
-                atomids, atomnames, atomtypes, charges, masses, vdwradii,
-                residueids, residuenums, residuenames, segids
+                topologyattrs.Atomids(atomids_arr),
+                topologyattrs.Atomnames(atomnames_arr),
+                topologyattrs.Atomtypes(atomtypes_arr),
+                topologyattrs.Charges(charges_arr),
+                topologyattrs.Masses(masses_arr),
+                topologyattrs.Radii(vdwradii_arr),
+                topologyattrs.Resids(new_resids),
+                topologyattrs.Resnums(new_resids.copy()),
+                topologyattrs.Resnames(new_resnames),
+                topologyattrs.Segids(perseg_segids),
             ],
             atom_resindex=residx,
-            residue_segindex=segidx)
+            residue_segindex=segidx,
+        )
         return top
 
     @abc.abstractmethod
@@ -300,26 +316,42 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
 
     def _add_angles(self):
         try:
-            angles = guessers.guess_angles(self.bonds)
+            guesser = self._get_default_guesser()
+            if guesser is not None:
+                angles = guesser.guess_angles(self.bonds)
+            else:
+                angles = guessers.guess_angles(self.bonds)
+
             self._topology.add_TopologyAttr(topologyattrs.Angles(angles))
-            self._generate_from_topology()
+            mda.Universe.__init__(self, self._topology)
         except AttributeError:
             pass
+
 
     def _add_dihedrals(self):
         try:
-            dihedrals = guessers.guess_dihedrals(self.angles)
+            guesser = self._get_default_guesser()
+            if guesser is not None:
+                dihedrals = guesser.guess_dihedrals(self.angles)
+            else:
+                dihedrals = guessers.guess_dihedrals(self.angles)
+
             self._topology.add_TopologyAttr(topologyattrs.Dihedrals(dihedrals))
-            self._generate_from_topology()
+            mda.Universe.__init__(self, self._topology)
         except AttributeError:
             pass
 
+
     def _add_impropers(self):
         try:
-            impropers = guessers.guess_improper_dihedrals(self.angles)
-            self._topology.add_TopologyAttr(
-                (topologyattrs.Impropers(impropers)))
-            self._generate_from_topology()
+            guesser = self._get_default_guesser()
+            if guesser is not None:
+                impropers = guesser.guess_improper_dihedrals(self.angles)
+            else:
+                impropers = guessers.guess_improper_dihedrals(self.angles)
+
+            self._topology.add_TopologyAttr(topologyattrs.Impropers(impropers))
+            mda.Universe.__init__(self, self._topology)
         except AttributeError:
             pass
 
@@ -428,5 +460,5 @@ def rename_universe(universe):
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))
     if not np.issubdtype(universe.atoms.types.dtype, np.int64):
         universe._topology.add_TopologyAttr(topologyattrs.Atomtypes(atomnames))
-    universe._generate_from_topology()
+    mda.Universe.__init__(self, self._topology)
     return universe

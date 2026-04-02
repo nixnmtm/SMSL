@@ -45,6 +45,18 @@ class Calpha(ModelBase):
         self._set_masses()
         self._set_charges()
 
+    def _iter_beads(self, universe=None):
+        u = self.atu if universe is None else universe
+
+        for res in u.select_atoms("protein").residues:
+            ca = res.atoms.select_atoms("calpha")
+            if ca.n_atoms > 0:
+                yield "CA", ca
+
+        for ion in u.select_atoms("bioion").split("residue"):
+            if ion.n_atoms > 0:
+                yield "ions", ion
+
     def _add_bonds(self):
         bonds = []
         bonds.extend(
@@ -65,7 +77,7 @@ class Calpha(ModelBase):
         ca_masses = [
             res.atoms.total_mass()
             for res in self.atu.select_atoms("protein").residues
-            if res.atoms.select_atoms("name CA").n_atoms > 0
+            if res.atoms.select_atoms("calpha").n_atoms > 0
         ]
         self.atoms.select_atoms("name CA").masses = np.asarray(ca_masses)
 
@@ -82,7 +94,7 @@ class Calpha(ModelBase):
             ca_charges = [
                 res.atoms.total_charge()
                 for res in self.atu.select_atoms("protein").residues
-                if res.atoms.select_atoms("name CA").n_atoms > 0
+                if res.atoms.select_atoms("calpha").n_atoms > 0
             ]
             self.atoms.select_atoms("name CA").charges = np.asarray(ca_charges)
 
@@ -113,6 +125,88 @@ class Caside(ModelBase):
         self._initialize(*args, **kwargs)
         self._set_masses()
         self._set_charges()
+
+    def _iter_beads(self, universe=None):
+        u = self.atu if universe is None else universe
+
+        for res in u.select_atoms("protein").residues:
+            ca = res.atoms.select_atoms("calpha")
+            if ca.n_atoms > 0:
+                yield "CA", ca
+
+            cb = res.atoms.select_atoms(self._mapping["CB"])
+            if cb.n_atoms > 0:
+                yield "CB", cb
+
+        for ion in u.select_atoms("bioion").split("residue"):
+            if ion.n_atoms > 0:
+                yield "ions", ion
+
+    def _apply_map(self, mapping):
+        bead_items = list(self._iter_beads(self.atu))
+
+        atomnames = []
+        atomids = []
+        resids = []
+        resnames = []
+        segids = []
+        charges = []
+        masses = []
+
+        for i, (name, bead) in enumerate(bead_items):
+            atomnames.append(name)
+            atomids.append(i)
+            resids.append(bead.resids[0])
+            resnames.append(bead.resnames[0])
+            segids.append(bead.segids[0].split("_")[-1])
+            charges.append(0.0)
+            masses.append(0.0)
+
+        n_atoms = len(bead_items)
+
+        vdwradii = topologyattrs.Radii(np.zeros(n_atoms, dtype=float))
+        atomids = topologyattrs.Atomids(np.asarray(atomids))
+        atomnames = topologyattrs.Atomnames(np.asarray(atomnames, dtype=object))
+        atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms) + 100))
+        charges = topologyattrs.Charges(np.asarray(charges, dtype=float))
+        masses = topologyattrs.Masses(np.asarray(masses, dtype=float))
+
+        segids = np.asarray(segids, dtype=object)
+        resids = np.asarray(resids)
+        resnames = np.asarray(resnames, dtype=object)
+
+        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
+            (resids,), (resids, resnames, segids)
+        )
+
+        residueids = topologyattrs.Resids(new_resids)
+        residuenums = topologyattrs.Resnums(new_resids.copy())
+        residuenames = topologyattrs.Resnames(new_resnames)
+
+        segidx, (perseg_segids,) = topbase.change_squash((new_segids,), (new_segids,))
+        segids = topologyattrs.Segids(perseg_segids)
+
+        top = topology.Topology(
+            len(atomids),
+            len(new_resids),
+            len(segids),
+            attrs=[
+                atomids,
+                atomnames,
+                atomtypes,
+                charges,
+                masses,
+                vdwradii,
+                residueids,
+                residuenums,
+                residuenames,
+                segids,
+            ],
+            atom_resindex=residx,
+            residue_segindex=segidx,
+        )
+        return top
+
 
     def _add_bonds(self):
         bonds = []
@@ -146,16 +240,16 @@ class Caside(ModelBase):
         cb_masses = []
 
         for r in self.atu.select_atoms("protein").residues:
-            ca_bead = r.atoms.select_atoms("name CA")
-            cb_bead = r.atoms.select_atoms("name CB")
+            ca = r.atoms.select_atoms("calpha")
+            cb = r.atoms.select_atoms(self._mapping["CB"])
 
             bb = r.atoms.select_atoms("hbackbone")
             sc = r.atoms.select_atoms("hsidechain")
 
-            if ca_bead.n_atoms > 0 and bb.n_atoms > 0:
+            if ca.n_atoms > 0 and bb.n_atoms > 0:
                 ca_masses.append(bb.total_mass())
 
-            if cb_bead.n_atoms > 0 and sc.n_atoms > 0:
+            if cb.n_atoms > 0 and sc.n_atoms > 0:
                 cb_masses.append(sc.total_mass())
 
         self.atoms.select_atoms("name CA").masses = np.asarray(ca_masses)
@@ -175,16 +269,16 @@ class Caside(ModelBase):
             cb_charges = []
 
             for r in self.atu.select_atoms("protein").residues:
-                ca_bead = r.atoms.select_atoms("name CA")
-                cb_bead = r.atoms.select_atoms("name CB")
+                ca = r.atoms.select_atoms("calpha")
+                cb = r.atoms.select_atoms(self._mapping["CB"])
 
                 bb = r.atoms.select_atoms("hbackbone")
                 sc = r.atoms.select_atoms("hsidechain")
 
-                if ca_bead.n_atoms > 0 and bb.n_atoms > 0:
+                if ca.n_atoms > 0 and bb.n_atoms > 0:
                     ca_charges.append(bb.total_charge())
 
-                if cb_bead.n_atoms > 0 and sc.n_atoms > 0:
+                if cb.n_atoms > 0 and sc.n_atoms > 0:
                     cb_charges.append(sc.total_charge())
 
             self.atoms.select_atoms("name CA").charges = np.asarray(ca_charges)
@@ -245,8 +339,31 @@ class Polar(ModelBase):
     def _cb_selection(self, resname):
         return self._mapping["CB"].get(resname, None)
 
+    def _iter_beads(self, universe=None):
+        u = self.atu if universe is None else universe
+
+        for res in u.select_atoms("protein").residues:
+            n = res.atoms.select_atoms(self._mapping["N"])
+            if n.n_atoms > 0:
+                yield "N", n
+
+            cb_sel = self._cb_selection(res.resname)
+            if cb_sel is not None:
+                cb = res.atoms.select_atoms(cb_sel)
+                if cb.n_atoms > 0:
+                    yield "CB", cb
+
+            o = res.atoms.select_atoms(self._mapping["O"])
+            if o.n_atoms > 0:
+                yield "O", o
+
+        for ion in u.select_atoms(self._mapping["ions"]).split("residue"):
+            if ion.n_atoms > 0:
+                yield "ion", ion
+
     def _apply_map(self, mapping):
-        beads = []
+        bead_items = list(self._iter_beads(self.atu))
+        from collections import Counter
         atomnames = []
         atomids = []
         resids = []
@@ -255,65 +372,16 @@ class Polar(ModelBase):
         charges = []
         masses = []
 
-        i = 0
+        for i, (name, bead) in enumerate(bead_items):
+            atomnames.append(name)
+            atomids.append(i)
+            resids.append(bead.resids[0])
+            resnames.append(bead.resnames[0])
+            segids.append(bead.segids[0].split("_")[-1])
+            charges.append(0.0)
+            masses.append(0.0)
 
-        for res in self.atu.select_atoms("protein").residues:
-            # N bead
-            n_bead = res.atoms.select_atoms(mapping["N"])
-            if n_bead.n_atoms > 0:
-                beads.append(n_bead)
-                atomnames.append("N")
-                atomids.append(i)
-                resids.append(n_bead.resids[0])
-                resnames.append(n_bead.resnames[0])
-                segids.append(n_bead.segids[0].split("_")[-1])
-                charges.append(0.0)
-                masses.append(0.0)
-                i += 1
-
-            # CB bead
-            cb_sel = self._cb_selection(res.resname)
-            if cb_sel is not None:
-                cb_bead = res.atoms.select_atoms(cb_sel)
-                if cb_bead.n_atoms > 0:
-                    beads.append(cb_bead)
-                    atomnames.append("CB")
-                    atomids.append(i)
-                    resids.append(cb_bead.resids[0])
-                    resnames.append(cb_bead.resnames[0])
-                    segids.append(cb_bead.segids[0].split("_")[-1])
-                    charges.append(0.0)
-                    masses.append(0.0)
-                    i += 1
-
-            # O bead
-            o_bead = res.atoms.select_atoms(mapping["O"])
-            if o_bead.n_atoms > 0:
-                beads.append(o_bead)
-                atomnames.append("O")
-                atomids.append(i)
-                resids.append(o_bead.resids[0])
-                resnames.append(o_bead.resnames[0])
-                segids.append(o_bead.segids[0].split("_")[-1])
-                charges.append(0.0)
-                masses.append(0.0)
-                i += 1
-
-        # ions
-        for ion in self.atu.select_atoms(mapping["ions"]).split("residue"):
-            if ion.n_atoms > 0:
-                beads.append(ion)
-                atomnames.append("ion")
-                atomids.append(i)
-                resids.append(ion.resids[0])
-                resnames.append(ion.resnames[0])
-                segids.append(ion.segids[0].split("_")[-1])
-                charges.append(0.0)
-                masses.append(0.0)
-                i += 1
-
-        beads = np.asarray(beads, dtype=object)
-        n_atoms = len(beads)
+        n_atoms = len(bead_items)
 
         vdwradii = topologyattrs.Radii(np.zeros(n_atoms, dtype=float))
         atomids = topologyattrs.Atomids(np.asarray(atomids))
@@ -388,8 +456,8 @@ class Polar(ModelBase):
         o_masses = []
 
         for r in self.atu.select_atoms("protein").residues:
-            n_bead = r.atoms.select_atoms("protein and name N")
-            o_bead = r.atoms.select_atoms("protein and name O OT1 OT2 OXT")
+            n_bead = r.atoms.select_atoms(self._mapping["N"])
+            o_bead = r.atoms.select_atoms(self._mapping["O"])
 
             n = r.atoms.select_atoms("amine")
             ca = r.atoms.select_atoms("hcalpha")
@@ -426,8 +494,8 @@ class Polar(ModelBase):
             o_charges = []
 
             for r in self.atu.select_atoms("protein").residues:
-                n_bead = r.atoms.select_atoms("protein and name N")
-                o_bead = r.atoms.select_atoms("protein and name O OT1 OT2 OXT")
+                n_bead = r.atoms.select_atoms(self._mapping["N"])
+                o_bead = r.atoms.select_atoms(self._mapping["O"])
 
                 n = r.atoms.select_atoms("amine")
                 ca = r.atoms.select_atoms("hcalpha")
