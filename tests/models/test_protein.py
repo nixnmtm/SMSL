@@ -8,38 +8,111 @@
 # Released under the New BSD license.
 #
 
+import numpy as np
 import MDAnalysis as mda
 from numpy import testing
+
 from fluctmatch.models import protein
-from fluctmatch.models.selection import *
 from tests.datafiles import (
     PDB_prot,
     TPR,
     XTC,
 )
 
-def expected_counts_from_mapping(u, mapping):
-    counts = {name: 0 for name in mapping}
-    for res in u.residues:
-        for name, sel in mapping.items():
-            bead = res.atoms.select_atoms(sel)
-            if bead.n_atoms > 0:
-                counts[name] += 1
-    return counts
 
-def actual_counts_from_cg(cg):
-    names = list(cg.atoms.names)
-    return {name: names.count(name) for name in set(names)}
+# ---------- shared helpers for capped proteins ----------
 
+def _trueprotein_residues(u):
+    return list(u.select_atoms("trueprotein").residues)
+
+
+def _cap_before(u, res):
+    idx = res.resindex
+    if idx > 0:
+        prev_res = u.residues[idx - 1]
+        if prev_res.resname == "ACE":
+            return prev_res
+    return None
+
+
+def _cap_after(u, res):
+    idx = res.resindex
+    if idx < len(u.residues) - 1:
+        next_res = u.residues[idx + 1]
+        if next_res.resname == "NME":
+            return next_res
+    return None
+
+
+def _calpha_group(u, res):
+    group = res.atoms.select_atoms("calpha")
+    cap_b = _cap_before(u, res)
+    cap_a = _cap_after(u, res)
+
+    if cap_b is not None:
+        group = group + cap_b.atoms
+    if cap_a is not None:
+        group = group + cap_a.atoms
+
+    return group.unique
+
+
+def _caside_ca_group(u, res):
+    group = res.atoms.select_atoms("calpha")
+    cap_b = _cap_before(u, res)
+    cap_a = _cap_after(u, res)
+
+    if cap_b is not None:
+        group = group + cap_b.atoms
+    if cap_a is not None:
+        group = group + cap_a.atoms
+
+    return group.unique
+
+
+def _caside_cb_group(res):
+    return res.atoms.select_atoms("hsidechain and not name H*").unique
+
+
+def _polar_cb_selection(cg_universe, res):
+    return cg_universe._mapping["CB"].get(res.resname, None)
+
+
+def _polar_has_cb(cg_universe, res):
+    cb_sel = _polar_cb_selection(cg_universe, res)
+    if cb_sel is None:
+        return False
+    return res.atoms.select_atoms(cb_sel).n_atoms > 0
+
+
+def _polar_n_group(u, res):
+    group = res.atoms.select_atoms("amine") + res.atoms.select_atoms("hcalpha")
+    cap = _cap_before(u, res)
+    if cap is not None:
+        group = group + cap.atoms
+    return group.unique
+
+
+def _polar_o_group(u, res):
+    group = res.atoms.select_atoms("carboxyl") + res.atoms.select_atoms("hcalpha")
+    cap = _cap_after(u, res)
+    if cap is not None:
+        group = group + cap.atoms
+    return group.unique
+
+
+# ---------- Calpha ----------
 
 def test_calpha_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Calpha(PDB_prot)
-    cg_natoms = (aa_universe.select_atoms("calpha").n_atoms +
-                 aa_universe.select_atoms("bioion").n_atoms)
+
+    expected = len(_trueprotein_residues(aa_universe))
+    expected += aa_universe.select_atoms("bioion").n_atoms
+
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
-        cg_natoms,
+        expected,
         err_msg="Number of sites not equal.",
         verbose=True,
     )
@@ -49,10 +122,15 @@ def test_calpha_positions():
     positions = []
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Calpha(PDB_prot)
-    for _ in aa_universe.select_atoms("protein").residues:
-        positions.append(_.atoms.select_atoms("calpha").center_of_mass())
-    for _ in aa_universe.select_atoms("bioion").residues:
-        positions.append(_.atoms.select_atoms("bioion").center_of_mass())
+
+    for res in _trueprotein_residues(aa_universe):
+        ca_group = _calpha_group(aa_universe, res)
+        if len(ca_group) > 0:
+            positions.append(ca_group.center_of_mass())
+
+    for ion in aa_universe.select_atoms("bioion").residues:
+        positions.append(ion.atoms.center_of_mass())
+
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -70,15 +148,42 @@ def test_calpha_trajectory():
         verbose=True,
     )
 
+
+def test_calpha_terminal_caps_are_incorporated():
+    aa_universe = mda.Universe(PDB_prot)
+    cg_universe = protein.Calpha(PDB_prot)
+
+    true_res = _trueprotein_residues(aa_universe)
+    first_res = true_res[0]
+    last_res = true_res[-1]
+
+    expected_first = _calpha_group(aa_universe, first_res).center_of_mass()
+    expected_last = _calpha_group(aa_universe, last_res).center_of_mass()
+
+    cg_ca = cg_universe.atoms.select_atoms("name CA")
+
+    testing.assert_allclose(cg_ca.positions[0], expected_first)
+    testing.assert_allclose(cg_ca.positions[-1], expected_last)
+
+
+# ---------- Caside ----------
+
 def test_caside_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Caside(PDB_prot)
-    cg_natoms = (aa_universe.select_atoms("calpha").n_atoms +
-                 aa_universe.select_atoms("cbeta").n_atoms +
-                 aa_universe.select_atoms("bioion").n_atoms)
+
+    expected = 0
+    for res in _trueprotein_residues(aa_universe):
+        if len(_caside_ca_group(aa_universe, res)) > 0:
+            expected += 1
+        if len(_caside_cb_group(res)) > 0:
+            expected += 1
+
+    expected += aa_universe.select_atoms("bioion").n_atoms
+
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
-        cg_natoms,
+        expected,
         err_msg="Number of sites not equal.",
         verbose=True,
     )
@@ -88,13 +193,19 @@ def test_caside_positions():
     positions = []
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Caside(PDB_prot)
-    for _ in aa_universe.select_atoms("protein").residues:
-        positions.append(_.atoms.select_atoms("calpha").center_of_mass())
-        if _.resname != "GLY":
-            cbeta = "hsidechain and not name H*"
-            positions.append(_.atoms.select_atoms(cbeta).center_of_mass())
-    for _ in aa_universe.select_atoms("bioion").residues:
-        positions.append(_.atoms.center_of_mass())
+
+    for res in _trueprotein_residues(aa_universe):
+        ca_group = _caside_ca_group(aa_universe, res)
+        if len(ca_group) > 0:
+            positions.append(ca_group.center_of_mass())
+
+        cb_group = _caside_cb_group(res)
+        if len(cb_group) > 0:
+            positions.append(cb_group.center_of_mass())
+
+    for ion in aa_universe.select_atoms("bioion").residues:
+        positions.append(ion.atoms.center_of_mass())
+
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
@@ -112,31 +223,46 @@ def test_caside_trajectory():
         verbose=True,
     )
 
-def _polar_cb_selection(cg_universe, res):
-    """Return the Polar CB selection string for a residue, or None if absent."""
-    return cg_universe._mapping["CB"].get(res.resname, None)
+
+def test_caside_terminal_caps_are_incorporated_into_ca_only():
+    aa_universe = mda.Universe(PDB_prot)
+    cg_universe = protein.Caside(PDB_prot)
+
+    true_res = _trueprotein_residues(aa_universe)
+    first_res = true_res[0]
+    last_res = true_res[-1]
+
+    expected_first_ca = _caside_ca_group(aa_universe, first_res).center_of_mass()
+    expected_last_ca = _caside_ca_group(aa_universe, last_res).center_of_mass()
+
+    cg_ca = cg_universe.atoms.select_atoms("name CA")
+    testing.assert_allclose(cg_ca.positions[0], expected_first_ca)
+    testing.assert_allclose(cg_ca.positions[-1], expected_last_ca)
+
+    # CB remains pure sidechain; no cap contribution
+    first_cb = _caside_cb_group(first_res)
+    if len(first_cb) > 0:
+        cg_first_res = cg_universe.residues[0]
+        cg_cb = cg_first_res.atoms.select_atoms("name CB")
+        if len(cg_cb) > 0:
+            testing.assert_allclose(cg_cb.positions[0], first_cb.center_of_mass())
 
 
-def _polar_has_cb(cg_universe, res):
-    """Whether this residue should contribute a CB bead in Polar."""
-    cb_sel = _polar_cb_selection(cg_universe, res)
-    if cb_sel is None:
-        return False
-    return res.atoms.select_atoms(cb_sel).n_atoms > 0
+# ---------- Polar ----------
 
 def test_polar_creation():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Polar(PDB_prot)
 
     expected = 0
-    for res in aa_universe.residues:
-        if res.atoms.select_atoms("protein and name N").n_atoms > 0:
+    for res in _trueprotein_residues(aa_universe):
+        if len(_polar_n_group(aa_universe, res)) > 0:
             expected += 1
 
         if _polar_has_cb(cg_universe, res):
             expected += 1
 
-        if res.atoms.select_atoms("protein and name O OT1 OT2 OXT").n_atoms > 0:
+        if len(_polar_o_group(aa_universe, res)) > 0:
             expected += 1
 
     expected += aa_universe.select_atoms("bioion").n_atoms
@@ -154,18 +280,20 @@ def test_polar_positions():
     aa_universe = mda.Universe(PDB_prot)
     cg_universe = protein.Polar(PDB_prot)
 
-    for res in aa_universe.select_atoms("protein").residues:
-        positions.append(res.atoms.select_atoms("name N").center_of_mass())
+    for res in _trueprotein_residues(aa_universe):
+        n_group = _polar_n_group(aa_universe, res)
+        if len(n_group) > 0:
+            positions.append(n_group.center_of_mass())
 
         cb_sel = _polar_cb_selection(cg_universe, res)
         if cb_sel is not None:
-            cb_atoms = res.atoms.select_atoms(cb_sel)
-            if cb_atoms.n_atoms > 0:
-                positions.append(cb_atoms.center_of_mass())
+            cb_group = res.atoms.select_atoms(cb_sel)
+            if len(cb_group) > 0:
+                positions.append(cb_group.center_of_mass())
 
-        positions.append(
-            res.atoms.select_atoms("name O OT1 OT2 OXT").center_of_mass()
-        )
+        o_group = _polar_o_group(aa_universe, res)
+        if len(o_group) > 0:
+            positions.append(o_group.center_of_mass())
 
     for ion in aa_universe.select_atoms("bioion").residues:
         positions.append(ion.atoms.center_of_mass())
@@ -186,3 +314,21 @@ def test_polar_trajectory():
         err_msg="All-atom and coarse-grain trajectories unequal.",
         verbose=True,
     )
+
+
+def test_polar_terminal_caps_are_incorporated():
+    aa_universe = mda.Universe(PDB_prot)
+    cg_universe = protein.Polar(PDB_prot)
+
+    true_res = _trueprotein_residues(aa_universe)
+    first_res = true_res[0]
+    last_res = true_res[-1]
+
+    expected_first_n = _polar_n_group(aa_universe, first_res).center_of_mass()
+    expected_last_o = _polar_o_group(aa_universe, last_res).center_of_mass()
+
+    cg_n = cg_universe.atoms.select_atoms("name N")
+    cg_o = cg_universe.atoms.select_atoms("name O")
+
+    testing.assert_allclose(cg_n.positions[0], expected_first_n)
+    testing.assert_allclose(cg_o.positions[-1], expected_last_o)
