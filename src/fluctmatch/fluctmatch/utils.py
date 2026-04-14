@@ -230,26 +230,27 @@ def write_charmm_files(universe,
         logger.info("Writing {}...".format(filenames["psf_file"]))
         psf.write(universe)
 
-    # Write the new trajectory in Gromacs XTC format.
+    # Write the new trajectory.
     if write_traj:
         universe.trajectory.rewind()
         with mda.Writer(
             native_str(filenames["traj_file"]),
             universe.atoms.n_atoms,
-            istart=1.0,
-                remarks="Written by fluctmatch.") as trj:
+            istart=1,
+            remarks="Written by fluctmatch.",
+        ) as trj:
             logger.info("Writing the trajectory {}...".format(
                 filenames["traj_file"]))
             logger.warning("This may take a while depending upon the size and "
-                           "length of the trajectory.")
+                        "length of the trajectory.")
             with click.progressbar(universe.trajectory) as bar:
-                for ts in bar:
-                    trj.write(ts)
+                for _ in bar:
+                    trj.write(universe.atoms)
 
     # Write an XPLOR version of the PSF
     atomtypes = topologyattrs.Atomtypes(universe.atoms.names)
     universe._topology.add_TopologyAttr(topologyattr=atomtypes)
-    universe._generate_from_topology()
+    #universe._generate_from_topology()
     with mda.Writer(native_str(filenames["xplor_psf_file"]), **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["xplor_psf_file"]))
         psf.write(universe)

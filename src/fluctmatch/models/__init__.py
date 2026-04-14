@@ -25,8 +25,8 @@ import logging
 
 from fluctmatch.models.protein import (
     Calpha,
-    Caside,
-    Ncsc,
+    Caside, 
+    Polar,
 )
 from fluctmatch.models.enm import Enm
 from fluctmatch.models.nucleic import (
@@ -44,10 +44,15 @@ from fluctmatch.models.solvent import (
     Dma,
 )
 
+from fluctmatch.models.ligand import (
+    ADP,
+    OM,
+)
+
 __all__ = [
     "Calpha",
     "Caside",
-    "Ncsc",
+    "Polar",
     "Enm",
     "Nucleic3",
     "Nucleic4",
@@ -57,6 +62,7 @@ __all__ = [
     "SolventIons",
     "BioIons",
     "NobleAtoms",
+    "OM", "ADP", # ligand models
 ]
 
 logger = logging.getLogger(__name__)

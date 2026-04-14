@@ -22,11 +22,17 @@ __all__ = [
 
 _DATA = Path(__file__).resolve().parent / "data"
 
-PDB = str(_DATA / "trex1.pdb")
+#PDB = str(_DATA / "trex1.pdb")
+
+# OM testing
+PDB = str(_DATA / "test_om.gro")
+TPR = str(_DATA / "test_om.tpr")
+XTC = str(_DATA / "test_om.xtc")
+
 PDB_prot = str(_DATA / "protein.pdb")
 PDB_dna = str(_DATA / "dna.pdb")
-TPR = str(_DATA / "trex1.tpr")
-XTC = str(_DATA / "trex1.xtc")
+#TPR = str(_DATA / "trex1.tpr")
+#XTC = str(_DATA / "trex1.xtc")
 TIP3P = str(_DATA / "spc216.gro")
 TIP4P = str(_DATA / "tip4p.gro")
 IONS = str(_DATA / "ions.pdb")

@@ -27,14 +27,24 @@ def _cat(*x):
 
 class BioIonSelection(selection.Selection):
     token = "bioion"
+
+    # keep this name for compatibility with other selections
     ion_atoms = _arr(["MG", "CAL", "MN", "FE", "CU", "ZN", "AG"])
+
+    # residue-based polyatomic ions
+    ion_resnames = _arr(["H2P"])
 
     def __init__(self, parser, tokens):
         super().__init__(parser, tokens)
 
     def apply(self, group):
         names = _arr(group.names)
-        return group[np.isin(names, self.ion_atoms)].unique
+        resnames = _arr(group.resnames)
+
+        atom_mask = np.isin(names, BioIonSelection.ion_atoms)
+        res_mask = np.isin(resnames, BioIonSelection.ion_resnames)
+
+        return group[np.logical_or(atom_mask, res_mask)].unique
 
 
 class WaterSelection(selection.Selection):
@@ -83,7 +93,6 @@ class BackboneSelection(selection.Selection):
         names = _arr(group.names)
         mask = np.isin(names, _cat(self.bb_atoms, self.oxy_atoms))
         return group[mask].unique
-
 
 class HBackboneSelection(BackboneSelection):
     token = "hbackbone"
@@ -146,6 +155,32 @@ class CarboxylSelection(selection.Selection):
     def apply(self, group):
         names = _arr(group.names)
         return group[np.isin(names, self.carboxyl)].unique
+
+# to manage terminal pathches
+class CapsSelection(selection.Selection):
+    token = "caps"
+    cap_resnames = _arr(["ACE", "NME"])
+
+    def __init__(self, parser, tokens):
+        super().__init__(parser, tokens)
+
+    def apply(self, group):
+        resnames = _arr(group.resnames)
+        return group[np.isin(resnames, self.cap_resnames)].unique
+
+
+class TrueProteinSelection(selection.Selection):
+    token = "trueprotein"
+    cap_resnames = _arr(["ACE", "NME"])
+
+    def __init__(self, parser, tokens):
+        super().__init__(parser, tokens)
+
+    def apply(self, group):
+        protein = group.select_atoms("protein")
+        resnames = _arr(protein.resnames)
+        mask = np.isin(resnames, self.cap_resnames, invert=True)
+        return protein[mask].unique
 
 
 # ======================

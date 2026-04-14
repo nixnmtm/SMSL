@@ -91,10 +91,10 @@ class _Trajectory(base.ReaderBase):
                 yield self._read_next_timestep()
             except StopIteration:
                 self._reopen()
-                raise StopIteration
+                return
 
     def __len__(self):
-        return len(self._u.trajectory)
+        return self._t.n_frames
 
     def __repr__(self):
         return "<CG Trajectory doing {:d} beads >".format(self.n_atoms)
@@ -138,7 +138,7 @@ class _Trajectory(base.ReaderBase):
                 pass
 
     def _read_next_timestep(self, ts=None):
-        at_ts = self._t.next()
+        at_ts = next(self._t)
         self._fill_ts(at_ts)
         return self.ts
 
