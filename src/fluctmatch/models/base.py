@@ -31,6 +31,7 @@ import logging
 import string
 
 import numpy as np
+
 import MDAnalysis as mda
 from MDAnalysis.core import (
     topology,
@@ -212,6 +213,9 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         mda.Universe.__init__(self, new_topology)
 
         self._add_bonds()
+        
+        # We are not using agles, dihedrals and imporpers
+        # just a placeholder if neede in future
         if kwargs.get("guess_angles", True):
             self._add_angles()
             self._add_dihedrals()
@@ -460,5 +464,5 @@ def rename_universe(universe):
     universe._topology.add_TopologyAttr(topologyattrs.Resnames(resnames))
     if not np.issubdtype(universe.atoms.types.dtype, np.int64):
         universe._topology.add_TopologyAttr(topologyattrs.Atomtypes(atomnames))
-    mda.Universe.__init__(self, self._topology)
+    mda.Universe.__init__(universe, universe._topology)
     return universe
