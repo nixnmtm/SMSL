@@ -87,9 +87,9 @@ class RTFWriter(topbase.TopologyWriterBase):
     def _write_mass(self):
         _, idx = np.unique(self._atoms.names, return_index=True)
         try:
-            atomtypes = self._atoms.types.astype(np.int)
+            atomtypes = self._atoms.types.astype(int)
         except ValueError:
-            atomtypes = np.arange(self._atoms.n_atoms, dtype=np.int) + 1
+            atomtypes = np.arange(self._atoms.n_atoms, dtype=int) + 1
         columns = (atomtypes, self._atoms.names, self._atoms.masses)
         columns = pd.concat([pd.DataFrame(_[idx]) for _ in columns], axis=1)
         columns.columns = ["itype", "stype", "mass"]
@@ -135,13 +135,13 @@ class RTFWriter(topbase.TopologyWriterBase):
                 # within the residue.
                 names = np.concatenate(
                     [_.atoms.names[np.newaxis, :] for _ in bonds],
-                    axis=0).astype(np.object)
+                    axis=0).astype(object)
                 idx = np.any(
                     [np.isin(_.atoms, atoms, invert=True) for _ in bonds],
                     axis=1)
                 pos_names = np.where(
                     np.isin(bonds[idx], atoms, invert=True), "+", "").astype(
-                        np.object)
+                        object)
                 if pos_names.size == 0:
                     logger.warning(
                         "Please check that all bond definitions are valid. "

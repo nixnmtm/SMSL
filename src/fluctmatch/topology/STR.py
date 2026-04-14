@@ -94,7 +94,7 @@ class STRWriter(topbase.TopologyWriterBase):
         """
         # Create the table
         try:
-            dist = np.zeros_like(universe.atoms.bonds.bonds(), dtype=np.float)
+            dist = np.zeros_like(universe.atoms.bonds.bonds(), dtype=float)
             if self._version >= 36:
                 a1, a2 = universe.atoms.bonds.atom1, universe.atoms.bonds.atom2
                 data = (

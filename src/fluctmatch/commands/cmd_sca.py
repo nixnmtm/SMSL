@@ -76,7 +76,7 @@ from fluctmatch.analysis import (
     "--pcut",
     default=0.95,
     show_default=True,
-    type=np.float,
+    type=float,
     help="Cutoff value for sector selection")
 @click.option(
     "-r",

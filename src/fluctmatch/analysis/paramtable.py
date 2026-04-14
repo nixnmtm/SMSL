@@ -213,7 +213,7 @@ class ParamTable(object):
         tables.wait()
 
         self.table = pd.concat(tables.get(), axis=1)
-        self.table.columns = self.table.columns.astype(np.int)
+        self.table.columns = self.table.columns.astype(int)
         self.table = self.table[np.sort(self.table.columns)]
         self.table.reset_index(inplace=True)
 
@@ -245,7 +245,7 @@ class ParamTable(object):
                 self.table.set_index(_index["complete"], inplace=True)
             else:
                 self.table.set_index(_index["general"], inplace=True)
-            self.table.columns = self.table.columns.astype(np.int)
+            self.table.columns = self.table.columns.astype(int)
 
     def write(self, filename):
         """Write the parameter table to file.

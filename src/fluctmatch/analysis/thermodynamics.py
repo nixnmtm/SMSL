@@ -96,19 +96,19 @@ def create_thermo_tables(datadir, outdir, **kwargs):
     for window, result in results.get():
         entropy = pd.concat(
             [entropy, pd.DataFrame(result["Entropy"], columns=window)], axis=1)
-        entropy.columns = entropy.columns.astype(np.int)
+        entropy.columns = entropy.columns.astype(int)
         entropy = entropy[np.sort(entropy.columns)]
 
         enthalpy = pd.concat(
             [enthalpy,
              pd.DataFrame(result["Enthalpy"], columns=window)],
             axis=1)
-        enthalpy.columns = enthalpy.columns.astype(np.int)
+        enthalpy.columns = enthalpy.columns.astype(int)
         enthalpy = enthalpy[np.sort(enthalpy.columns)]
 
         heat = pd.concat(
             [heat, pd.DataFrame(result["Heatcap"], columns=window)], axis=1)
-        heat.columns = heat.columns.astype(np.int)
+        heat.columns = heat.columns.astype(int)
         heat = heat[np.sort(heat.columns)]
 
         temperature = kwargs.get("temperature", 300.)

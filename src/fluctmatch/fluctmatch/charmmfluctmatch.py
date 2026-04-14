@@ -209,7 +209,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
         # Self consistent error information.
         self.error = pd.DataFrame(
-            np.zeros((1, len(self.error_hdr)), dtype=np.int),
+            np.zeros((1, len(self.error_hdr)), dtype=int),
             columns=self.error_hdr,
         )
 
@@ -601,7 +601,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         thermo = pd.DataFrame(thermo, columns=columns)
         thermo.drop(["RESN", "Atm/res", "Ign.frq"], axis=1, inplace=True)
         thermo.set_index(["segidI", "resI"], inplace=True)
-        thermo = thermo.astype(np.float)
+        thermo = thermo.astype(float)
 
         # Write data to file
         with open(self.filenames["thermo_data"], "wb") as data_file:

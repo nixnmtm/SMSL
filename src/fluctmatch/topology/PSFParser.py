@@ -429,7 +429,7 @@ class PSFWriter(base.TopologyWriterBase):
             fmt += "%10.6f%18s"
             cheq = (np.zeros_like(atoms.masses),
                     np.full_like(
-                        atoms.names.astype(np.object), "-0.301140E-02"))
+                        atoms.names.astype(object), "-0.301140E-02"))
             cheq = pd.concat([pd.DataFrame(_) for _ in cheq], axis=1)
             lines = pd.concat([lines, cheq], axis=1)
         np.savetxt(psffile, lines, fmt=native_str(fmt))
@@ -448,13 +448,13 @@ class PSFWriter(base.TopologyWriterBase):
             return
 
         values = np.asarray(getattr(self._universe, attr).to_indices()) + 1
-        values = values.astype(np.object)
+        values = values.astype(object)
         n_rows, n_cols = values.shape
         n_values = n_perline // n_cols
         if n_rows % n_values > 0:
             n_extra = n_values - (n_rows % n_values)
             values = np.concatenate(
-                (values, np.full((n_extra, n_cols), "", dtype=np.object)),
+                (values, np.full((n_extra, n_cols), "", dtype=object)),
                 axis=0)
         values = values.reshape((values.shape[0] // n_values, n_perline))
         psffile.write(self.sect_hdr.format(n_rows, header).encode())
@@ -472,10 +472,10 @@ class PSFWriter(base.TopologyWriterBase):
         missing = n_cols - dn_cols if dn_cols > 0 else dn_cols
 
         # NNB
-        nnb = np.full(n_atoms, "0", dtype=np.object)
+        nnb = np.full(n_atoms, "0", dtype=object)
         if missing > 0:
             nnb = np.concatenate(
-                [nnb, np.full(missing, native_str(""), dtype=np.object)],
+                [nnb, np.full(missing, native_str(""), dtype=object)],
                 axis=0)
         nnb = nnb.reshape((nnb.size // n_cols, n_cols))
 
@@ -489,7 +489,7 @@ class PSFWriter(base.TopologyWriterBase):
 
         # NGRP NST2
         psffile.write(self.sect_hdr2.format(1, 0, "NGRP NST2\n").encode())
-        line = np.zeros(3, dtype=np.int)
+        line = np.zeros(3, dtype=int)
         line = line.reshape((1, line.size))
         np.savetxt(
             psffile,
@@ -500,10 +500,10 @@ class PSFWriter(base.TopologyWriterBase):
 
         # MOLNT
         if self._cheq:
-            line = np.full(n_atoms, "1", dtype=np.object)
+            line = np.full(n_atoms, "1", dtype=object)
             if dn_cols > 0:
                 line = np.concatenate(
-                    [line, np.zeros(missing, dtype=np.object)], axis=0)
+                    [line, np.zeros(missing, dtype=object)], axis=0)
             line = line.reshape((line.size // n_cols, n_cols))
             psffile.write(self.sect_hdr.format(1, "MOLNT\n").encode())
             np.savetxt(

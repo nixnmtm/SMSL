@@ -90,20 +90,20 @@ class IntcorReader(TopologyReaderBase):
                 if line.startswith("*") or not line:
                     continue  # ignore TITLE and empty lines
                 break
-            line = np.fromiter(line.strip().split(), dtype=np.int)
+            line = np.fromiter(line.strip().split(), dtype=int)
             key = "EXTENDED" if line[0] == 30 else "STANDARD"
             key += "_RESID" if line[1] == 2 else ""
             resid_a = line[1]
 
             line = next(buf).strip().split()
-            n_lines, resid_b = np.array(line, dtype=np.int)
+            n_lines, resid_b = np.array(line, dtype=int)
             if resid_a != resid_b:
                 raise IOError(
                     "A mismatch has occurred on determining the IC format.")
 
             TableParser = util.FORTRANReader(self.fmt[key])
             table = pd.DataFrame(
-                [TableParser.read(line) for line in buf], dtype=np.object)
+                [TableParser.read(line) for line in buf], dtype=object)
             table = table[table != ":"]
             table = table.dropna(axis=1).apply(pd.to_numeric, errors="ignore")
             table.set_index(0, inplace=True)
@@ -204,7 +204,7 @@ class IntcorWriter(TopologyWriterBase):
             for _ in self._title:
                 icfile.write(_.encode())
                 icfile.write("\n".encode())
-            line = np.zeros(20, dtype=np.int)
+            line = np.zeros(20, dtype=int)
             line[0] = 30 if self._extended else 20
             line[1] = 2 if self._resid else 1
             np.savetxt(
@@ -212,7 +212,7 @@ class IntcorWriter(TopologyWriterBase):
                 line[np.newaxis, :],
                 fmt=native_str("%4d"),
                 delimiter=native_str(""))
-            line = np.zeros(2, dtype=np.int)
+            line = np.zeros(2, dtype=int)
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
             np.savetxt(
