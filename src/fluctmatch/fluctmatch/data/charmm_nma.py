@@ -29,7 +29,7 @@ nma = ("""
     {dimension}
 
     set version {version}
-    bomlev -5 ! This is for CHARMM 39
+    bomlev -2 ! This is for CHARMM 39
 
     ! Additional information
     set temp    {temperature}
@@ -42,11 +42,8 @@ nma = ("""
     read para card {flex} name "{fixed_prm}"
 
     ! Open PSF and coordinate files
-    if @version .ge. 39 then
-        read psf  card name "{xplor_psf_file}"
-    else
-        read psf  card name "{psf_file}"
-    endif
+    read psf  card name "{xplor_psf_file}"
+
     read coor card name "{crd_file}"
     coor copy comp
      

@@ -181,7 +181,7 @@ class PSF36Parser(PSFParser.PSFParser):
         # how to partition the line into the individual atom components
         atom_parsers = dict(
             STANDARD="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
-            STANDARD_XPLOR="'(I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2F14.6,I8",
+            STANDARD_XPLOR="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2F14.6,I8",
             EXTENDED="I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2F14.6,I8",
             EXTENDED_XPLOR="I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A6,1X,2F14.6,I8",
             NAMD="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
@@ -310,7 +310,7 @@ class PSFWriter(base.TopologyWriterBase):
     units = dict(time=None, length=None)
     _fmt = dict(
         STD="%8d %-4s %-4d %-4s %-4s %4d %14.6f%14.6f%8d",
-        STD_XPLOR="{%8d %4s %-4d %-4s %-4s %-4s %14.6f%14.6f%8d",
+        STD_XPLOR="%8d %-4s %-4d %-4s %-4s %-4s %14.6f%14.6f%8d",
         STD_XPLOR_C35="%4d %-4s %-4d %-4s %-4s %-4s %14.6f%14.6f%8d",
         EXT="%10d %-8s %8d %-8s %-8s %4d %14.6f%14.6f%8d",
         EXT_XPLOR="%10d %-8s %-8d %-8s %-8s %-6s %14.6f%14.6f%8d",
@@ -346,17 +346,45 @@ class PSFWriter(base.TopologyWriterBase):
                                          8), ("donors", "NDON: donors\n", 8),
                          ("acceptors", "NACC: acceptors\n", 8))
 
-    def write(self, universe):
+    def write(self, universe, xplor=None, atom_type_source=None):
         """Write universe to PSF format.
 
         Parameters
         ----------
-        universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        universe : MDAnalysis.Universe or MDAnalysis.AtomGroup
             A collection of atoms in a universe or atomgroup with bond
             definitions.
+        xplor : bool, optional
+            If True, force XPLOR PSF output.
+            If False, force standard/CHARMM PSF output.
+            If None, infer from atom type dtype (backward-compatible behavior).
+        atom_type_source : {"types", "names"}, optional
+            Controls which attribute is written into the PSF atom-type column.
+            If None, defaults to:
+                - "names" for xplor=True
+                - "types" otherwise
         """
         self._universe = universe
-        xplor = not np.issubdtype(universe.atoms.types.dtype, np.signedinteger)
+        # Backward-compatible default inference
+        if xplor is None:
+            xplor = not np.issubdtype(universe.atoms.types.dtype, np.signedinteger)
+        
+        # Choose what goes in the atom-type field
+        if atom_type_source is None:
+            atom_type_source = "names" if xplor else "types"
+
+        if atom_type_source == "types":
+            atomtypes_out = universe.atoms.types
+        elif atom_type_source == "names":
+            atomtypes_out = universe.atoms.names
+        else:
+            raise ValueError(
+                "atom_type_source must be one of: None, 'types', 'names'"
+            )
+
+        # Reset fmtkey every write so repeated calls on the same writer object
+        # do not accumulate suffixes like _XPLOR_XPLOR
+        self._fmtkey = "EXT" if self._extended else "STD"
 
         header = "PSF"
         if self._extended:
@@ -384,12 +412,12 @@ class PSFWriter(base.TopologyWriterBase):
                 psffile.write(_.encode())
                 psffile.write("\n".encode())
             psffile.write("\n".encode())
-            self._write_atoms(psffile)
+            self._write_atoms(psffile, atomtypes_out=atomtypes_out)
             for section in self.sections:
                 self._write_sec(psffile, section)
             self._write_other(psffile)
 
-    def _write_atoms(self, psffile):
+    def _write_atoms(self, psffile, atomtypes_out=None):
         """Write atom section in a Charmm PSF file.
 
         Normal (standard) and extended (EXT) PSF format are
@@ -420,9 +448,18 @@ class PSFWriter(base.TopologyWriterBase):
                                  "NATOM").encode())
         psffile.write("\n".encode())
         atoms = self._universe.atoms
-        lines = (np.arange(atoms.n_atoms) + 1, atoms.segids, atoms.resids,
-                 atoms.resnames, atoms.names, atoms.types, atoms.charges,
-                 atoms.masses, np.zeros_like(atoms.ids))
+        if atomtypes_out is None:
+            atomtypes_out = atoms.types
+        
+        lines = (np.arange(atoms.n_atoms) + 1, 
+                atoms.segids, 
+                atoms.resids,
+                atoms.resnames, 
+                atoms.names, 
+                np.asarray(atomtypes_out, dtype=object), 
+                atoms.charges,
+                atoms.masses, 
+                np.zeros_like(atoms.ids))
         lines = pd.concat([pd.DataFrame(_) for _ in lines], axis=1)
 
         if self._cheq:

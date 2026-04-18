@@ -189,8 +189,6 @@ def write_charmm_files(universe,
     title
         Title lines at the beginning of the file.
     """
-    from MDAnalysis.core import (
-        topologyattrs, )
 
     # Attempt to create the necessary subdirectory
     try:
@@ -228,7 +226,7 @@ def write_charmm_files(universe,
         stream.write(universe)
     with mda.Writer(native_str(filenames["psf_file"]), **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["psf_file"]))
-        psf.write(universe)
+        psf.write(universe, xplor=False, atom_type_source="types")
 
     # Write the new trajectory.
     if write_traj:
@@ -247,13 +245,10 @@ def write_charmm_files(universe,
                 for _ in bar:
                     trj.write(universe.atoms)
 
-    # Write an XPLOR version of the PSF
-    atomtypes = topologyattrs.Atomtypes(universe.atoms.names)
-    universe._topology.add_TopologyAttr(topologyattr=atomtypes)
     #universe._generate_from_topology()
     with mda.Writer(native_str(filenames["xplor_psf_file"]), **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["xplor_psf_file"]))
-        psf.write(universe)
+        psf.write(universe, xplor=True, atom_type_source="names")
 
     # Calculate the average coordinates from the trajectory.
     logger.info("Determining the average structure of the trajectory. ")

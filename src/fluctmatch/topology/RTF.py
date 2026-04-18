@@ -188,7 +188,7 @@ class RTFWriter(topbase.TopologyWriterBase):
             for _ in self._title:
                 self.rtffile.write(_.encode())
                 self.rtffile.write("\n".encode())
-            self.rtffile.write(self.fmt["HEADER"].format(36, 1).encode())
+            self.rtffile.write(self.fmt["HEADER"].format(self._version, 1).encode())
             self.rtffile.write("\n".encode())
 
             # Write the atom mass and declaration sections

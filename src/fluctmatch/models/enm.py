@@ -14,7 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-# -*- coding: utf-8 -*-
 from __future__ import (
     absolute_import,
     division,
@@ -25,6 +24,8 @@ from future.builtins import (
     super,
     zip,
 )
+
+from collections import defaultdict
 
 import numpy as np
 import MDAnalysis as mda
@@ -39,9 +40,11 @@ from fluctmatch.models.base import (
 )
 
 
-class Enm(ModelBase):
-    model = "ENM"
-    describe = "Elastic network model"
+class _EnmBase(ModelBase):
+    """Shared ENM construction logic."""
+
+    model = "ENM_BASE"
+    describe = "Elastic network model base"
 
     def __init__(self, *args, **kwargs):
         self._rmin = kwargs.pop("rmin", 0.0)
@@ -94,8 +97,10 @@ class Enm(ModelBase):
             self._add_dihedrals()
             self._add_impropers()
 
-    def _add_bonds(self):
-        positions = fmutils.AverageStructure(self.atu.atoms).run().result
+    def _average_positions(self):
+        return fmutils.AverageStructure(self.atu.atoms).run().result
+
+    def _candidate_pairs_from_distance(self, positions):
         distmat = distance_array(positions, positions, backend="OpenMP")
 
         if self._rmin > 0.0:
@@ -103,18 +108,33 @@ class Enm(ModelBase):
         else:
             a0, a1 = np.where((distmat > self._rmin) & (distmat <= self._rmax))
 
-        skeleton_bonds = set(
-            (int(bond[0].ix), int(bond[1].ix)) for bond in self.atu.bonds
-        )
-        rmax_bonds = set(
-            (int(x), int(y)) for x, y in zip(a0, a1) if y > x
-        )
-        all_bonds = skeleton_bonds.union(rmax_bonds)
+        pairs = []
+        for i, j in zip(a0, a1):
+            if j > i:
+                pairs.append((int(i), int(j), float(distmat[i, j])))
+        return pairs
 
-        self._topology.add_TopologyAttr(topologyattrs.Bonds(all_bonds))
+    def _skeleton_bonds(self):
+        try:
+            return set(
+                tuple(sorted((int(bond[0].ix), int(bond[1].ix))))
+                for bond in self.atu.bonds
+            )
+        except Exception:
+            return set()
 
-        # Rebuild topology after adding bonds
+    def _finalize_bonds(self, bond_set):
+        self._topology.add_TopologyAttr(topologyattrs.Bonds(sorted(bond_set)))
         mda.Universe.__init__(self, self._topology)
+
+    def _select_enm_bonds(self, positions):
+        """Override in subclasses."""
+        raise NotImplementedError
+
+    def _add_bonds(self):
+        positions = self._average_positions()
+        bond_set = self._select_enm_bonds(positions)
+        self._finalize_bonds(bond_set)
 
     @property
     def rmin(self):
@@ -131,3 +151,101 @@ class Enm(ModelBase):
     @rmax.setter
     def rmax(self, distance):
         self._rmax = distance
+
+
+class Enm(_EnmBase):
+    model = "ENM"
+    describe = "Elastic network model"
+
+    def _select_enm_bonds(self, positions):
+        skeleton_bonds = self._skeleton_bonds()
+        candidate_pairs = self._candidate_pairs_from_distance(positions)
+
+        rmax_bonds = set((i, j) for i, j, _ in candidate_pairs)
+        return skeleton_bonds.union(rmax_bonds)
+
+
+class EnmSparse(_EnmBase):
+    model = "ENM_SPARSE"
+    describe = "Elastic network model with reduced redundant long-range contacts"
+
+    def __init__(self, *args, **kwargs):
+        self._local_seq_sep = kwargs.pop("local_seq_sep", 2)
+        self._short_contact_cutoff = kwargs.pop("short_contact_cutoff", 4.5)
+        self._max_long_range_per_node = kwargs.pop("max_long_range_per_node", 10)
+        super().__init__(*args, **kwargs)
+
+    def _node_metadata(self):
+        atoms = self.atu.atoms
+
+        segids = []
+        resids = []
+
+        for atom in atoms:
+            try:
+                segid = str(atom.segid).strip()
+            except Exception:
+                segid = ""
+            segids.append(segid)
+
+            try:
+                resid = int(atom.resid)
+            except Exception:
+                resid = int(atom.ix) + 1
+            resids.append(resid)
+
+        return np.array(segids, dtype=object), np.array(resids, dtype=int)
+
+    def _select_enm_bonds(self, positions):
+        skeleton_bonds = self._skeleton_bonds()
+        candidate_pairs = self._candidate_pairs_from_distance(positions)
+        segids, resids = self._node_metadata()
+
+        local_bonds = set()
+        short_bonds = set()
+        long_range_candidates = []
+
+        for i, j, d in candidate_pairs:
+            pair = (i, j)
+
+            same_seg = (segids[i] == segids[j])
+            seq_sep = abs(resids[i] - resids[j])
+
+            # Keep all local sequence-neighbor contacts on same segment
+            if same_seg and seq_sep <= self._local_seq_sep:
+                local_bonds.add(pair)
+                continue
+
+            # Keep all very short contacts regardless of sequence separation
+            if d <= self._short_contact_cutoff:
+                short_bonds.add(pair)
+                continue
+
+            # Everything else is considered pruneable long-range contact
+            long_range_candidates.append((i, j, d))
+
+        # Cap long-range contacts per node by shortest distance
+        per_node = defaultdict(list)
+        for i, j, d in long_range_candidates:
+            per_node[i].append((d, j))
+            per_node[j].append((d, i))
+
+        kept_long_range = set()
+        for i, neigh in per_node.items():
+            neigh = sorted(neigh, key=lambda x: x[0])
+            for d, j in neigh[: self._max_long_range_per_node]:
+                kept_long_range.add(tuple(sorted((i, j))))
+
+        return skeleton_bonds.union(local_bonds).union(short_bonds).union(kept_long_range)
+
+    @property
+    def local_seq_sep(self):
+        return self._local_seq_sep
+
+    @property
+    def short_contact_cutoff(self):
+        return self._short_contact_cutoff
+
+    @property
+    def max_long_range_per_node(self):
+        return self._max_long_range_per_node

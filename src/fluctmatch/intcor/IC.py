@@ -102,25 +102,57 @@ class IntcorReader(TopologyReaderBase):
                     "A mismatch has occurred on determining the IC format.")
 
             TableParser = util.FORTRANReader(self.fmt[key])
-            table = pd.DataFrame(
-                [TableParser.read(line) for line in buf], dtype=object)
+            table = pd.DataFrame([TableParser.read(line) for line in buf], dtype=object)
+
+            # Remove literal ":" separators that appear in IC records
             table = table[table != ":"]
-            table = table.dropna(axis=1).apply(pd.to_numeric, errors="ignore")
+            table = table.dropna(axis=1)
+
+            if table.empty:
+                raise IOError(f"{self.filename}: IC table is empty")
+
+            if 0 not in table.columns:
+                raise IOError(f"{self.filename}: IC table missing record index column")
+
             table.set_index(0, inplace=True)
+
             if n_lines != table.shape[0]:
-                raise IOError("A mismatch has occurred between the number "
-                              "of lines expected and the number of lines "
-                              "read. ({:d} != {:d})".format(
-                                  n_lines, len(table)))
+                raise IOError(
+                    "A mismatch has occurred between the number of lines expected "
+                    "and the number of lines read. ({:d} != {:d})".format(
+                        n_lines, len(table)
+                    )
+                )
 
             if key == "STANDARD":
                 idx = np.where(
-                    (self.cols != "segidI") & (self.cols != "segidJ") &
-                    (self.cols != "segidK") & (self.cols != "segidL"))
+                    (self.cols != "segidI")
+                    & (self.cols != "segidJ")
+                    & (self.cols != "segidK")
+                    & (self.cols != "segidL")
+                )
                 columns = self.cols[idx]
             else:
                 columns = self.cols
+
             table.columns = columns
+
+            # Convert only truly numeric fields
+            numeric_cols = [
+                "resI", "resJ", "resK", "resL",
+                "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
+            ]
+
+            for col in numeric_cols:
+                if col in table.columns:
+                    table[col] = pd.to_numeric(table[col], errors="coerce")
+
+            # Preserve atom identifiers explicitly as strings
+            string_cols = ["I", "J", "K", "L"]
+            for col in string_cols:
+                if col in table.columns:
+                    table[col] = table[col].astype(str).str.strip()
+                    table.loc[table[col].isin(["nan", "None"]), col] = np.nan
             logger.info("Table read successfully.")
         return table
 
