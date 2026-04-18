@@ -92,3 +92,14 @@ Note, to combine the coverage data from all the tox environments run:
 
             PYTEST_ADDOPTS=--cov-append tox
 
+# Pipeline commands
+
+# COnverting spliied trajectories into Coarse grained models
+fluctmatch convert -s ./tests/data/test_om.tpr -f ./data/1/aa.xtc -o ./data/1/ -p cg -m POLAR -m OM -m ADP -c 48 --write
+
+# Convert CG to ENM
+fluctmatch convert -s ./data/1/cg.psf -f ./data/1/cg.dcd -m ENM --rmin 0.0 --rmax 8.0 -p ./data/1/fluctmatch -c 48
+
+# Run startistical learning (fluctuation matching)
+run_fm -s ./data/1/fluctmatch.xplor.psf -f ./data/1/cg.dcd -l ./data/1/charmm.log -o ./data/1/ -e /home/gdbakerlab/nxr042/research/setups/charmm48_custom/bin/charmm -t 310 -c 48 --resid -m 0.001 -p fluctmatch -n 300
+
