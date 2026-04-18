@@ -20,6 +20,8 @@ from MDAnalysis.topology import base as topbase
 
 from fluctmatch.models.base import ModelBase
 from fluctmatch.models.selection import *
+from fluctmatch.models.segid import _safe_segid
+
 
 def _safe_total_charge(ag):
     try:
@@ -27,8 +29,10 @@ def _safe_total_charge(ag):
     except AttributeError:
         return 0.0
 
+
 def _trueprotein_residues(u):
     return list(u.select_atoms("trueprotein").residues)
+
 
 def _cap_before(u, res):
     idx = res.resindex
@@ -38,6 +42,7 @@ def _cap_before(u, res):
             return prev_res
     return None
 
+
 def _cap_after(u, res):
     idx = res.resindex
     if idx < len(u.residues) - 1:
@@ -46,105 +51,6 @@ def _cap_after(u, res):
             return next_res
     return None
 
-def _alpha_code(i):
-    """0 -> A, 1 -> B, ..., 25 -> Z, 26 -> AA, ..."""
-    letters = []
-    i = int(i)
-    while True:
-        i, rem = divmod(i, 26)
-        letters.append(chr(ord("A") + rem))
-        if i == 0:
-            break
-        i -= 1
-    return "".join(reversed(letters))
-
-def _first_molnum(bead):
-    try:
-        molnums = bead.atoms.molnums
-        if molnums is not None and len(molnums) > 0:
-            return int(molnums[0])
-    except Exception:
-        pass
-    return None
-
-def _first_chainid(bead):
-    try:
-        chainids = bead.atoms.chainIDs
-        if chainids is not None and len(chainids) > 0:
-            chainid = str(chainids[0]).strip()
-            if chainid:
-                return chainid
-    except Exception:
-        pass
-    return None
-
-def _protein_group_key(bead):
-    """
-    Prefer molnum for GROMACS/TPR systems.
-    Fall back to short chainID only if it looks real.
-    """
-    molnum = _first_molnum(bead)
-    if molnum is not None:
-        return ("molnum", molnum)
-
-    chainid = _first_chainid(bead)
-    if chainid and len(chainid) <= 2 and " " not in chainid and chainid.upper() not in {"P", "PROTEIN"}:
-        return ("chain", chainid)
-
-    try:
-        segid = str(bead.segids[0]).strip()
-        if segid and " " not in segid and len(segid) <= 4 and segid.upper() not in {"PROT", "SYS"}:
-            return ("segid", segid)
-    except Exception:
-        pass
-
-    return ("fallback", "protein")
-
-def _ion_group_key(bead):
-    molnum = _first_molnum(bead)
-    if molnum is not None:
-        return ("ion_molnum", molnum)
-
-    try:
-        return ("ion_resid", int(bead.resids[0]))
-    except Exception:
-        return ("ion_fallback", "ion")
-
-def _safe_segid(name, bead, segid_map=None, default="SYS"):
-    """
-    Return 4-character PSF-safe SEGIDs.
-
-    Protein beads: PROA, PROB, ...
-    Ion beads:     IONA, IONB, ...
-    Ligands:       residue-name based, e.g. OM, ADP
-    """
-    if segid_map is None:
-        segid_map = {}
-
-    # proteins
-    if name in {"CA", "CB", "N", "O"}:
-        key = _protein_group_key(bead)
-        if key not in segid_map:
-            segid_map[key] = f"PRO{_alpha_code(sum(v.startswith('PRO') for v in segid_map.values()))}"[:4]
-        return segid_map[key]
-
-    # ions
-    if name in {"ion", "ions"}:
-        key = _ion_group_key(bead)
-        if key not in segid_map:
-            segid_map[key] = f"ION{_alpha_code(sum(v.startswith('ION') for v in segid_map.values()))}"[:4]
-        return segid_map[key]
-
-    # ligands and others
-    try:
-        resname = str(bead.resnames[0]).strip().upper()
-        if resname:
-            return resname[:4]
-    except Exception:
-        pass
-
-    return default[:4]
-
 class Calpha(ModelBase):
     """Create a universe defined by the protein C-alpha."""
     model = "CALPHA"
@@ -152,6 +58,7 @@ class Calpha(ModelBase):
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
+        self._user_segid_map = kwargs.pop("segid_map", None)
         super().__init__(*args, **kwargs)
         self._mapping["CA"] = "calpha"
         self._mapping["ions"] = "bioion"
@@ -181,6 +88,81 @@ class Calpha(ModelBase):
         for ion in u.select_atoms("bioion").split("residue"):
             if ion.n_atoms > 0:
                 yield "ions", ion
+
+    def _apply_map(self, mapping):
+        bead_items = list(self._iter_beads(self.atu))
+
+        atomnames = []
+        atomids = []
+        resids = []
+        resnames = []
+        segids = []
+        charges = []
+        masses = []
+
+        user_segid_map = getattr(self, "_user_segid_map", {}) or {}
+        protein_group_map = {}
+
+        for i, (name, bead) in enumerate(bead_items):
+            atomnames.append(name)
+            atomids.append(i)
+            resids.append(bead.resids[0])
+            resnames.append(bead.resnames[0])
+            segids.append(
+                _safe_segid(
+                    name,
+                    bead,
+                    user_segid_map=user_segid_map,
+                    protein_group_map=protein_group_map,
+                )
+            )
+            charges.append(0.0)
+            masses.append(0.0)
+
+        n_atoms = len(bead_items)
+
+        vdwradii = topologyattrs.Radii(np.zeros(n_atoms, dtype=float))
+        atomids = topologyattrs.Atomids(np.asarray(atomids))
+        atomnames = topologyattrs.Atomnames(np.asarray(atomnames, dtype=object))
+        atomtypes = topologyattrs.Atomtypes(np.asarray(np.arange(n_atoms) + 100))
+        charges = topologyattrs.Charges(np.asarray(charges, dtype=float))
+        masses = topologyattrs.Masses(np.asarray(masses, dtype=float))
+
+        segids = np.asarray(segids, dtype=object)
+        resids = np.asarray(resids)
+        resnames = np.asarray(resnames, dtype=object)
+
+        residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
+            (resids, segids), (resids, resnames, segids)
+        )
+
+        residueids = topologyattrs.Resids(new_resids)
+        residuenums = topologyattrs.Resnums(new_resids.copy())
+        residuenames = topologyattrs.Resnames(new_resnames)
+
+        segidx, (perseg_segids,) = topbase.change_squash((new_segids,), (new_segids,))
+        segids = topologyattrs.Segids(perseg_segids)
+
+        top = topology.Topology(
+            len(atomids),
+            len(new_resids),
+            len(segids),
+            attrs=[
+                atomids,
+                atomnames,
+                atomtypes,
+                charges,
+                masses,
+                vdwradii,
+                residueids,
+                residuenums,
+                residuenames,
+                segids,
+            ],
+            atom_resindex=residx,
+            residue_segindex=segidx,
+        )
+        return top
 
     def _add_bonds(self):
         bonds = []
@@ -219,6 +201,14 @@ class Calpha(ModelBase):
 
         self.atoms.select_atoms("name CA").masses = np.asarray(ca_masses)
 
+        ion_masses = [
+            ion.total_mass()
+            for ion in self.atu.select_atoms("bioion").split("residue")
+            if ion.n_atoms > 0
+        ]
+        if self.atoms.select_atoms("name ions").n_atoms > 0:
+            self.atoms.select_atoms("name ions").masses = np.asarray(ion_masses)
+
     def _set_charges(self):
         try:
             ca_charges = []
@@ -238,6 +228,14 @@ class Calpha(ModelBase):
 
             self.atoms.select_atoms("name CA").charges = np.asarray(ca_charges)
 
+            ion_charges = [
+                ion.total_charge()
+                for ion in self.atu.select_atoms("bioion").split("residue")
+                if ion.n_atoms > 0
+            ]
+            if self.atoms.select_atoms("name ions").n_atoms > 0:
+                self.atoms.select_atoms("name ions").charges = np.asarray(ion_charges)
+
         except AttributeError:
             pass
 
@@ -249,6 +247,7 @@ class Caside(ModelBase):
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
+        self._user_segid_map = kwargs.pop("segid_map", None)
         super().__init__(*args, **kwargs)
         self._mapping["CA"] = "calpha"
         self._mapping["CB"] = "hsidechain and not name H*"
@@ -263,7 +262,6 @@ class Caside(ModelBase):
         u = self.atu if universe is None else universe
 
         for res in _trueprotein_residues(u):
-            # ---- CA (with caps) ----
             ca = res.atoms.select_atoms("calpha")
 
             cap_b = _cap_before(u, res)
@@ -277,7 +275,6 @@ class Caside(ModelBase):
             if len(ca) > 0:
                 yield "CA", ca.unique
 
-            # ---- CB (NO caps!) ----
             cb = res.atoms.select_atoms(self._mapping["CB"])
             if cb.n_atoms > 0:
                 yield "CB", cb
@@ -297,14 +294,22 @@ class Caside(ModelBase):
         charges = []
         masses = []
 
-        segid_map = {}
+        user_segid_map = getattr(self, "_user_segid_map", {}) or {}
+        protein_group_map = {}
 
         for i, (name, bead) in enumerate(bead_items):
             atomnames.append(name)
             atomids.append(i)
             resids.append(bead.resids[0])
             resnames.append(bead.resnames[0])
-            segids.append(_safe_segid(name, bead, segid_map=segid_map))
+            segids.append(
+                _safe_segid(
+                    name,
+                    bead,
+                    user_segid_map=user_segid_map,
+                    protein_group_map=protein_group_map,
+                )
+            )
             charges.append(0.0)
             masses.append(0.0)
 
@@ -321,7 +326,6 @@ class Caside(ModelBase):
         resids = np.asarray(resids)
         resnames = np.asarray(resnames, dtype=object)
 
-        # IMPORTANT: distinguish residues by both resid and segid
         residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
             (resids, segids), (resids, resnames, segids)
         )
@@ -357,7 +361,6 @@ class Caside(ModelBase):
     def _add_bonds(self):
         bonds = []
 
-        # intra-residue CA-CB
         for r in self.residues:
             ca = r.atoms.select_atoms("name CA")
             cb = r.atoms.select_atoms("name CB")
@@ -365,7 +368,6 @@ class Caside(ModelBase):
             if ca.n_atoms > 0 and cb.n_atoms > 0:
                 bonds.append((ca.ix[0], cb.ix[0]))
 
-        # inter-residue CA(i)-CA(i+1), only for consecutive residue IDs
         for s in self.segments:
             residues = list(s.residues)
             for r1, r2 in zip(residues[:-1], residues[1:]):
@@ -381,13 +383,12 @@ class Caside(ModelBase):
         if bonds:
             self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
         mda.Universe.__init__(self, self._topology)
-    
+
     def _set_masses(self):
         ca_masses = []
         cb_masses = []
 
         for r in _trueprotein_residues(self.atu):
-            # ---- CA (with caps) ----
             atoms = r.atoms
 
             cap_b = _cap_before(self.atu, r)
@@ -400,7 +401,6 @@ class Caside(ModelBase):
 
             ca_masses.append(atoms.total_mass())
 
-            # ---- CB (pure sidechain) ----
             cb = r.atoms.select_atoms(self._mapping["CB"])
             if cb.n_atoms > 0:
                 cb_masses.append(cb.total_mass())
@@ -422,7 +422,6 @@ class Caside(ModelBase):
             cb_charges = []
 
             for r in _trueprotein_residues(self.atu):
-                # CA bead gets full residue + terminal cap(s)
                 atoms = r.atoms
 
                 cap_b = _cap_before(self.atu, r)
@@ -435,7 +434,6 @@ class Caside(ModelBase):
 
                 ca_charges.append(_safe_total_charge(atoms))
 
-                # CB bead stays pure sidechain
                 cb = r.atoms.select_atoms(self._mapping["CB"])
                 if cb.n_atoms > 0:
                     cb_charges.append(_safe_total_charge(cb))
@@ -461,6 +459,7 @@ class Polar(ModelBase):
     _mapping = OrderedDict()
 
     def __init__(self, *args, **kwargs):
+        self._user_segid_map = kwargs.pop("segid_map", None)
         super().__init__(*args, **kwargs)
         self._mapping["N"] = "protein and name N"
         self._mapping["CB"] = dict(
@@ -503,7 +502,7 @@ class Polar(ModelBase):
 
         cap = _cap_before(self.atu, res)
         if cap is not None:
-            atoms = atoms + cap.atoms  # includes CH3
+            atoms = atoms + cap.atoms
 
         return atoms.unique
 
@@ -512,7 +511,7 @@ class Polar(ModelBase):
 
         cap = _cap_after(self.atu, res)
         if cap is not None:
-            atoms = atoms + cap.atoms  # includes CH3
+            atoms = atoms + cap.atoms
 
         return atoms.unique
 
@@ -540,7 +539,7 @@ class Polar(ModelBase):
 
     def _apply_map(self, mapping):
         bead_items = list(self._iter_beads(self.atu))
-        from collections import Counter
+
         atomnames = []
         atomids = []
         resids = []
@@ -549,14 +548,22 @@ class Polar(ModelBase):
         charges = []
         masses = []
 
-        segid_map = {}
+        user_segid_map = getattr(self, "_user_segid_map", {}) or {}
+        protein_group_map = {}
 
         for i, (name, bead) in enumerate(bead_items):
             atomnames.append(name)
             atomids.append(i)
             resids.append(bead.resids[0])
             resnames.append(bead.resnames[0])
-            segids.append(_safe_segid(name, bead, segid_map=segid_map))
+            segids.append(
+                _safe_segid(
+                    name,
+                    bead,
+                    user_segid_map=user_segid_map,
+                    protein_group_map=protein_group_map,
+                )
+            )
             charges.append(0.0)
             masses.append(0.0)
 
@@ -574,7 +581,7 @@ class Polar(ModelBase):
         resnames = np.asarray(resnames, dtype=object)
 
         residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids,), (resids, resnames, segids)
+            (resids, segids), (resids, resnames, segids)
         )
 
         residueids = topologyattrs.Resids(new_resids)
@@ -608,7 +615,6 @@ class Polar(ModelBase):
     def _add_bonds(self):
         bonds = []
 
-        # intra-residue bonds
         for r in self.residues:
             n = r.atoms.select_atoms("name N")
             cb = r.atoms.select_atoms("name CB")
@@ -621,7 +627,6 @@ class Polar(ModelBase):
             if cb.n_atoms > 0 and o.n_atoms > 0:
                 bonds.append((cb.ix[0], o.ix[0]))
 
-        # inter-residue O(i)-N(i+1), only for consecutive residue IDs
         for s in self.segments:
             residues = list(s.residues)
             for r1, r2 in zip(residues[:-1], residues[1:]):

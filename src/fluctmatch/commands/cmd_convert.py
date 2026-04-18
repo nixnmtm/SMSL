@@ -32,6 +32,41 @@ from fluctmatch import (_DESCRIBE, _MODELS)
 from fluctmatch.models.core import modeller
 from fluctmatch.fluctmatch.utils import write_charmm_files
 
+def parse_segid_map(segid_map_str):
+    if not segid_map_str:
+        return None
+
+    mapping = {}
+    for item in segid_map_str.split(","):
+        item = item.strip()
+        if not item:
+            continue
+
+        if ":" not in item:
+            raise click.BadParameter(
+                "Invalid --segid-map entry '{}'. Expected RESNAME:SEGID".format(item)
+            )
+
+        resname, segid = item.split(":", 1)
+        resname = resname.strip().upper()
+        segid = segid.strip().upper()
+
+        if not resname:
+            raise click.BadParameter("Empty residue name in --segid-map")
+        if not segid:
+            raise click.BadParameter("Empty segid in --segid-map")
+        if len(segid) > 8:
+            raise click.BadParameter(
+                "SEGID '{}' is longer than 8 characters; PSF-safe max is 8".format(segid)
+            )
+        if " " in segid:
+            raise click.BadParameter(
+                "SEGID '{}' contains spaces; SEGIDs must not contain spaces".format(segid)
+            )
+
+        mapping[resname] = segid
+
+    return mapping
 
 @click.command(
     "convert", short_help="Convert from all-atom to coarse-grain model.")
@@ -52,6 +87,13 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
     show_default=True,
     type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Trajectory file (e.g. xtc trr dcd)",
+)
+@click.option(
+    "--segid-map",
+    metavar="MAP",
+    default=None,
+    type=click.STRING,
+    help="Comma-separated residue-to-segid mapping, e.g. ADP:PROA,2OW:PROA,H2P:PROA,MG:PROA,ZN:PROB",
 )
 @click.option(
     "-l",
@@ -171,6 +213,7 @@ from fluctmatch.fluctmatch.utils import write_charmm_files
 def cli(
         topology,
         trajectory,
+        segid_map,
         logfile,
         outdir,
         prefix,
@@ -230,8 +273,12 @@ def cli(
         return
 
     kwargs = dict()
-    
-    kwargs.update(dict(rmin=rmin, rmax=rmax,))
+
+    kwargs.update(dict(rmin=rmin, rmax=rmax))
+
+    user_segid_map = parse_segid_map(segid_map)
+    if user_segid_map is not None:
+        kwargs["segid_map"] = user_segid_map
 
     universe = modeller(topology, trajectory, com=com, model=model, **kwargs)
 
@@ -250,5 +297,5 @@ def cli(
 
     if mass:
         logger.info("Setting all bead masses to 1.0.")
-        universe.atoms.mass = 1.0
+        universe.atoms.masses = 1.0
     write_charmm_files(universe, **kwargs)

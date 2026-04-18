@@ -30,6 +30,7 @@ from collections import OrderedDict
 from MDAnalysis.core import topologyattrs
 from fluctmatch.models.base import ModelBase
 from fluctmatch.models.selection import *
+import numpy as np
 
 
 class SolventIons(ModelBase):

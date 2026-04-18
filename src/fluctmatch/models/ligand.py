@@ -8,8 +8,9 @@ import MDAnalysis as mda
 from MDAnalysis.core import topology, topologyattrs
 from MDAnalysis.topology import base as topbase
 
-from fluctmatch.models.base import ModelBase
 
+from fluctmatch.models.base import ModelBase
+from fluctmatch.models.segid import _safe_segid
 
 def _safe_total_charge(ag):
     try:
@@ -17,59 +18,15 @@ def _safe_total_charge(ag):
     except AttributeError:
         return 0.0
 
-def _is_psf_safe_segid(segid):
-        if segid is None:
-            return False
-        segid = str(segid).strip()
-        if not segid:
-            return False
-        if " " in segid:
-            return False
-        if len(segid) > 8:
-            return False
-        return True
-
-def _safe_segid(name, bead, default="SYS"):
-    """
-    Preserve an existing SEGID if it is already PSF-safe.
-    Otherwise, synthesize one based on bead/model identity.
-    """
-    raw = None
-    try:
-        if bead.segids is not None and len(bead.segids) > 0:
-            raw = str(bead.segids[0]).strip()
-    except Exception:
-        raw = None
-
-    # keep an existing segid only if it looks PSF-safe
-    if _is_psf_safe_segid(raw) and raw.upper() not in {
-        "SYSTEM", 
-        "PROTEININWATER", 
-        "PROTEIN IN WATER"
-        }:
-        return raw
-
-    # fallback: assign a clean segid by bead/model type
-    if name in {"CA", "CB", "N", "O"}:
-        return "PROT"
-    if name in {"ion", "ions"}:
-        return "ION"
-
-    # for ligands, use residue name if available
-    try:
-        resname = str(bead.resnames[0]).strip()
-        if resname:
-            return resname[:8]
-    except Exception:
-        pass
-
-    return default
-
 class LigandBase(ModelBase):
     """Base class for coarse-grained ligand models."""
     resname = None
     _mapping = OrderedDict()
     _bonded = []
+
+    def __init__(self, *args, **kwargs):
+        self._user_segid_map = kwargs.pop("segid_map", None)
+        super().__init__(*args, **kwargs)
 
     def _iter_beads(self, universe=None):
         u = self.atu if universe is None else universe
@@ -94,12 +51,22 @@ class LigandBase(ModelBase):
         charges = []
         masses = []
 
+        user_segid_map = getattr(self, "_user_segid_map", {}) or {}
+        protein_group_map = {}
+
         for i, (name, bead) in enumerate(bead_items):
             atomnames.append(name)
             atomids.append(i)
             resids.append(bead.resids[0])
             resnames.append(bead.resnames[0])
-            segids.append(_safe_segid(name, bead))
+            segids.append(
+                _safe_segid(
+                    name,
+                    bead,
+                    user_segid_map=user_segid_map,
+                    protein_group_map=protein_group_map,
+                )
+            )
             charges.append(0.0)
             masses.append(0.0)
 
@@ -117,7 +84,7 @@ class LigandBase(ModelBase):
         resnames = np.asarray(resnames, dtype=object)
 
         residx, (new_resids, new_resnames, new_segids) = topbase.change_squash(
-            (resids,), (resids, resnames, segids)
+            (resids, segids), (resids, resnames, segids)
         )
 
         residueids = topologyattrs.Resids(new_resids)

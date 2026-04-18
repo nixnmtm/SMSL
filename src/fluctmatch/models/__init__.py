@@ -28,7 +28,7 @@ from fluctmatch.models.protein import (
     Caside, 
     Polar,
 )
-from fluctmatch.models.enm import Enm
+from fluctmatch.models.enm import Enm, EnmSparse
 from fluctmatch.models.nucleic import (
     Nucleic3,
     Nucleic4,
@@ -54,6 +54,7 @@ __all__ = [
     "Caside",
     "Polar",
     "Enm",
+    "EnmSparse",
     "Nucleic3",
     "Nucleic4",
     "Water",
