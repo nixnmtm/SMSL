@@ -211,7 +211,7 @@ def cli(program, topology, trajectory, data, index, outfile, logfile,
     values = zip(
         range(beg, stop + 1, half_size),
         range(beg + window_size - 1, stop + 1, half_size))
-    values = [((y // half_size) - 1, x, y) for x, y in values]
+    values = [(i + 1, x, y) for i, (x, y) in enumerate(values)]
 
     func = functools.partial(
         _CONVERT[program],
