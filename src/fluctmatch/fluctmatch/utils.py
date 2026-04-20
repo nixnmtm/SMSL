@@ -372,7 +372,14 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)
 
+# TODO: split_mda currently selects windows using ts.time, while the CLI
+# arguments -b/-e/-w are documented as frame-based. This works for the
+# current trajectory because 1 frame = 1 ps, but should be refactored to
+# use ts.frame (or the CLI should be renamed to explicit time units) so
+# behavior is consistent for trajectories saved at other time intervals.
+
 def split_mda(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
+
     """Create a subtrajectory from a trajectory using MDAnalysis.
 
     This mirrors the current GMX backend semantics by selecting frames

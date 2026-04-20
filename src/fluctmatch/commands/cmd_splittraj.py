@@ -43,6 +43,13 @@ _CONVERT = {
     "GMX": utils.split_gmx,
 }
 
+# IF MDA IS USED remember
+# TODO: split_mda currently selects windows using ts.time, while the CLI
+# arguments -b/-e/-w are documented as frame-based. This works for the
+# current trajectory because 1 frame = 1 ps, but should be refactored to
+# use ts.frame (or the CLI should be renamed to explicit time units) so
+# behavior is consistent for trajectories saved at other time intervals.
+
 
 @click.command(
     "splittraj", short_help="Split a trajectory using Gromacs or CHARMM, "
