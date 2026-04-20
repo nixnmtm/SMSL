@@ -156,7 +156,12 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 @click.option(
     "--restart",
     is_flag=True,
-    help="Restart simulation",
+    help="Restart fluctuation matching from the saved initialized baseline and begin again at cycle 1.",
+)
+@click.option(
+    "--resume",
+    is_flag=True,
+    help="Resume fluctuation matching from the last completed saved cycle.",
 )
 def cli(
         topology,
@@ -174,10 +179,14 @@ def cli(
         resid,
         nonbonded,
         restart,
+        resume,
 ):
+    if restart and resume:
+        raise click.UsageError("--restart and --resume are mutually exclusive.")
+
     logging.config.dictConfig({
         "version": 1,
-        "disable_existing_loggers": False,  # this fixes the problem
+        "disable_existing_loggers": False,
         "formatters": {
             "standard": {
                 "class": "logging.Formatter",
@@ -222,8 +231,20 @@ def cli(
     )
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
 
-    logger.info("Initializing the parameters.")
-    cfm.initialize(nma_exec=nma_exec, restart=restart)
+    if resume:
+        logger.info("Resuming fluctuation matching from the last completed cycle.")
+    elif restart:
+        logger.info("Restarting fluctuation matching from the saved initialized baseline.")
+    else:
+        logger.info("Starting a fresh fluctuation matching run.")
+
     logger.info("Running fluctuation matching.")
-    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles, low_bound=low_bound)
+    cfm.run(
+        nma_exec=nma_exec,
+        tol=tol,
+        n_cycles=n_cycles,
+        low_bound=low_bound,
+        restart=restart,
+        resume=resume,
+    )
     logger.info("Fluctuation matching successfully completed.")

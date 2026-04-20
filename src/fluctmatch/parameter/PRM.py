@@ -126,7 +126,7 @@ class ParamReader(TopologyReaderBase):
             self._prmbuffers[key].seek(0)
             parameters[key] = pd.read_csv(
                 self._prmbuffers[key], header=None, names=self._prmcolumns[key],
-                skipinitialspace=True, delim_whitespace=True, comment="!",
+                skipinitialspace=True, sep=r"\s+", engine="python", comment="!",
                 dtype=self._dtypes[key]
             )
             parameters[key].fillna(self._na_values[key], inplace=True)
