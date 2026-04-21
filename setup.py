@@ -35,6 +35,11 @@ from setuptools import (
     setup
 )
 
+from pathlib import Path
+
+version_ns = {}
+init_py = Path(__file__).parent / "src" / "fluctmatch" / "__init__.py"
+exec(init_py.read_text(), version_ns)
 
 def read(*names, **kwargs):
     return io.open(
@@ -42,10 +47,9 @@ def read(*names, **kwargs):
         encoding=kwargs.get("encoding", "utf8")
     ).read()
 
-
 setup(
     name="fluctmatch",
-    version="3.5.1",
+    version=version_ns["__version__"],
     license="BSD license",
     description="Elastic network model using fluctuation matching.",
     long_description="%s\n%s" % (
