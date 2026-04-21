@@ -372,18 +372,27 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)
 
-# TODO: split_mda currently selects windows using ts.time, while the CLI
-# arguments -b/-e/-w are documented as frame-based. This works for the
-# current trajectory because 1 frame = 1 ps, but should be refactored to
-# use ts.frame (or the CLI should be renamed to explicit time units) so
-# behavior is consistent for trajectories saved at other time intervals.
-
-def split_mda(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
-
+def split_mda(info, data_dir=path.join(os.getcwd(), "data"), frame_based=True, **kwargs):
     """Create a subtrajectory from a trajectory using MDAnalysis.
 
-    This mirrors the current GMX backend semantics by selecting frames
-    based on trajectory time: start <= ts.time <= stop.
+    Parameters
+    ----------
+    info : tuple
+        Tuple of (subdir, start, stop), where subdir is the output folder
+        label and start/stop define the selected interval.
+    data_dir : str, optional
+        Location of the main data directory.
+    frame_based : bool, optional
+        If True, select using 1-based frame indices:
+        start <= ts.frame + 1 <= stop
+
+        If False, select using trajectory time:
+        start <= ts.time <= stop
+
+    Notes
+    -----
+    Frame-based selection is safer for concatenated trajectories because
+    trajectory time may reset between runs.
     """
     subdir, start, stop = info
     subdir = path.join(data_dir, "{}".format(subdir))
@@ -398,25 +407,56 @@ def split_mda(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
     outfile = path.join(subdir, kwargs.get("outfile", "aa.xtc"))
     logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
     precision = kwargs.get("precision", 5)
+    progress_every = kwargs.get("progress_every", 1000)
 
     u = mda.Universe(topology, trajectory)
     ag = u.atoms
 
     n_written = 0
-    first_time = None
-    last_time = None
-    times = []
+    first_value = None
+    last_value = None
+    values = []
+
+    logger.info(
+        "split_mda starting | outfile=%s | start=%s | stop=%s | frame_based=%s",
+        outfile, start, stop, frame_based
+    )
 
     with mda.Writer(native_str(outfile), ag.n_atoms, precision=precision) as W:
         for ts in u.trajectory:
-            t = ts.time
-            if start <= t <= stop:
+            current_value = (ts.frame + 1) if frame_based else ts.time
+
+            if start <= current_value <= stop:
                 W.write(ag)
                 n_written += 1
-                times.append(float(t))
-                if first_time is None:
-                    first_time = float(t)
-                last_time = float(t)
+
+                if frame_based:
+                    current_value = int(current_value)
+                else:
+                    current_value = float(current_value)
+
+                values.append(current_value)
+
+                if first_value is None:
+                    first_value = current_value
+                last_value = current_value
+
+                if progress_every and (n_written % progress_every == 0):
+                    if frame_based:
+                        logger.info(
+                            "split_mda progress | outfile=%s | written=%d | current_frame=%d",
+                            outfile, n_written, current_value
+                        )
+                    else:
+                        logger.info(
+                            "split_mda progress | outfile=%s | written=%d | current_time=%.6f",
+                            outfile, n_written, current_value
+                        )
+
+    logger.info(
+        "split_mda completed | outfile=%s | frames_written=%d | first=%s | last=%s",
+        outfile, n_written, first_value, last_value
+    )
 
     with mdutil.openany(logfile, mode="w") as log:
         print("Backend: MDAnalysis", file=log)
@@ -425,8 +465,15 @@ def split_mda(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
         print("Output: {}".format(outfile), file=log)
         print("Start: {}".format(start), file=log)
         print("Stop: {}".format(stop), file=log)
+        print("Frame based: {}".format(frame_based), file=log)
         print("Frames written: {}".format(n_written), file=log)
-        if n_written:
-            print("First time: {:.6f}".format(first_time), file=log)
-            print("Last time: {:.6f}".format(last_time), file=log)
-            print("Times: {}".format(", ".join("{:.6f}".format(x) for x in times)), file=log)
+
+        if n_written and frame_based:
+            print("First frame: {}".format(first_value), file=log)
+            print("Last frame: {}".format(last_value), file=log)
+            print("Frames: {}".format(", ".join(str(x) for x in values)), file=log)
+
+        elif n_written and not frame_based:
+            print("First time: {:.6f}".format(first_value), file=log)
+            print("Last time: {:.6f}".format(last_value), file=log)
+            print("Times: {}".format(", ".join("{:.6f}".format(x) for x in values)), file=log)
