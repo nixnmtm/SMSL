@@ -394,6 +394,7 @@ def split_mda(info, data_dir=path.join(os.getcwd(), "data"), frame_based=True, *
     Frame-based selection is safer for concatenated trajectories because
     trajectory time may reset between runs.
     """
+
     subdir, start, stop = info
     subdir = path.join(data_dir, "{}".format(subdir))
 
@@ -407,15 +408,10 @@ def split_mda(info, data_dir=path.join(os.getcwd(), "data"), frame_based=True, *
     outfile = path.join(subdir, kwargs.get("outfile", "aa.xtc"))
     logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
     precision = kwargs.get("precision", 5)
-    progress_every = kwargs.get("progress_every", 1000)
 
     u = mda.Universe(topology, trajectory)
     ag = u.atoms
-
     n_written = 0
-    first_value = None
-    last_value = None
-    values = []
 
     logger.info(
         "split_mda starting | outfile=%s | start=%s | stop=%s | frame_based=%s",
@@ -423,57 +419,27 @@ def split_mda(info, data_dir=path.join(os.getcwd(), "data"), frame_based=True, *
     )
 
     with mda.Writer(native_str(outfile), ag.n_atoms, precision=precision) as W:
-        for ts in u.trajectory:
-            current_value = (ts.frame + 1) if frame_based else ts.time
-
-            if start <= current_value <= stop:
+        if frame_based:
+            for ts in u.trajectory[start - 1:stop]:
+                W.write(ag)
+                n_written += 1
+        else:
+            for ts in u.trajectory:
+                current_value = ts.time
+                if current_value < start:
+                    continue
+                if current_value > stop:
+                    break
                 W.write(ag)
                 n_written += 1
 
-                if frame_based:
-                    current_value = int(current_value)
-                else:
-                    current_value = float(current_value)
-
-                values.append(current_value)
-
-                if first_value is None:
-                    first_value = current_value
-                last_value = current_value
-
-                if progress_every and (n_written % progress_every == 0):
-                    if frame_based:
-                        logger.info(
-                            "split_mda progress | outfile=%s | written=%d | current_frame=%d",
-                            outfile, n_written, current_value
-                        )
-                    else:
-                        logger.info(
-                            "split_mda progress | outfile=%s | written=%d | current_time=%.6f",
-                            outfile, n_written, current_value
-                        )
-
-    logger.info(
-        "split_mda completed | outfile=%s | frames_written=%d | first=%s | last=%s",
-        outfile, n_written, first_value, last_value
-    )
-
     with mdutil.openany(logfile, mode="w") as log:
-        print("Backend: MDAnalysis", file=log)
-        print("Topology: {}".format(topology), file=log)
-        print("Trajectory: {}".format(trajectory), file=log)
-        print("Output: {}".format(outfile), file=log)
+        print("Frames written: {}".format(n_written), file=log)
         print("Start: {}".format(start), file=log)
         print("Stop: {}".format(stop), file=log)
         print("Frame based: {}".format(frame_based), file=log)
-        print("Frames written: {}".format(n_written), file=log)
 
-        if n_written and frame_based:
-            print("First frame: {}".format(first_value), file=log)
-            print("Last frame: {}".format(last_value), file=log)
-            print("Frames: {}".format(", ".join(str(x) for x in values)), file=log)
-
-        elif n_written and not frame_based:
-            print("First time: {:.6f}".format(first_value), file=log)
-            print("Last time: {:.6f}".format(last_value), file=log)
-            print("Times: {}".format(", ".join("{:.6f}".format(x) for x in values)), file=log)
+    logger.info(
+        "split_mda completed | outfile=%s | frames_written=%d",
+        outfile, n_written
+    )

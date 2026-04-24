@@ -162,8 +162,21 @@ _CONVERT = {
     type=click.IntRange(1, None, clamp=True),
     help="XTC number of decimal precision",
 )
+@click.option(
+    "--n-jobs",
+    "n_jobs",
+    metavar="N",
+    default=32,
+    show_default=True,
+    type=click.IntRange(1, None, clamp=True),
+    help="Number of worker processes to use for trajectory splitting.",
+)
+
+
+
+
 def cli(program, topology, trajectory, data, index, outfile, logfile,
-        system, start, stop, window_size, precision):
+        system, start, stop, window_size, precision, n_jobs):
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,  # this fixes the problem
@@ -225,8 +238,10 @@ def cli(program, topology, trajectory, data, index, outfile, logfile,
         precision=precision,
     )
 
+    logger.info("first 10 split values: %s", values[:10])
+    logger.info("total split windows: %d", len(values))
+
     # Run multiple instances simultaneously
-    pool = mp.Pool()
-    pool.map_async(func, values)
-    pool.close()
-    pool.join()
+    with mp.Pool(processes=n_jobs) as pool:
+        pool.map(func, values)
+    logger.info("splittraj finished successfully | total_windows=%d", len(values))
