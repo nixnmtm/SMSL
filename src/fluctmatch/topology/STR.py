@@ -14,20 +14,8 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    open,
-)
-from future.utils import (
-    native_str,
-    raise_with_traceback,
-)
+
+from future.utils import native_str
 
 import textwrap
 import time
@@ -111,7 +99,7 @@ class STRWriter(topbase.TopologyWriterBase):
                 data = universe._topology.bonds.values
                 data = np.concatenate((data, dist[:, np.newaxis]), axis=1)
         except AttributeError:
-            raise_with_traceback(AttributeError("No bonds were found."))
+            raise AttributeError("No bonds were found.")
 
         # Write the data to the file.
         with open(self.filename, "wb") as stream_file:

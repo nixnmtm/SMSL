@@ -15,10 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.builtins import (
-    super,
-    zip,
-)
 import MDAnalysis as mda
 from collections import OrderedDict
 

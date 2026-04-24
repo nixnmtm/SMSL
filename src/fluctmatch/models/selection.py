@@ -21,10 +21,8 @@ def _cat(*x):
     return np.concatenate([_arr(i) for i in x])
 
 
-# ======================
-# BASIC SELECTIONS
-# ======================
 
+# BASIC SELECTIONS
 class BioIonSelection(selection.Selection):
     token = "bioion"
 
@@ -59,10 +57,7 @@ class WaterSelection(selection.Selection):
         return group[np.isin(names, self.water_atoms)].unique
 
 
-# ======================
 # PROTEIN
-# ======================
-
 class CalphaSelection(selection.Selection):
     token = "calpha"
     calpha = _arr(["CA"])
@@ -183,10 +178,7 @@ class TrueProteinSelection(selection.Selection):
         return protein[mask].unique
 
 
-# ======================
 # NUCLEIC
-# ======================
-
 class AdditionalNucleicSelection(selection.NucleicSelection):
     token = "nucleic"
 

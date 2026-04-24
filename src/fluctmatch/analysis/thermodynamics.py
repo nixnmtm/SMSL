@@ -14,12 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
+
 from future.builtins import open
 from future.utils import native_str
 
@@ -49,7 +44,7 @@ def calculate_thermo(subdir, **kwargs):
             header=0,
             index_col=["segidI", "resI"],
             skipinitialspace=True,
-            delim_whitespace=True)
+            sep=r"\s+")
 
     return (window, table)
 

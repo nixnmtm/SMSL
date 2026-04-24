@@ -3,14 +3,7 @@
 #
 # SMSL - https://github.com/nixnmtm/SMSL
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
 
-from future.builtins import dict, zip
 from collections import OrderedDict
 
 import numpy as np

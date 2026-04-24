@@ -14,8 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+
 from future.utils import (
     viewkeys,
     raise_with_traceback,
@@ -53,10 +52,11 @@ def modeller(*args, **kwargs):
                 "ENM model detected. All other models are being ignored.")
             universe = _MODELS["ENM"](*args, **kwargs)
             return universe
-    except Exception as e:
+    except Exception:
         logger.exception(
-            "An error occurred while trying to create the universe.")
-        reraise(e)
+            "An error occurred while trying to create the universe."
+            )
+        raise
 
     try:
         # remove rmax and rmin as it is used only in ENM
@@ -65,9 +65,9 @@ def modeller(*args, **kwargs):
         universe = [_MODELS[model](*args, **kwargs) for model in models]
     except KeyError:
         msg = ("{0} is not an available model. "
-               "Please try {1}".format(models, viewkeys(_MODELS)))
+               "Please try {}".format(", ".join(sorted(_MODELS.keys())))
         logger.exception(msg)
-        raise_with_traceback(KeyError(msg))
+        raise KeyError(msg)
     else:
         universe = Merge(*universe) if len(universe) > 1 else universe[0]
         return universe

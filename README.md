@@ -22,18 +22,13 @@ Residues can be represented using:
 - alpha-carbon plus sidechain (CASIDE)
 - amino N, carboxyl O, and chemically specific sidechain atoms (POLAR)
 
-Earlier versions of fluctuation matching relied entirely on CHARMM for all
-stages of the workflow, including average structure generation, initial bond
-statistics, and NMA. The current code base has been reworked to support
-cleaner coarse-grain model definitions, improved analysis workflows, and
-better interoperability with modern MD packages. The use of MDAnalysis has
-also improved the efficiency and flexibility of the pipeline.
+Fluctuation matching relies heavily on CHARMM  and MDAnalysis.
 
 ---
 
 ## Please Cite
 
-1. 1. Chu JW, Voth GA. *Biophys J.*, 2006 Mar 1; **90(5)** :1572-82.
+1. Chu JW, Voth GA. *Biophys J.*, 2006 Mar 1; **90(5)** :1572-82.
 
 2. N. Raj, T. Click, H. Yang, and J.-W. Chu, *Computational and Structural Biotechnology Journal*, 2021, **19**, 5309–5320.
 

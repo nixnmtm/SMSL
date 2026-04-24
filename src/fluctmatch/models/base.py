@@ -18,13 +18,6 @@
 # https://github.com/richardjgowers/MDAnalysis-coarsegraining
 #
 
-from future.builtins import super, zip
-from future.utils import (
-    raise_with_traceback,
-    viewitems,
-    with_metaclass,
-)
-
 import abc
 import itertools
 import logging
@@ -75,8 +68,7 @@ class _ModelMeta(abc.ABCMeta):
                 f = f.upper()
                 _DESCRIBE[f] = d
 
-
-class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
+class ModelBase(mda.Universe, metaclass=_ModelMeta):
     """Base class for creating coarse-grain models.
 
     Parameters
@@ -173,7 +165,7 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         try:
             self.atu = mda.Universe(*args, **kwargs)
         except (IOError, OSError, ValueError):
-            raise_with_traceback(RuntimeError("Failed to create a universe."))
+            raise RuntimeError("Failed to create a universe.")
         
         super().__init__(self.atu._topology)
         if getattr(self.atu, "trajectory", None) is not None:
@@ -230,9 +222,8 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
                 com=self._com,
             )
         except (IOError, TypeError) as exc:
-            raise_with_traceback(
-                RuntimeError("Unable to open {}".format(
-                    self.atu.trajectory.filename)))
+            raise RuntimeError("Unable to open {}".format(
+                self.atu.trajectory.filename)))
 
     def _apply_map(self, mapping):
         _beads = []
@@ -247,12 +238,12 @@ class ModelBase(with_metaclass(_ModelMeta, mda.Universe)):
         # Build each mapped selection once on the full atomistic universe
         selected_cache = {
             name: self.atu.select_atoms(selection)
-            for name, selection in viewitems(mapping)
+            for name, selection in mapping.items()
         }
-        for name, selection in viewitems(mapping):
+        for name, selection in mapping.items():
             print(name, selection)
         for res in self.atu.residues:
-            for name, selected in viewitems(selected_cache):
+            for name, selected in selected_cache.items():
                 bead = selected.intersection(res.atoms)
                 if bead.n_atoms == 0:
                     continue

@@ -14,12 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
+
 from future.utils import native_str, PY3
 from future.builtins import open
 from six.moves import cPickle
