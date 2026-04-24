@@ -163,6 +163,11 @@ from fluctmatch.fluctmatch import charmmfluctmatch
     is_flag=True,
     help="Resume fluctuation matching from the last completed saved cycle.",
 )
+@click.option(
+    "--auto",
+    is_flag=True,
+    help="Automatically choose per-window mode: resume if valid, otherwise restart if possible, otherwise fresh.",
+)
 def cli(
         topology,
         trajectory,
@@ -180,9 +185,11 @@ def cli(
         nonbonded,
         restart,
         resume,
+        auto,
 ):
-    if restart and resume:
-        raise click.UsageError("--restart and --resume are mutually exclusive.")
+    selected = sum(bool(x) for x in (restart, resume, auto))
+    if selected > 1:
+        raise click.UsageError("--restart, --resume, and --auto are mutually exclusive.")
 
     logging.config.dictConfig({
         "version": 1,
@@ -232,13 +239,16 @@ def cli(
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
 
     if resume:
-        logger.info("Resuming fluctuation matching from the last completed cycle.")
+        logger.info("Forcing resume from the last completed saved cycle.")
     elif restart:
-        logger.info("Restarting fluctuation matching from the saved initialized baseline.")
+        logger.info("Forcing restart from the saved initialized baseline.")
+    elif auto:
+        logger.info("Using automatic mode selection per window: resume, restart, or fresh.")
     else:
         logger.info("Starting a fresh fluctuation matching run.")
 
     logger.info("Running fluctuation matching.")
+
     cfm.run(
         nma_exec=nma_exec,
         tol=tol,
@@ -246,5 +256,7 @@ def cli(
         low_bound=low_bound,
         restart=restart,
         resume=resume,
+        auto=auto,
     )
+
     logger.info("Fluctuation matching successfully completed.")

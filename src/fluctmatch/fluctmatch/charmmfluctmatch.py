@@ -20,11 +20,12 @@
 
 Notes
 -----
-This workflow relies on correct CHARMM build configured to support
-large coarse-grained fluctuation-matching calculations. 
-USE charmmsize_increase_before_configuration.py along with this tool to 
-modify the source code of charmm before configuration.
-Please make sure ncessary changes are reflected and then compile CHARMM 
+This workflow relies on a correctly configured CHARMM build capable of
+handling large coarse-grained fluctuation-matching calculations.
+Use `charmmsize_increase_before_configuration.py` together with this
+workflow to modify the CHARMM source code before configuration when
+larger problem sizes are required. Please ensure the necessary source
+changes are applied and that CHARMM is recompiled before use.
 
 Workflow
 --------
@@ -39,58 +40,54 @@ toward the target coarse-grained fluctuations derived from the trajectory.
 Modified by Nixon Raj
 ---------------------
 This implementation extends the original fluctuation-matching procedure
-with bondwise convergence tracking, tail-convergence filtering, explicit
-restart/resume handling, and per-cycle timestamped progress logging.
+with bondwise convergence tracking, tail-convergence filtering, robust
+fresh/restart/resume/auto execution modes, conservative checkpoint-based
+recovery, and per-cycle timestamped progress logging.
 
 Briefly,
-1. Convergence is now monitored bondwise rather than relying only on the
+1. Convergence is monitored bondwise rather than relying only on the
    overall root-mean-squared error.
-2. At each cycle, every bond is checked individually against the
+2. At each cycle, every bond is evaluated individually against the
    fluctuation-difference tolerance.
 3. The number and fraction of bonds that remain unconverged are tracked
-   throughout the run.
+   throughout the run using an active unconverged-bond mask.
 4. When the remaining unconverged bonds fall below 0.3% of the total
    number of bonds in the system, a tail-convergence rule is applied.
 5. In this tail region, a relative difference is evaluated as
    `(fluct_diff - tol) / tol`, where `fluct_diff` is the bondwise
    difference between the current fluctuation and the target fluctuation,
    and `tol` is the convergence tolerance.
-6. Bonds with a very small relative excess above tolerance are treated as
-   effectively converged and are removed from the active unconverged set.
-7. Restart explicitly rebuilds the fluctuation-matching state from the
-   initialized `init.average.ic` and `init.fluct.ic` files and begins the
-   cycle count again from step 1.
-8. Resume explicitly reloads the latest checkpointed run state, including
-   the current parameter files, bond mask, and error history, and
-   continues from the last completed cycle.
-9. Each completed fluctuation-matching cycle is logged with detailed
-   timing information together with a wall-clock timestamp, making runtime
-   progress easier to monitor on long HPC jobs.
+6. Bonds with only a very small relative excess above tolerance are
+   treated as effectively converged and removed from the active
+   unconverged set.
+7. A fresh run initializes the fluctuation-matching state from the
+   trajectory-derived `init.average.ic` and `init.fluct.ic` files and
+   begins the cycle count from step 1.
+8. Restart explicitly rebuilds the fluctuation-matching state from the
+   saved initialization files and begins the cycle count again from
+   step 1.
+9. Resume explicitly reloads the latest checkpointed run state,
+   including the current parameter files, bond mask, and error history,
+   and continues from the most conservative valid completed step.
+10. Auto mode selects the execution path per window by prioritizing
+    resume when a valid checkpointed state is available, otherwise
+    falling back to restart if initialization files are present, and
+    otherwise starting fresh.
+11. Resume recovery is tolerant to minor checkpoint and `error.dat`
+    step mismatches by continuing from the minimum consistent completed
+    step rather than discarding recoverable progress.
+12. Each completed fluctuation-matching cycle is logged with detailed
+    timing information together with a wall-clock timestamp, making
+    runtime progress easier to monitor on long HPC jobs.
 
 Note
 ----
-The bonds that remain longest in the unconverged set are often associated
-with highly flexible regions of the protein.
+The bonds that remain longest in the active unconverged set are often
+associated with highly flexible regions of the protein.
 
 """
 
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    open,
-    range,
-    super,
-)
-from future.utils import (
-    PY2,
-    native_str,
-    raise_with_traceback,
-)
+from future.utils import native_str
 
 import copy
 import json
@@ -119,11 +116,7 @@ from fluctmatch.parameter import utils as prmutils
 
 from datetime import datetime, timedelta
 
-if PY2:
-    FileNotFoundError = IOError
-
 logger = logging.getLogger(__name__)
-
 
 def _fmt_timing(parts):
     return " | ".join(f"{k}={v:.3f}s" for k, v in parts.items())
@@ -176,6 +169,10 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             columns=self.error_hdr,
         )
 
+        self.auto = False
+        self.restart = False
+        self.resume = False
+
     def _create_ic_table(self, universe, data):
         data.set_index(self.bond_def, inplace=True)
         table = icutils.create_empty_table(universe.atoms)
@@ -213,20 +210,20 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
     def _initialize_convergence_mask(self):
         kb = self.target["BONDS"].set_index(self.bond_def)["Kb"]
-        self.converge_bnd_list = (~kb.isna()).astype(bool).copy()
+        self.unconverged_bond_list = (~kb.isna()).astype(bool).copy()
 
     def _update_convergence_mask(self, fluct_diff_series, current_kb_series, tol, i):
         mask = ((fluct_diff_series > tol) & (current_kb_series > 0)).astype(bool)
-        if not self.converge_bnd_list.index.equals(mask.index):
-            self.converge_bnd_list = self.converge_bnd_list.reindex(mask.index)
-            self.converge_bnd_list = self.converge_bnd_list.fillna(True).astype(bool)
+        if not self.unconverged_bond_list.index.equals(mask.index):
+            self.unconverged_bond_list = self.unconverged_bond_list.reindex(mask.index)
+            self.unconverged_bond_list = self.unconverged_bond_list.fillna(True).astype(bool)
         if not self.restart:
-            self.converge_bnd_list &= mask
+            self.unconverged_bond_list &= mask
         else:
             if i == 0:
-                self.converge_bnd_list = mask.copy()
+                self.unconverged_bond_list = mask.copy()
             else:
-                self.converge_bnd_list &= mask
+                self.unconverged_bond_list &= mask
 
     def _compute_convergence_and_error(self, vib_ic, bond_values, tol, i, fdiff):
         fluct_diff_series = np.abs(
@@ -325,7 +322,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
     def _save_bond_mask(self, filename=None):
         bond_mask_file = filename or self.filenames["bond_mask"]
-        pd.Series(self.converge_bnd_list.astype(bool)).to_csv(
+        pd.Series(self.unconverged_bond_list.astype(bool)).to_csv(
             bond_mask_file, index=False, header=["active"]
         )
 
@@ -346,7 +343,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 )
             )
         mask.index = bond_index
-        self.converge_bnd_list = mask
+        self.unconverged_bond_list = mask
 
     def _build_initial_state_from_init_ic(self):
         with reader(self.filenames["init_fluct_ic"]) as icfile:
@@ -446,12 +443,26 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
         checkpoint_step = int(state["last_completed_step"])
         error_last_step = self._get_error_last_step()
-        if checkpoint_step != error_last_step:
+
+        if checkpoint_step <= 0 or error_last_step <= 0:
             raise IOError(
-                "Resume validation failed: checkpoint step {} does not match error.dat last step {}".format(
+                "Resume validation failed: invalid step values checkpoint={} error.dat={}".format(
                     checkpoint_step, error_last_step
                 )
             )
+
+        resume_step = min(checkpoint_step, error_last_step)
+
+        if checkpoint_step != error_last_step:
+            logger.warning(
+                "Resume step mismatch detected: checkpoint step=%d, error.dat last step=%d. "
+                "Using conservative resume_step=%d.",
+                checkpoint_step,
+                error_last_step,
+                resume_step,
+            )
+
+        state["resume_step"] = int(resume_step)
 
         self._load_parameter_files(self.filenames["fixed_prm"], self.filenames["dynamic_prm"])
         self._load_target_from_init_files()
@@ -474,13 +485,82 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         )
         return state
 
+    def _can_restart(self):
+        required = (
+            self.filenames["init_avg_ic"],
+            self.filenames["init_fluct_ic"],
+            self.filenames["xplor_psf_file"],
+            self.filenames["crd_file"],
+        )
+        for required_file in required:
+            if not path.exists(required_file):
+                return False
+            try:
+                if os.path.getsize(required_file) == 0:
+                    return False
+            except OSError:
+                return False
+        return True
+
+
+    def _can_resume(self):
+        required = (
+            self.filenames["checkpoint"],
+            self.filenames["fixed_prm"],
+            self.filenames["dynamic_prm"],
+            self.filenames["bond_mask"],
+            self.filenames["error_data"],
+            self.filenames["init_avg_ic"],
+            self.filenames["init_fluct_ic"],
+        )
+        for required_file in required:
+            if not path.exists(required_file):
+                return False
+            try:
+                if os.path.getsize(required_file) == 0:
+                    return False
+            except OSError:
+                return False
+
+        try:
+            state = self._read_json(self.filenames["checkpoint"])
+            checkpoint_step = int(state["last_completed_step"])
+            error_last_step = self._get_error_last_step()
+            if checkpoint_step <= 0 or error_last_step <= 0:
+                return False
+        except Exception:
+            return False
+
+        return True
+
+
+    def _resolve_requested_mode(self, restart=False, resume=False, auto=False):
+        selected = sum(bool(x) for x in (restart, resume, auto))
+        if selected > 1:
+            raise ValueError("restart, resume, and auto are mutually exclusive.")
+        if resume:
+            return "resume"
+        if restart:
+            return "restart"
+        if auto:
+            return "auto"
+        return "fresh"
+
+
+    def _resolve_auto_mode(self):
+        if self._can_resume():
+            return "resume"
+        if self._can_restart():
+            return "restart"
+        return "fresh"  
+
     def _compute_relative_diff(self, fluct_diff_series, tol):
         fluct_diff_series = pd.to_numeric(fluct_diff_series, errors="coerce")
         return (fluct_diff_series - tol) / tol
 
     def _log_tail_convergence_debug(self, fluct_diff, relative_diff, tol):
-        n_remaining = int(self.converge_bnd_list.sum())
-        n_total = self.converge_bnd_list.size
+        n_remaining = int(self.unconverged_bond_list.sum())
+        n_total = self.unconverged_bond_list.size
 
         logger.info("Remaining unconverged bonds: %d / %d", n_remaining, n_total)
 
@@ -489,10 +569,10 @@ class CharmmFluctMatch(fmbase.FluctMatch):
 
         logger.info("Tail convergence region reached.")
 
-        mask_tail = self.converge_bnd_list & (
+        mask_tail = self.unconverged_bond_list & (
             relative_diff > self.TAIL_RELATIVE_DIFF_THRESHOLD
         )
-        skipped_mask = self.converge_bnd_list & (~mask_tail)
+        skipped_mask = self.unconverged_bond_list & (~mask_tail)
 
         if int(skipped_mask.sum()) > 0:
             skipped_df = pd.DataFrame({
@@ -511,9 +591,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             skipped_df.to_csv(skipped_file, sep=" ")
             logger.info("Skipped tail bonds written to %s", skipped_file)
 
-        self.converge_bnd_list = mask_tail
+        self.unconverged_bond_list = mask_tail
 
-        if self.converge_bnd_list.sum() == 0:
+        if self.unconverged_bond_list.sum() == 0:
             logger.info("Checking relative difference: All bonds converged, exiting")
             return True
 
@@ -534,20 +614,12 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         fluct_conv.columns = [j for j in range(1, completed_cycles + 1)]
         fluct_conv.to_csv(self.filenames["bond_convergence"])
 
-    def initialize(self, nma_exec=None, restart=False, resume=False):
-        """Prepare fluctuation-matching initialization state."""
-        if restart and resume:
-            raise ValueError("restart and resume are mutually exclusive.")
 
-        self.restart = restart
-        self.resume = resume
+    # Initial average and fluctuation values are calculated 
+    # Using ic dyna aver and ic dyna fluct in CHARMM
 
-        if self.restart:
-            self._load_restart_state()
-            return
-        if self.resume:
-            self._load_resume_state()
-            return
+    def initialize(self, nma_exec=None):
+        """Prepare fresh fluctuation-matching initialization state."""
 
         if not path.exists(self.filenames["init_input"]):
             version = self.kwargs.get("charmm_version", 41)
@@ -593,7 +665,20 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.info("Writing %s...", self.filenames["dynamic_prm"])
             prm.write(self.dynamic_params)
 
-    def run(self, nma_exec=None, tol=1.e-3, n_cycles=300, low_bound=0.0, restart=False, resume=False):        
+
+    # Fluctuation Matching starts here by calculating 
+    # NMA (Using vibran nmode in CHARMM) from ENM and 
+    # fluctuations are matched with CG initial values untill convergence 
+    def run(
+        self,
+        nma_exec=None,
+        tol=1.e-3,
+        n_cycles=300,
+        low_bound=0.0,
+        restart=False,
+        resume=False,
+        auto=False,
+    ):     
         """Perform self-consistent fluctuation matching.
 
         Parameters
@@ -619,9 +704,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             `init.fluct.ic`.
         """
 
-        if restart and resume:
-            raise ValueError("restart and resume are mutually exclusive.")
-
         charmm_exec = (
             os.environ.get("CHARMMEXEC", util.which("charmm"))
             if nma_exec is None else nma_exec
@@ -630,34 +712,97 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.exception(
                 "Please set CHARMMEXEC with the location of your CHARMM executable file or add the charmm path to your PATH environment."
             )
-            raise_with_traceback(
-                OSError(
+            raise OSError(
                     "Please set CHARMMEXEC with the location of your CHARMM executable file or add the charmm path to your PATH environment."
-                )
             )
 
-        if resume:
+        requested_mode = self._resolve_requested_mode(
+            restart=restart, resume=resume, auto=auto
+        )
+
+        if requested_mode == "resume":
             state = self._load_resume_state()
-            last_completed_step = int(state["last_completed_step"])
+            last_completed_step = int(state.get("resume_step", state["last_completed_step"]))
             self.restart = False
             self.resume = True
-        elif restart:
+            self.auto = False
+            logger.info("Run mode selected: resume")
+
+        elif requested_mode == "restart":
             self._load_restart_state()
             self._reset_run_outputs()
             last_completed_step = 0
             self.restart = True
             self.resume = False
-        else:
+            self.auto = False
+            logger.info("Run mode selected: restart")
+
+        elif requested_mode == "auto":
+            self.auto = True
+            self.restart = False
+            self.resume = False
+            resolved_mode = self._resolve_auto_mode()
+            logger.info("Auto run mode resolved to: %s", resolved_mode)
+
+            if resolved_mode == "resume":
+                try:
+                    state = self._load_resume_state()
+                    last_completed_step = int(state.get("resume_step", state["last_completed_step"]))
+                    self.resume = True
+                    logger.info("Auto mode using resume state.")
+                except Exception as exc:
+                    logger.warning(
+                        "Auto mode could not load resume state (%s). Falling back.",
+                        exc
+                    )
+                    if self._can_restart():
+                        self._load_restart_state()
+                        self._reset_run_outputs()
+                        last_completed_step = 0
+                        self.restart = True
+                        logger.info("Auto mode falling back to restart state.")
+                    else:
+                        if not self.parameters:
+                            try:
+                                self.initialize(nma_exec)
+                            except IOError:
+                                raise IOError("Some files are missing. Unable to initialize.")
+                        self._reset_run_outputs()
+                        self._initialize_convergence_mask()
+                        last_completed_step = 0
+                        logger.info("Auto mode falling back to fresh state.")
+
+            elif resolved_mode == "restart":
+                self._load_restart_state()
+                self._reset_run_outputs()
+                last_completed_step = 0
+                self.restart = True
+                logger.info("Auto mode using restart state.")
+
+            else:
+                if not self.parameters:
+                    try:
+                        self.initialize(nma_exec)
+                    except IOError:
+                        raise IOError("Some files are missing. Unable to initialize.")
+                self._reset_run_outputs()
+                self._initialize_convergence_mask()
+                last_completed_step = 0
+                logger.info("Auto mode using fresh state.")
+
+        else:  # start fresh
             if not self.parameters:
                 try:
-                    self.initialize(nma_exec, restart=False, resume=False)
+                    self.initialize(nma_exec)
                 except IOError:
-                    raise_with_traceback(IOError("Some files are missing. Unable to initialize."))
+                    raise IOError("Some files are missing. Unable to initialize.")
             self._reset_run_outputs()
             self._initialize_convergence_mask()
             last_completed_step = 0
             self.restart = False
             self.resume = False
+            self.auto = False
+            logger.info("Run mode selected: fresh")
 
         if not path.exists(self.filenames["charmm_input"]):
             version = self.kwargs.get("charmm_version", 41)
@@ -677,7 +822,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
         self.target["BONDS"].set_index(self.bond_def, inplace=True)
         bond_values = self.target["BONDS"].columns
 
-        logger.info("Starting fluctuation matching--%d iterations to run", n_cycles)
+        logger.info(f"Starting fluctuation matching --> {n_cycles - last_completed_step} iterations to run")
         if low_bound != 0.0:
             logger.info("Lower bound after 75%% iteration is set to %s", low_bound)
 
@@ -758,7 +903,7 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             )
             logger.info(
                 "%d not converged out of %d",
-                self.converge_bnd_list.sum(), self.converge_bnd_list.size
+                self.unconverged_bond_list.sum(), self.unconverged_bond_list.size
             )
 
             relative_diff = self._compute_relative_diff(fluct_diff, tol)
@@ -783,11 +928,9 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.exception(
                 "Please set CHARMMEXEC with the location of your CHARMM executable file or add the charmm path to your PATH environment."
             )
-            raise_with_traceback(
-                OSError(
+            raise OSError(
                     "Please set CHARMMEXEC with the location of your CHARMM executable file or add the charmm path to your PATH environment."
-                )
-            )
+                    )
 
         if not path.exists(self.filenames["thermo_input"]):
             version = self.kwargs.get("charmm_version", 41)
