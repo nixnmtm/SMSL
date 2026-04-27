@@ -27,6 +27,8 @@ from fluctmatch.cli import main
 
 def test_main():
     runner = CliRunner()
-    result = runner.invoke(main, [])
+    result = runner.invoke(main, ["--help"])
 
     assert result.exit_code == 0
+    assert "Commands:" in result.output
+    assert "splittraj" in result.output

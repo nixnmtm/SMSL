@@ -1,4 +1,6 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest import SkipTest
 
 import numpy as np
 import MDAnalysis as mda
@@ -10,7 +12,27 @@ MDA_DIR = Path("data_mda")
 
 
 def _window_ids(base):
-    return sorted(int(p.name) for p in base.iterdir() if p.is_dir() and p.name.isdigit())
+    return sorted(
+        int(p.name) for p in base.iterdir()
+        if p.is_dir() and p.name.isdigit())
+
+
+def _require_split_outputs():
+    missing = [
+        str(base) for base in (GMX_DIR, MDA_DIR)
+        if not base.exists()
+    ]
+    if missing:
+        raise SkipTest(
+            "Split trajectory comparison outputs are missing: {}".format(
+                ", ".join(missing)))
+
+    gmx_windows = _window_ids(GMX_DIR)
+    mda_windows = _window_ids(MDA_DIR)
+    if not gmx_windows or not mda_windows:
+        raise SkipTest("Split trajectory comparison outputs are empty.")
+
+    return gmx_windows, mda_windows
 
 
 def _frame_times(topology, trajectory):
@@ -18,9 +40,18 @@ def _frame_times(topology, trajectory):
     return np.array([float(ts.time) for ts in u.trajectory], dtype=float)
 
 
+def test_window_ids_returns_sorted_numeric_directories_only():
+    with TemporaryDirectory() as tmpdir:
+        base = Path(tmpdir)
+        for name in ("10", "notes", "2", "1"):
+            (base / name).mkdir()
+        (base / "3.txt").write_text("")
+
+        assert _window_ids(base) == [1, 2, 10]
+
+
 def test_splittraj_gmx_mda_all_frame_times_match():
-    gmx_windows = _window_ids(GMX_DIR)
-    mda_windows = _window_ids(MDA_DIR)
+    gmx_windows, mda_windows = _require_split_outputs()
 
     assert gmx_windows == mda_windows, (
         f"Window folders differ: GMX={gmx_windows}, MDA={mda_windows}"

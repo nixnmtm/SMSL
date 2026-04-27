@@ -223,7 +223,7 @@ class ModelBase(mda.Universe, metaclass=_ModelMeta):
             )
         except (IOError, TypeError) as exc:
             raise RuntimeError("Unable to open {}".format(
-                self.atu.trajectory.filename)))
+                self.atu.trajectory.filename))
 
     def _apply_map(self, mapping):
         _beads = []
