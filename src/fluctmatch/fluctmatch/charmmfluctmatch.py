@@ -804,6 +804,14 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             self.auto = False
             logger.info("Run mode selected: fresh")
 
+        # Check whether the requested cylce is already completed and exit early if so
+        if last_completed_step >= n_cycles:
+            logger.info(
+                f"Requested {n_cycles} cycles already completed for this window "
+                f"(last_completed_step={last_completed_step}). Skipping."
+            )
+            return
+
         if not path.exists(self.filenames["charmm_input"]):
             version = self.kwargs.get("charmm_version", 41)
             dimension = ("dimension chsize 8000000" if version >= 36 else "")
