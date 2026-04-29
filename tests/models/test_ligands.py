@@ -1,6 +1,5 @@
 import numpy as np
 import MDAnalysis as mda
-from future.utils import native_str
 from numpy import testing
 
 from fluctmatch.models import protein, ligand
@@ -37,7 +36,7 @@ def test_adp_creation():
     testing.assert_equal(
         cg.atoms.n_atoms,
         expected,
-        err_msg=native_str("Number of ADP sites not equal."),
+        err_msg="Number of ADP sites not equal.",
         verbose=True,
     )
 
@@ -49,7 +48,7 @@ def test_adp_positions():
     testing.assert_allclose(
         _expected_positions(aa, cg),
         cg.atoms.positions,
-        err_msg=native_str("ADP coordinates do not match."),
+        err_msg="ADP coordinates do not match.",
     )
 
 
@@ -61,7 +60,7 @@ def test_om_creation():
     testing.assert_equal(
         cg.atoms.n_atoms,
         expected,
-        err_msg=native_str("Number of OM sites not equal."),
+        err_msg="Number of OM sites not equal.",
         verbose=True,
     )
 
@@ -73,5 +72,5 @@ def test_om_positions():
     testing.assert_allclose(
         _expected_positions(aa, cg),
         cg.atoms.positions,
-        err_msg=native_str("OM coordinates do not match."),
+        err_msg="OM coordinates do not match.",
     )

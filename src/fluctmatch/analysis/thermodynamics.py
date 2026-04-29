@@ -15,8 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.builtins import open
-from future.utils import native_str
 
 import functools
 import glob
@@ -114,8 +112,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = entropy.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
@@ -125,8 +123,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = enthalpy.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
@@ -136,8 +134,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = heat.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
@@ -147,8 +145,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = gibbs.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())

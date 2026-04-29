@@ -15,7 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import native_str
 
 import logging
 import time
@@ -89,13 +88,13 @@ class RTFWriter(topbase.TopologyWriterBase):
         np.savetxt(
             self.rtffile,
             columns,
-            fmt=native_str(self.fmt["MASS"]),
-            delimiter=native_str(""))
+            fmt=self.fmt["MASS"],
+            delimiter="")
 
     def _write_decl(self):
         names = np.unique(self._atoms.names)[:, np.newaxis]
         decl = np.concatenate((names, names), axis=1)
-        np.savetxt(self.rtffile, decl, fmt=native_str(self.fmt["DECL"]))
+        np.savetxt(self.rtffile, decl, fmt=self.fmt["DECL"])
         self.rtffile.write("\n".encode())
 
     def _write_residues(self, residue):
@@ -110,7 +109,7 @@ class RTFWriter(topbase.TopologyWriterBase):
                  if np.issubdtype(atoms.types.dtype, np.signedinteger) else    # NIx
                  (atoms.names, atoms.names, atoms.charges))
         lines = pd.concat([pd.Series(_) for _ in lines], axis=1)
-        np.savetxt(self.rtffile, lines, fmt=native_str(self.fmt[key]))
+        np.savetxt(self.rtffile, lines, fmt=self.fmt[key])
 
         # Write the bond, angle, dihedral, and improper dihedral lines.
         for key, value in self.bonds:
@@ -134,11 +133,14 @@ class RTFWriter(topbase.TopologyWriterBase):
                         object)
                 if pos_names.size == 0:
                     logger.warning(
-                        "Please check that all bond definitions are valid. "
-                        "You may have some missing or broken bonds.")
+                        "Residue %s has only internal %s definitions; "
+                        "no cross-residue +ATOM entries needed.",
+                        residue.resname,
+                        key,
+                    )
                 else:
                     names[idx] = pos_names + names[idx]
-                names = names.astype(np.unicode)
+                names = names.astype(str)
 
                 # Eliminate redundancies.
                 # Code courtesy of Daniel F on
@@ -153,10 +155,10 @@ class RTFWriter(topbase.TopologyWriterBase):
                 n_values = n_perline // n_cols
                 if n_rows % n_values > 0:
                     n_extra = n_values - (n_rows % n_values)
-                    extras = np.full((n_extra, n_cols), native_str(""))
+                    extras = np.full((n_extra, n_cols), "")
                     names = np.concatenate((names, extras), axis=0)
                 names = names.reshape((names.shape[0] // n_values, n_perline))
-                np.savetxt(self.rtffile, names, fmt=native_str(fmt))
+                np.savetxt(self.rtffile, names, fmt=fmt)
             except (AttributeError, ):
                 continue
         self.rtffile.write("\n".encode())

@@ -87,8 +87,6 @@ associated with highly flexible regions of the protein.
 
 """
 
-from future.utils import native_str
-
 import copy
 import json
 import logging
@@ -282,8 +280,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             np.savetxt(
                 error_file,
                 self.error,
-                fmt=native_str("%15d%15.6f%15.6f%15.6f"),
-                delimiter=native_str(""),
+                fmt="%15d%15.6f%15.6f%15.6f",
+                delimiter="",
             )
 
     def _write_error_header(self):
@@ -291,8 +289,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             np.savetxt(
                 data,
                 [self.error_hdr],
-                fmt=native_str("%15s"),
-                delimiter=native_str(""),
+                fmt="%15s",
+                delimiter="",
             )
 
     def _get_error_last_step(self):
@@ -991,8 +989,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.info("Writing thermodynamics data file.")
             thermo = thermo.to_csv(
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             data_file.write(thermo.encode())

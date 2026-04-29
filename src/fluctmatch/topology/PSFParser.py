@@ -15,7 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import native_str
 
 import logging
 import time
@@ -458,7 +457,7 @@ class PSFWriter(base.TopologyWriterBase):
                         atoms.names.astype(object), "-0.301140E-02"))
             cheq = pd.concat([pd.DataFrame(_) for _ in cheq], axis=1)
             lines = pd.concat([lines, cheq], axis=1)
-        np.savetxt(psffile, lines, fmt=native_str(fmt))
+        np.savetxt(psffile, lines, fmt=fmt)
         psffile.write("\n".encode())
 
     def _write_sec(self, psffile, section_info):
@@ -487,8 +486,8 @@ class PSFWriter(base.TopologyWriterBase):
         np.savetxt(
             psffile,
             values,
-            fmt=native_str("%{:d}s".format(self.col_width)),
-            delimiter=native_str(""))
+            fmt="%{:d}s".format(self.col_width),
+            delimiter="")
         psffile.write("\n".encode())
 
     def _write_other(self, psffile):
@@ -501,7 +500,7 @@ class PSFWriter(base.TopologyWriterBase):
         nnb = np.full(n_atoms, "0", dtype=object)
         if missing > 0:
             nnb = np.concatenate(
-                [nnb, np.full(missing, native_str(""), dtype=object)],
+                [nnb, np.full(missing, "", dtype=object)],
                 axis=0)
         nnb = nnb.reshape((nnb.size // n_cols, n_cols))
 
@@ -509,8 +508,8 @@ class PSFWriter(base.TopologyWriterBase):
         np.savetxt(
             psffile,
             nnb,
-            fmt=native_str("%{:d}s".format(self.col_width)),
-            delimiter=native_str(""))
+            fmt="%{:d}s".format(self.col_width),
+            delimiter="")
         psffile.write("\n".encode())
 
         # NGRP NST2
@@ -520,8 +519,8 @@ class PSFWriter(base.TopologyWriterBase):
         np.savetxt(
             psffile,
             line,
-            fmt=native_str("%{:d}d".format(self.col_width)),
-            delimiter=native_str(""))
+            fmt="%{:d}d".format(self.col_width),
+            delimiter="")
         psffile.write("\n".encode())
 
         # MOLNT
@@ -535,8 +534,8 @@ class PSFWriter(base.TopologyWriterBase):
             np.savetxt(
                 psffile,
                 line,
-                fmt=native_str("%{:d}s".format(self.col_width)),
-                delimiter=native_str(""))
+                fmt="%{:d}s".format(self.col_width),
+                delimiter="")
             psffile.write("\n".encode())
         else:
             psffile.write(self.sect_hdr.format(0, "MOLNT\n").encode())

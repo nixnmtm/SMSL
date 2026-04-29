@@ -14,13 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str
 
 import numpy as np
 import MDAnalysis as mda
@@ -40,7 +33,7 @@ def test_average_structure():
     testing.assert_allclose(
         positions,
         avg_positions,
-        err_msg=native_str("Average coordinates don't match."),
+        err_msg="Average coordinates don't match.",
     )
 
 
@@ -52,7 +45,7 @@ def test_average_bonds():
     testing.assert_allclose(
         bonds["r_IJ"],
         avg_bonds,
-        err_msg=native_str("Average bond distances don't match."),
+        err_msg="Average bond distances don't match.",
     )
 
 
@@ -66,7 +59,7 @@ def test_bond_fluctuation():
     testing.assert_allclose(
         bonds["r_IJ"],
         bond_fluct,
-        err_msg=native_str("Bond fluctuations don't match."),
+        err_msg="Bond fluctuations don't match.",
     )
 
 

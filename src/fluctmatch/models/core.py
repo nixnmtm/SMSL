@@ -15,12 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import (
-    viewkeys,
-    raise_with_traceback,
-    reraise,
-)
-
 import logging
 
 from fluctmatch import _MODELS

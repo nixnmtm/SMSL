@@ -15,8 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.builtins import open
-from future.utils import native_str
 
 import logging
 import logging.config
@@ -115,8 +113,8 @@ def cli(logfile, outdir, ressep, table):
         ent = ent_table.coupling_entropy().to_csv(
             index=True,
             header=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(ent.encode())
@@ -128,8 +126,8 @@ def cli(logfile, outdir, ressep, table):
         ent = ent_table.relative_entropy().to_csv(
             index=True,
             header=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(ent.encode())
@@ -142,8 +140,8 @@ def cli(logfile, outdir, ressep, table):
         ent = ent_table.windiff_entropy().to_csv(
             index=True,
             header=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(ent.encode())

@@ -5,7 +5,6 @@
 #
 
 import itertools
-from future.utils import viewitems
 from MDAnalysis.coordinates import base
 
 
@@ -23,7 +22,7 @@ class _Trajectory(base.ReaderBase):
             self._beads = [bead for _, bead in self._u._iter_beads(self._u.atu)]
         else:
             residue_selection = itertools.product(
-                self._u.residues, viewitems(self._mapping)
+                self._u.residues, self._mapping.items()
             )
             self._beads = []
             for res, (key, selection) in residue_selection:

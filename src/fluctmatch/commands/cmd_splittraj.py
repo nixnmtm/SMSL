@@ -15,8 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import viewkeys
-
 import functools
 import logging
 import logging.config
@@ -47,7 +45,7 @@ _CONVERT = {
 @click.option(
     "--type",
     "program",
-    type=click.Choice(viewkeys(_CONVERT)),
+    type=click.Choice(_CONVERT.keys()),
     default="MDA",
     help="Split using MDAnalysis or Gromacs")
 @click.option(

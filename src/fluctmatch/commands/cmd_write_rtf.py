@@ -15,7 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import (native_str)
 
 import logging
 import logging.config
@@ -128,6 +127,6 @@ def cli(
         logger.info("Setting all bead masses to 1.0.")
         universe.atoms.mass = 1.0
 
-    with mda.Writer(native_str(outfile), **kwargs) as rtf:
+    with mda.Writer(outfile, **kwargs) as rtf:
         logger.info("Writing {}...".format(outfile))
         rtf.write(universe, decl=not decl)

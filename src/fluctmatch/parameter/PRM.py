@@ -15,9 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import (
-    native_str, )
-
 import textwrap
 import time
 from io import (StringIO, TextIOWrapper)
@@ -221,7 +218,7 @@ class ParamWriter(TopologyWriterBase):
                 if value.empty:
                     prmfile.write("\n".encode())
                 if not value.empty:
-                    np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))
+                    np.savetxt(prmfile, value, fmt=self._fmt[key])
                     prmfile.write("\n".encode())
 
             nb_header = ("""
@@ -242,8 +239,8 @@ class ParamWriter(TopologyWriterBase):
                 np.savetxt(
                     prmfile,
                     nb_list,
-                    fmt=native_str(self._fmt["NONBONDED"]),
-                    delimiter=native_str(""))
+                    fmt=self._fmt["NONBONDED"],
+                    delimiter="")
             prmfile.write("\nEND\n".encode())
 
 

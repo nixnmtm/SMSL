@@ -14,20 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    next,
-    open,
-)
-from future.utils import (
-    native_str, )
-
 import logging
 import time
 from io import TextIOWrapper
@@ -229,7 +215,7 @@ class IntcorWriter(TopologyWriterBase):
             "resK",
             "resL",
         ]
-        ictable[rescol] = ictable[rescol].astype(np.unicode)
+        ictable[rescol] = ictable[rescol].astype(str)
 
         with open(self.filename, "wb") as icfile:
             logger.info("Writing to {}".format(self.filename))
@@ -242,18 +228,18 @@ class IntcorWriter(TopologyWriterBase):
             np.savetxt(
                 icfile,
                 line[np.newaxis, :],
-                fmt=native_str("%4d"),
-                delimiter=native_str(""))
+                fmt="%4d",
+                delimiter="")
             line = np.zeros(2, dtype=int)
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
             np.savetxt(
                 icfile,
                 line[np.newaxis, :],
-                fmt=native_str("%5d"),
-                delimiter=native_str(""))
+                fmt="%5d",
+                delimiter="")
             np.savetxt(
                 icfile,
                 ictable.reset_index(),
-                fmt=native_str(self.fmt[self.key]))
+                fmt=self.fmt[self.key])
             logger.info("Table successfully written.")

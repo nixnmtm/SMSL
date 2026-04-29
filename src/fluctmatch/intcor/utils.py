@@ -14,15 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import (
-    raise_with_traceback, )
-
 import logging
 
 import numpy as np
@@ -68,8 +59,7 @@ def create_empty_table(universe):
                     raise AttributeError
             except AttributeError:
                 logger.exception("Bonds, angles, and torsions undefined")
-                raise_with_traceback(
-                    AttributeError("Bonds, angles, and torsions undefined"))
+                raise AttributeError("Bonds, angles, and torsions undefined")
             else:
                 n_bonds = len(bonds)
                 atom1, atom2 = bonds.atom1, bonds.atom2

@@ -15,7 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import native_str
 
 import textwrap
 import time
@@ -44,7 +43,7 @@ class STRWriter(topbase.TopologyWriterBase):
     units = dict(time=None, length="Angstrom")
 
     def __init__(self, filename, **kwargs):
-        self.filename = util.filename(filename, ext=native_str("stream"))
+        self.filename = util.filename(filename, ext="stream")
         self._version = kwargs.get("charmm_version", 41)
 
         width = 4 if self._version < 36 else 8
@@ -109,5 +108,5 @@ class STRWriter(topbase.TopologyWriterBase):
             np.savetxt(
                 stream_file,
                 data,
-                fmt=native_str(textwrap.dedent(self.fmt[1:])))
+                fmt=textwrap.dedent(self.fmt[1:]))
             stream_file.write("RETURN\n".encode())

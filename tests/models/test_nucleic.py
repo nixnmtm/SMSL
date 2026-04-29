@@ -14,13 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str
 
 import MDAnalysis as mda
 from numpy import testing
@@ -45,7 +38,7 @@ def test_nucleic3_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         n_atoms,
-        err_msg=native_str("Number of sites do not match."),
+        err_msg="Number of sites do not match.",
         verbose=True,
     )
 
@@ -67,7 +60,7 @@ def test_nucleic3_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -77,7 +70,7 @@ def test_nucleic3_trajectory():
     testing.assert_equal(
         cg_universe.trajectory.n_frames,
         aa_universe.trajectory.n_frames,
-        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        err_msg="All-atom and coarse-grain trajectories unequal.",
         verbose=True,
     )
 
@@ -97,7 +90,7 @@ def test_nucleic4_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         n_atoms,
-        err_msg=native_str("Number of sites do not match."),
+        err_msg="Number of sites do not match.",
         verbose=True,
     )
 
@@ -118,7 +111,7 @@ def test_nucleic4_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -128,7 +121,7 @@ def test_nucleic4_trajectory():
     testing.assert_equal(
         cg_universe.trajectory.n_frames,
         aa_universe.trajectory.n_frames,
-        err_msg=native_str("All-atom and coarse-grain trajectories unequal."),
+        err_msg="All-atom and coarse-grain trajectories unequal.",
         verbose=True,
     )
 
@@ -157,6 +150,6 @@ def test_nucleic6_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         n_atoms,
-        err_msg=native_str("Number of sites do not match."),
+        err_msg="Number of sites do not match.",
         verbose=True,
     )

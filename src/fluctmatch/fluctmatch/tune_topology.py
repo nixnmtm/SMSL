@@ -16,8 +16,6 @@
 # https://doi.org/10.1016/j.csbj.2021.09.004.
 #
 
-from future.utils import (PY2, native_str)
-
 import os.path as path
 import os
 import logging
@@ -201,13 +199,13 @@ class TopologyTuning(object):
         #             os.system(f'mv {v} {file}')
 
         # Write required CHARMM input files.
-        with mda.Writer(native_str(self.write_filenames["topology_file"]), **kwargs) as rtf:
+        with mda.Writer(self.write_filenames["topology_file"], **kwargs) as rtf:
             logger.info("Writing {}...".format(self.write_filenames["topology_file"]))
             rtf.write(self.universe)
-        with mda.Writer(native_str(self.write_filenames["psf_file"]), **kwargs) as psf:
+        with mda.Writer(self.write_filenames["psf_file"], **kwargs) as psf:
             logger.info("Writing {}...".format(self.write_filenames["psf_file"]))
             psf.write(self.universe)
-        with mda.Writer(native_str(self.write_filenames["stream_file"]), **kwargs) as stream:
+        with mda.Writer(self.write_filenames["stream_file"], **kwargs) as stream:
             logger.info("Writing {}...".format(self.write_filenames["stream_file"]))
             stream.write(self.universe)
 
@@ -215,7 +213,7 @@ class TopologyTuning(object):
         atomtypes = topologyattrs.Atomtypes(self.universe.atoms.names)
         self.universe._topology.add_TopologyAttr(topologyattr=atomtypes)
         self.universe._generate_from_topology()
-        with mda.Writer(native_str(self.write_filenames["xplor_psf_file"]), **kwargs) as psf:
+        with mda.Writer(self.write_filenames["xplor_psf_file"], **kwargs) as psf:
             logger.info("Writing {}...".format(self.write_filenames["xplor_psf_file"]))
             psf.write(self.universe)
 
@@ -254,6 +252,4 @@ class TopologyTuning(object):
         self.universe._topology.add_TopologyAttr(bonds)
         self.universe._generate_from_topology()
         return self.trim_write_topology_files()
-
-
 

@@ -15,8 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.builtins import (dict, super)
-from future.utils import (PY2, native_str)
 
 import logging
 import os
@@ -34,9 +32,6 @@ import MDAnalysis.analysis.base as analysis
 from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch.data import charmm_split
-
-if PY2:
-    FileNotFoundError = OSError
 
 logger = logging.getLogger(__name__)
 
@@ -218,13 +213,13 @@ def write_charmm_files(universe,
                                                     n_dihedrals, n_impropers))
 
     # Write required CHARMM input files.
-    with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
+    with mda.Writer(filenames["topology_file"], **kwargs) as rtf:
         logger.info("Writing {}...".format(filenames["topology_file"]))
         rtf.write(universe)
-    with mda.Writer(native_str(filenames["stream_file"]), **kwargs) as stream:
+    with mda.Writer(filenames["stream_file"], **kwargs) as stream:
         logger.info("Writing {}...".format(filenames["stream_file"]))
         stream.write(universe)
-    with mda.Writer(native_str(filenames["psf_file"]), **kwargs) as psf:
+    with mda.Writer(filenames["psf_file"], **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["psf_file"]))
         psf.write(universe, xplor=False, atom_type_source="types")
 
@@ -232,7 +227,7 @@ def write_charmm_files(universe,
     if write_traj:
         universe.trajectory.rewind()
         with mda.Writer(
-            native_str(filenames["traj_file"]),
+            filenames["traj_file"],
             universe.atoms.n_atoms,
             istart=1,
             remarks="Written by fluctmatch.",
@@ -246,7 +241,7 @@ def write_charmm_files(universe,
                     trj.write(universe.atoms)
 
     #universe._generate_from_topology()
-    with mda.Writer(native_str(filenames["xplor_psf_file"]), **kwargs) as psf:
+    with mda.Writer(filenames["xplor_psf_file"], **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["xplor_psf_file"]))
         psf.write(universe, xplor=True, atom_type_source="names")
 
@@ -278,7 +273,7 @@ def write_charmm_files(universe,
     # avg_universe.load_new(
     #     positions, )
     with mda.Writer(
-            native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+            filenames["crd_file"], dt=1.0, **kwargs) as crd:
         logger.info("Writing {}...".format(filenames["crd_file"]))
         crd.write(avg_universe.atoms)
 
@@ -418,7 +413,7 @@ def split_mda(info, data_dir=path.join(os.getcwd(), "data"), frame_based=True, *
         outfile, start, stop, frame_based
     )
 
-    with mda.Writer(native_str(outfile), ag.n_atoms, precision=precision) as W:
+    with mda.Writer(outfile, ag.n_atoms, precision=precision) as W:
         if frame_based:
             for ts in u.trajectory[start - 1:stop]:
                 W.write(ag)

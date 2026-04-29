@@ -15,8 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.builtins import open
-from future.utils import native_str
 
 import logging
 import logging.config
@@ -156,8 +154,8 @@ def cli(logfile, outdir, ressep, kb, b0):
         kb_table = kb_table.to_csv(
             header=True,
             index=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(kb_table.encode())
@@ -169,8 +167,8 @@ def cli(logfile, outdir, ressep, kb, b0):
         b0_table = b0_table.to_csv(
             header=True,
             index=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(b0_table.encode())

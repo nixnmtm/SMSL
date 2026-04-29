@@ -25,10 +25,6 @@ import subprocess
 from MDAnalysis.lib import util
 from fluctmatch.fluctmatch.data import charmm_afnma, charmm_afqha
 
-from future.utils import (
-    raise_with_traceback,
-)
-
 logger = logging.getLogger(__name__)
 
 
@@ -84,11 +80,10 @@ class AtomicFluctuations(object):
                 "Please set CHARMMEXEC with the location of your CHARMM "
                 "executable file or add the charmm path to your PATH "
                 "environment.")
-            raise_with_traceback(
-                OSError(
-                    "Please set CHARMMEXEC with the location of your CHARMM "
-                    "executable file or add the charmm path to your PATH "
-                    "environment."))
+            raise OSError(
+                "Please set CHARMMEXEC with the location of your CHARMM "
+                "executable file or add the charmm path to your PATH "
+                "environment.")
 
         # Write CHARMM input files and run atomic fluctuations
         if not path.exists(self.filenames["qha_input"]):

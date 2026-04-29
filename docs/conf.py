@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import os
 
@@ -26,7 +25,7 @@ project = u'fluctmatch'
 year = u'2014-2017'
 author = u'Nixon Raj'
 copyright = '{0}, {1}'.format(year, author)
-version = release = u'3.5.1'
+version = release = '3.5.1'
 
 pygments_style = 'trac'
 templates_path = ['.']

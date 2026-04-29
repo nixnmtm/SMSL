@@ -16,7 +16,6 @@
 #
 
 
-from future.utils import native_str
 
 import functools
 import glob
@@ -250,7 +249,7 @@ class ParamTable(object):
         with openany(filename, mode="w") as table:
             self.table.to_csv(
                 table,
-                sep=native_str(" "),
+                sep=" ",
                 header=True,
                 index=True,
                 float_format="%.6f",

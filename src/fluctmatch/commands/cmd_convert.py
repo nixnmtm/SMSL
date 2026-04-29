@@ -15,8 +15,6 @@
 # doi:10.1016/bs.mie.2016.05.024.
 #
 
-from future.utils import (viewkeys, iteritems)
-
 import logging
 import logging.config
 import os
@@ -137,7 +135,7 @@ def parse_segid_map(segid_map_str):
     "-m",
     "--model",
     metavar="MODEL",
-    type=click.Choice(viewkeys(_MODELS)),
+    type=click.Choice(_MODELS.keys()),
     multiple=True,
     help="Model(s) to convert to",
 )
@@ -244,7 +242,7 @@ def cli(
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                "level": "INFO",
+                "level": "WARNING",
                 "formatter": "standard",
             },
             "file": {
@@ -263,7 +261,7 @@ def cli(
     logger = logging.getLogger(__name__)
 
     if model_list:
-        for k, v in iteritems(_DESCRIBE):
+        for k, v in _DESCRIBE.items():
             print("{:20}{}".format(k, v))
         return
 

@@ -20,19 +20,6 @@
 Read and write coordinates in CHARMM CARD coordinate format (suffix
 "cord"). The CHARMM "extended format" is handled automatically.
 """
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    open,
-    range,
-    str,
-    super,
-    zip,
-)
 
 import itertools
 import logging
