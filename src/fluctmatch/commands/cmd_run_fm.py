@@ -14,12 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
 
 import logging
 import logging.config
@@ -156,7 +150,17 @@ from fluctmatch.fluctmatch import charmmfluctmatch
 @click.option(
     "--restart",
     is_flag=True,
-    help="Restart simulation",
+    help="Restart fluctuation matching from the saved initialized baseline and begin again at cycle 1.",
+)
+@click.option(
+    "--resume",
+    is_flag=True,
+    help="Resume fluctuation matching from the last completed saved cycle.",
+)
+@click.option(
+    "--auto",
+    is_flag=True,
+    help="Automatically choose per-window mode: resume if valid, otherwise restart if possible, otherwise fresh.",
 )
 def cli(
         topology,
@@ -174,10 +178,16 @@ def cli(
         resid,
         nonbonded,
         restart,
+        resume,
+        auto,
 ):
+    selected = sum(bool(x) for x in (restart, resume, auto))
+    if selected > 1:
+        raise click.UsageError("--restart, --resume, and --auto are mutually exclusive.")
+
     logging.config.dictConfig({
         "version": 1,
-        "disable_existing_loggers": False,  # this fixes the problem
+        "disable_existing_loggers": False,
         "formatters": {
             "standard": {
                 "class": "logging.Formatter",
@@ -222,8 +232,25 @@ def cli(
     )
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
 
-    logger.info("Initializing the parameters.")
-    cfm.initialize(nma_exec=nma_exec, restart=restart)
+    if resume:
+        logger.info("Forcing resume from the last completed saved cycle.")
+    elif restart:
+        logger.info("Forcing restart from the saved initialized baseline.")
+    elif auto:
+        logger.info("Using automatic mode selection per window: resume, restart, or fresh.")
+    else:
+        logger.info("Starting a fresh fluctuation matching run.")
+
     logger.info("Running fluctuation matching.")
-    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles, low_bound=low_bound)
+
+    cfm.run(
+        nma_exec=nma_exec,
+        tol=tol,
+        n_cycles=n_cycles,
+        low_bound=low_bound,
+        restart=restart,
+        resume=resume,
+        auto=auto,
+    )
+
     logger.info("Fluctuation matching successfully completed.")

@@ -14,13 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str
 
 import MDAnalysis as mda
 from numpy import testing
@@ -36,7 +29,7 @@ def test_enm_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("The number of beads don't match."),
+        err_msg="The number of beads don't match.",
         verbose=True,
     )
 
@@ -44,12 +37,12 @@ def test_enm_creation():
 def test_enm_names():
     cg_universe = enm.Enm(NCSC)
     testing.assert_string_equal(
-        native_str(cg_universe.atoms[0].name),
-        native_str("A001"),
+        cg_universe.atoms[0].name,
+        "A001",
     )
     testing.assert_string_equal(
-        native_str(cg_universe.residues[0].resname),
-        native_str("A001"),
+        cg_universe.residues[0].resname,
+        "A001",
     )
 
 
@@ -59,5 +52,5 @@ def test_enm_positions():
     testing.assert_allclose(
         cg_universe.atoms.positions,
         aa_universe.atoms.positions,
-        err_msg=native_str("Coordinates don't match."),
+        err_msg="Coordinates don't match.",
     )

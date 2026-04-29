@@ -14,13 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str
 
 import MDAnalysis as mda
 from numpy import testing
@@ -44,7 +37,7 @@ def test_water_from_tip3p_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites don't match."),
+        err_msg="Number of sites don't match.",
         verbose=True,
     )
 
@@ -59,7 +52,7 @@ def test_water_from_tip3p_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -70,7 +63,7 @@ def test_water_from_tip4p_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites don't match."),
+        err_msg="Number of sites don't match.",
         verbose=True,
     )
 
@@ -85,7 +78,7 @@ def test_water_from_tip4p_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -98,7 +91,7 @@ def test_tip3p_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites don't match."),
+        err_msg="Number of sites don't match.",
         verbose=True,
     )
 
@@ -114,7 +107,7 @@ def test_tip3p_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -126,7 +119,7 @@ def test_ions_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites don't match."),
+        err_msg="Number of sites don't match.",
         verbose=True,
     )
 
@@ -142,7 +135,7 @@ def test_ions_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )
 
 
@@ -156,7 +149,7 @@ def test_dma_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites don't match."),
+        err_msg="Number of sites don't match.",
         verbose=True,
     )
 
@@ -181,5 +174,5 @@ def test_dma_positions():
     testing.assert_allclose(
         np.array(positions),
         cg_universe.atoms.positions,
-        err_msg=native_str("The coordinates do not match."),
+        err_msg="The coordinates do not match.",
     )

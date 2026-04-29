@@ -14,22 +14,13 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    super,
-    zip,
-)
 
 from collections import OrderedDict
 
 from MDAnalysis.core import topologyattrs
 from fluctmatch.models.base import ModelBase
 from fluctmatch.models.selection import *
+import numpy as np
 
 
 class SolventIons(ModelBase):

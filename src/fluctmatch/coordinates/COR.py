@@ -20,19 +20,6 @@
 Read and write coordinates in CHARMM CARD coordinate format (suffix
 "cord"). The CHARMM "extended format" is handled automatically.
 """
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    open,
-    range,
-    str,
-    super,
-    zip,
-)
 
 import itertools
 import logging
@@ -138,7 +125,7 @@ class CORWriter(CRD.CRDWriter):
         for attr, default in (
             ("resnames", itertools.cycle(("UNK", ))),
                 # Resids *must* be an array because we index it later
-            ("resids", np.ones(n_atoms, dtype=np.int)),
+            ("resids", np.ones(n_atoms, dtype=int)),
             ("names", itertools.cycle(("X", ))),
             ("tempfactors", itertools.cycle((0.0, ))),
         ):

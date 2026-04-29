@@ -14,15 +14,8 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict, )
-from future.utils import native_str
+
+
 
 import functools
 import glob
@@ -179,7 +172,7 @@ class ParamTable(object):
                 raise ValueError('trimmed flag requires trimcut, please check ')
             directories = glob.iglob(path.join(self._datadir, f"*/trimmed_{self.trimcut}"))
         else:
-            directories = glob.iglob(path.join(self._datadir, "*"))
+            directories = sorted(glob.iglob(path.join(self._datadir, "*")))
 
         if self.start is not None and self.end is not None:
             directories = []
@@ -206,23 +199,21 @@ class ParamTable(object):
             trimmed=self.trimmed,
             verbose=verbose,
         )
-        pool = mp.Pool()
-        tables = pool.map_async(create_table, directories)
-        pool.close()
-        pool.join()
-        tables.wait()
+
+        with mp.Pool() as pool:
+            tables = pool.map(create_table, directories)
 
         self.table = pd.concat(tables.get(), axis=1)
-        self.table.columns = self.table.columns.astype(np.int)
+        self.table.columns = self.table.columns.astype(int)
         self.table = self.table[np.sort(self.table.columns)]
         self.table.reset_index(inplace=True)
 
         self._complete_table()
         self.table.set_index(_index["general"], inplace=True)
-        print(self.table.shape)
+        
         # Nix, drop values with 0.0 in all columns of a row, Finalized to use hereafter
         self.table = self.table.where(self.table != 0.).dropna(how="all")
-        print(self.table.shape)
+        
         self.table.fillna(0., inplace=True)
         self.table.sort_index(kind="mergesort", inplace=True)
 
@@ -238,14 +229,14 @@ class ParamTable(object):
             self.table = pd.read_csv(
                 table,
                 skipinitialspace=True,
-                delim_whitespace=True,
+                sep=r"\s+",
                 header=0,
             )
             if "resnI" in self.table.columns:
                 self.table.set_index(_index["complete"], inplace=True)
             else:
                 self.table.set_index(_index["general"], inplace=True)
-            self.table.columns = self.table.columns.astype(np.int)
+            self.table.columns = self.table.columns.astype(int)
 
     def write(self, filename):
         """Write the parameter table to file.
@@ -258,7 +249,7 @@ class ParamTable(object):
         with openany(filename, mode="w") as table:
             self.table.to_csv(
                 table,
-                sep=native_str(" "),
+                sep=" ",
                 header=True,
                 index=True,
                 float_format="%.6f",

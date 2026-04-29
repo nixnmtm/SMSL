@@ -14,17 +14,8 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    super,
-    zip,
-)
 
+import MDAnalysis as mda
 from collections import OrderedDict
 
 from MDAnalysis.core import topologyattrs
@@ -239,7 +230,7 @@ class Nucleic6(ModelBase):
                 s.atoms.select_atoms("name P").ix[1:])
         ])
         self._topology.add_TopologyAttr(topologyattrs.Bonds(bonds))
-        self._generate_from_topology()
+        mda.Universe.__init__(self, self._topology)
 
     def _set_charges(self):
         self.atoms.charges = 0.

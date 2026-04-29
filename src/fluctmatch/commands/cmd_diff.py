@@ -14,14 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import open
-from future.utils import native_str
+
 
 import logging
 import os
@@ -139,8 +132,8 @@ def cli(logfile, outdir, ressep, table1, table2):
         d_table = d_table.to_csv(
             header=True,
             index=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(d_table.encode())
@@ -152,8 +145,8 @@ def cli(logfile, outdir, ressep, table1, table2):
         d_perres = d_perres.to_csv(
             header=True,
             index=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(d_perres.encode())
@@ -166,8 +159,8 @@ def cli(logfile, outdir, ressep, table1, table2):
         d_interactions = d_interactions.to_csv(
             header=True,
             index=True,
-            sep=native_str(" "),
-            float_format=native_str("%.4f"),
+            sep=" ",
+            float_format="%.4f",
             encoding="utf-8",
         )
         output.write(d_interactions.encode())

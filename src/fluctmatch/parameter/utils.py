@@ -14,14 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict, )
 
 import numpy as np
 import pandas as pd
@@ -75,7 +67,7 @@ def create_empty_parameters(universe, **kwargs):
         bonds = [
             universe.bonds.atom1.names,
             universe.bonds.atom2.names,
-            np.zeros((universe.bonds.atom1.names.size, 2), dtype=np.float),
+            np.zeros((universe.bonds.atom1.names.size, 2), dtype=float),
         ]
         parameters["BONDS"] = pd.concat(
             [pd.DataFrame(_) for _ in bonds], axis=1)
@@ -89,7 +81,7 @@ def create_empty_parameters(universe, **kwargs):
             universe.angles.atom1.names,
             universe.angles.atom2.names,
             universe.angles.atom3.names,
-            np.zeros((universe.angles.atom1.names.size, 2), dtype=np.float),
+            np.zeros((universe.angles.atom1.names.size, 2), dtype=float),
         ]
         parameters["ANGLES"] = pd.concat(
             [pd.DataFrame(_) for _ in angles], axis=1)
@@ -104,9 +96,9 @@ def create_empty_parameters(universe, **kwargs):
             universe.dihedrals.atom2.names,
             universe.dihedrals.atom3.names,
             universe.dihedrals.atom4.names,
-            np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.float),
-            np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.int),
-            np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=np.float),
+            np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=float),
+            np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=int),
+            np.zeros((universe.dihedrals.atom1.names.size, 1), dtype=float),
         ]
         parameters["DIHEDRALS"] = pd.concat(
             [pd.DataFrame(_) for _ in dihedrals], axis=1)
@@ -121,9 +113,9 @@ def create_empty_parameters(universe, **kwargs):
             universe.impropers.atom2.names,
             universe.impropers.atom3.names,
             universe.impropers.atom4.names,
-            np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.float),
-            np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.int),
-            np.zeros((universe.impropers.atom1.names.size, 1), dtype=np.float),
+            np.zeros((universe.impropers.atom1.names.size, 1), dtype=float),
+            np.zeros((universe.impropers.atom1.names.size, 1), dtype=int),
+            np.zeros((universe.impropers.atom1.names.size, 1), dtype=float),
         ]
         parameters["IMPROPER"] = pd.concat(
             [pd.DataFrame(_) for _ in impropers], axis=1)

@@ -14,12 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
 
 import logging
 import logging.config
@@ -290,8 +284,12 @@ def cli(topology,
 
     #  Run Fluctuation Matching for the trimmed topolgy untill bonds converge
     cfm = charmmfluctmatch.CharmmFluctMatch(topology, trajectory, **kwargs)
-    logger.info("Initializing the parameters.")
-    cfm.initialize(nma_exec=nma_exec, restart=restart)
     logger.info("Running fluctuation matching with new trimmed topology")
-    cfm.run(nma_exec=nma_exec, tol=tol, n_cycles=n_cycles, low_bound=low_bound)
+    cfm.run(
+        nma_exec=nma_exec,
+        tol=tol,
+        n_cycles=n_cycles,
+        low_bound=low_bound,
+        restart=True,
+    )
     logger.info("Fluctuation matching successfully completed.")

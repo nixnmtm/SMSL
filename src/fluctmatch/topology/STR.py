@@ -14,20 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    open,
-)
-from future.utils import (
-    native_str,
-    raise_with_traceback,
-)
+
 
 import textwrap
 import time
@@ -56,7 +43,7 @@ class STRWriter(topbase.TopologyWriterBase):
     units = dict(time=None, length="Angstrom")
 
     def __init__(self, filename, **kwargs):
-        self.filename = util.filename(filename, ext=native_str("stream"))
+        self.filename = util.filename(filename, ext="stream")
         self._version = kwargs.get("charmm_version", 41)
 
         width = 4 if self._version < 36 else 8
@@ -94,7 +81,7 @@ class STRWriter(topbase.TopologyWriterBase):
         """
         # Create the table
         try:
-            dist = np.zeros_like(universe.atoms.bonds.bonds(), dtype=np.float)
+            dist = np.zeros_like(universe.atoms.bonds.bonds(), dtype=float)
             if self._version >= 36:
                 a1, a2 = universe.atoms.bonds.atom1, universe.atoms.bonds.atom2
                 data = (
@@ -111,7 +98,7 @@ class STRWriter(topbase.TopologyWriterBase):
                 data = universe._topology.bonds.values
                 data = np.concatenate((data, dist[:, np.newaxis]), axis=1)
         except AttributeError:
-            raise_with_traceback(AttributeError("No bonds were found."))
+            raise AttributeError("No bonds were found.")
 
         # Write the data to the file.
         with open(self.filename, "wb") as stream_file:
@@ -121,5 +108,5 @@ class STRWriter(topbase.TopologyWriterBase):
             np.savetxt(
                 stream_file,
                 data,
-                fmt=native_str(textwrap.dedent(self.fmt[1:])))
+                fmt=textwrap.dedent(self.fmt[1:]))
             stream_file.write("RETURN\n".encode())

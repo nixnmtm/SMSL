@@ -14,20 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    next,
-    open,
-)
-from future.utils import (
-    native_str, )
-
 import logging
 import time
 from io import TextIOWrapper
@@ -90,37 +76,69 @@ class IntcorReader(TopologyReaderBase):
                 if line.startswith("*") or not line:
                     continue  # ignore TITLE and empty lines
                 break
-            line = np.fromiter(line.strip().split(), dtype=np.int)
+            line = np.fromiter(line.strip().split(), dtype=int)
             key = "EXTENDED" if line[0] == 30 else "STANDARD"
             key += "_RESID" if line[1] == 2 else ""
             resid_a = line[1]
 
             line = next(buf).strip().split()
-            n_lines, resid_b = np.array(line, dtype=np.int)
+            n_lines, resid_b = np.array(line, dtype=int)
             if resid_a != resid_b:
                 raise IOError(
                     "A mismatch has occurred on determining the IC format.")
 
             TableParser = util.FORTRANReader(self.fmt[key])
-            table = pd.DataFrame(
-                [TableParser.read(line) for line in buf], dtype=np.object)
+            table = pd.DataFrame([TableParser.read(line) for line in buf], dtype=object)
+
+            # Remove literal ":" separators that appear in IC records
             table = table[table != ":"]
-            table = table.dropna(axis=1).apply(pd.to_numeric, errors="ignore")
+            table = table.dropna(axis=1)
+
+            if table.empty:
+                raise IOError(f"{self.filename}: IC table is empty")
+
+            if 0 not in table.columns:
+                raise IOError(f"{self.filename}: IC table missing record index column")
+
             table.set_index(0, inplace=True)
+
             if n_lines != table.shape[0]:
-                raise IOError("A mismatch has occurred between the number "
-                              "of lines expected and the number of lines "
-                              "read. ({:d} != {:d})".format(
-                                  n_lines, len(table)))
+                raise IOError(
+                    "A mismatch has occurred between the number of lines expected "
+                    "and the number of lines read. ({:d} != {:d})".format(
+                        n_lines, len(table)
+                    )
+                )
 
             if key == "STANDARD":
                 idx = np.where(
-                    (self.cols != "segidI") & (self.cols != "segidJ") &
-                    (self.cols != "segidK") & (self.cols != "segidL"))
+                    (self.cols != "segidI")
+                    & (self.cols != "segidJ")
+                    & (self.cols != "segidK")
+                    & (self.cols != "segidL")
+                )
                 columns = self.cols[idx]
             else:
                 columns = self.cols
+
             table.columns = columns
+
+            # Convert only truly numeric fields
+            numeric_cols = [
+                "resI", "resJ", "resK", "resL",
+                "r_IJ", "T_IJK", "P_IJKL", "T_JKL", "r_KL"
+            ]
+
+            for col in numeric_cols:
+                if col in table.columns:
+                    table[col] = pd.to_numeric(table[col], errors="coerce")
+
+            # Preserve atom identifiers explicitly as strings
+            string_cols = ["I", "J", "K", "L"]
+            for col in string_cols:
+                if col in table.columns:
+                    table[col] = table[col].astype(str).str.strip()
+                    table.loc[table[col].isin(["nan", "None"]), col] = np.nan
             logger.info("Table read successfully.")
         return table
 
@@ -197,31 +215,31 @@ class IntcorWriter(TopologyWriterBase):
             "resK",
             "resL",
         ]
-        ictable[rescol] = ictable[rescol].astype(np.unicode)
+        ictable[rescol] = ictable[rescol].astype(str)
 
         with open(self.filename, "wb") as icfile:
             logger.info("Writing to {}".format(self.filename))
             for _ in self._title:
                 icfile.write(_.encode())
                 icfile.write("\n".encode())
-            line = np.zeros(20, dtype=np.int)
+            line = np.zeros(20, dtype=int)
             line[0] = 30 if self._extended else 20
             line[1] = 2 if self._resid else 1
             np.savetxt(
                 icfile,
                 line[np.newaxis, :],
-                fmt=native_str("%4d"),
-                delimiter=native_str(""))
-            line = np.zeros(2, dtype=np.int)
+                fmt="%4d",
+                delimiter="")
+            line = np.zeros(2, dtype=int)
             line[0] = ictable.shape[0]
             line[1] = 2 if self._resid else 1
             np.savetxt(
                 icfile,
                 line[np.newaxis, :],
-                fmt=native_str("%5d"),
-                delimiter=native_str(""))
+                fmt="%5d",
+                delimiter="")
             np.savetxt(
                 icfile,
                 ictable.reset_index(),
-                fmt=native_str(self.fmt[self.key]))
+                fmt=self.fmt[self.key])
             logger.info("Table successfully written.")

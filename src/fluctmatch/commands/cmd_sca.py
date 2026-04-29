@@ -14,15 +14,8 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str, PY3
-from future.builtins import open
-from six.moves import cPickle
+
+import pickle
 
 import logging
 import logging.config
@@ -76,7 +69,7 @@ from fluctmatch.analysis import (
     "--pcut",
     default=0.95,
     show_default=True,
-    type=np.float,
+    type=float,
     help="Cutoff value for sector selection")
 @click.option(
     "-r",
@@ -101,7 +94,7 @@ from fluctmatch.analysis import (
     "-s",
     "--subset",
     metavar="SEGID RES RES",
-    type=(native_str, click.IntRange(1, None, clamp=True),
+    type=(str, click.IntRange(1, None, clamp=True),
           click.IntRange(1, None, clamp=True)),
     multiple=True,
     help="Subset of a system (SEGID FIRST LAST)")
@@ -274,7 +267,4 @@ def cli(logfile, ntrials, std, kpos, pcut, ressep, output, subset,
     D = dict(info=D_info, sca=D_sca, sector=D_sector)
     with open(click.format_filename(output), mode="wb") as dbf:
         logger.info("Saving data to {}".format(click.format_filename(output)))
-        if PY3:
-            logger.warning(
-                "Note: The saved file will be incompatible with Python 2.")
-        cPickle.dump(D, dbf, protocol=cPickle.HIGHEST_PROTOCOL)
+        pickle.dump(D, dbf, protocol=pickle.HIGHEST_PROTOCOL)

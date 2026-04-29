@@ -14,18 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    range,
-    zip,
-)
-from future.utils import viewkeys
 
 import functools
 import logging
@@ -38,10 +26,17 @@ import click
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch import utils
 
-_CONVERT = dict(
-    GMX=utils.split_gmx,
-    CHARMM=utils.split_charmm,
-)
+_CONVERT = {
+    "MDA": utils.split_mda,
+    "GMX": utils.split_gmx,
+}
+
+# IF MDA IS USED remember
+# TODO: split_mda currently selects windows using ts.time, while the CLI
+# arguments -b/-e/-w are documented as frame-based. This works for the
+# current trajectory because 1 frame = 1 ps, but should be refactored to
+# use ts.frame (or the CLI should be renamed to explicit time units) so
+# behavior is consistent for trajectories saved at other time intervals.
 
 
 @click.command(
@@ -50,9 +45,9 @@ _CONVERT = dict(
 @click.option(
     "--type",
     "program",
-    type=click.Choice(viewkeys(_CONVERT)),
-    default="GMX",
-    help="Split using an external MD program")
+    type=click.Choice(_CONVERT.keys()),
+    default="MDA",
+    help="Split using MDAnalysis or Gromacs")
 @click.option(
     "-s",
     "topology",
@@ -60,13 +55,6 @@ _CONVERT = dict(
     default=path.join(os.getcwd(), "md.tpr"),
     type=click.Path(exists=False, file_okay=True, resolve_path=True),
     help="Gromacs topology file (e.g., tpr gro g96 pdb brk ent)",
-)
-@click.option(
-    "--toppar",
-    metavar="DIR",
-    default=path.join(os.getcwd(), "toppar"),
-    type=click.Path(exists=False, file_okay=False, resolve_path=True),
-    help="Location of CHARMM topology/parameter files",
 )
 @click.option(
     "-f",
@@ -162,8 +150,21 @@ _CONVERT = dict(
     type=click.IntRange(1, None, clamp=True),
     help="XTC number of decimal precision",
 )
-def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
-        system, start, stop, window_size, precision):
+@click.option(
+    "--n-jobs",
+    "n_jobs",
+    metavar="N",
+    default=32,
+    show_default=True,
+    type=click.IntRange(1, None, clamp=True),
+    help="Number of worker processes to use for trajectory splitting.",
+)
+
+
+
+
+def cli(program, topology, trajectory, data, index, outfile, logfile,
+        system, start, stop, window_size, precision, n_jobs):
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,  # this fixes the problem
@@ -205,24 +206,18 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
                      "If installed, please ensure that it is in your path.")
         raise OSError("Gromacs 5.0+ is required. "
                       "If installed, please ensure that it is in your path.")
-    if program == "CHARMM" and mdutil.which("charmm") is None:
-        logger.error("CHARMM is required. If installed, "
-                     "please ensure that it is in your path.")
-        raise OSError("CHARMM is required. If installed, "
-                      "please ensure that it is in your path.")
 
     half_size = window_size // 2
     beg = start - half_size if start >= window_size else start
     values = zip(
         range(beg, stop + 1, half_size),
         range(beg + window_size - 1, stop + 1, half_size))
-    values = [((y // half_size) - 1, x, y) for x, y in values]
+    values = [(i + 1, x, y) for i, (x, y) in enumerate(values)]
 
     func = functools.partial(
         _CONVERT[program],
         data_dir=data,
         topology=topology,
-        toppar=toppar,
         trajectory=trajectory,
         index=index,
         outfile=outfile,
@@ -231,8 +226,10 @@ def cli(program, toppar, topology, trajectory, data, index, outfile, logfile,
         precision=precision,
     )
 
+    logger.info("first 10 split values: %s", values[:10])
+    logger.info("total split windows: %d", len(values))
+
     # Run multiple instances simultaneously
-    pool = mp.Pool()
-    pool.map_async(func, values)
-    pool.close()
-    pool.join()
+    with mp.Pool(processes=n_jobs) as pool:
+        pool.map(func, values)
+    logger.info("splittraj finished successfully | total_windows=%d", len(values))

@@ -164,4 +164,6 @@ docs/_build
 .bootstrap
 .appveyor.token
 *.bak
->>>>>>> Add initial project skeleton.
+data/
+*.zip
+data_mda/

@@ -14,18 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    open,
-)
-from future.utils import (
-    native_str, )
 
 import textwrap
 import time
@@ -61,19 +49,19 @@ class ParamReader(TopologyReaderBase):
         DIHEDRALS=["I", "J", "K", "L", "Kchi", "n", "delta"],
         IMPROPER=["I", "J", "K", "L", "Kchi", "n", "delta"])
     _dtypes = dict(
-        ATOMS=dict(hdr=np.str, type=np.int, atom=np.str, mass=np.float,),
-        BONDS=dict(I=np.str, J=np.str, Kb=np.float, b0=np.float),
+        ATOMS=dict(hdr=str, type=int, atom=str, mass=float,),
+        BONDS=dict(I=str, J=str, Kb=float, b0=float),
         ANGLES=dict(
-            I=np.str, J=np.str, K=np.str, Ktheta=np.float, theta0=np.float,
-            Kub=np.object, S0=np.object,
+            I=str, J=str, K=str, Ktheta=float, theta0=float,
+            Kub=object, S0=object,
         ),
         DIHEDRALS=dict(
-            I=np.str, J=np.str, K=np.str, L=np.str,
-            Kchi=np.float, n=np.int, delta=np.float,
+            I=str, J=str, K=str, L=str,
+            Kchi=float, n=int, delta=float,
         ),
         IMPROPER=dict(
-            I=np.str, J=np.str, K=np.str, L=np.str,
-            Kchi=np.float, n=np.int, delta=np.float,
+            I=str, J=str, K=str, L=str,
+            Kchi=float, n=int, delta=float,
         ),
     )
     _na_values = dict(
@@ -126,7 +114,7 @@ class ParamReader(TopologyReaderBase):
             self._prmbuffers[key].seek(0)
             parameters[key] = pd.read_csv(
                 self._prmbuffers[key], header=None, names=self._prmcolumns[key],
-                skipinitialspace=True, delim_whitespace=True, comment="!",
+                skipinitialspace=True, sep=r"\s+", engine="python", comment="!",
                 dtype=self._dtypes[key]
             )
             parameters[key].fillna(self._na_values[key], inplace=True)
@@ -205,7 +193,7 @@ class ParamWriter(TopologyWriterBase):
 
             if self._version > 35 and parameters["ATOMS"].empty:
                 if atomgroup:
-                    if np.issubdtype(atomgroup.types.dtype, np.int):
+                    if np.issubdtype(atomgroup.types.dtype, np.integer):
                         atom_types = atomgroup.types
                     else:
                         atom_types = np.arange(atomgroup.n_atoms) + 1
@@ -230,7 +218,7 @@ class ParamWriter(TopologyWriterBase):
                 if value.empty:
                     prmfile.write("\n".encode())
                 if not value.empty:
-                    np.savetxt(prmfile, value, fmt=native_str(self._fmt[key]))
+                    np.savetxt(prmfile, value, fmt=self._fmt[key])
                     prmfile.write("\n".encode())
 
             nb_header = ("""
@@ -251,8 +239,8 @@ class ParamWriter(TopologyWriterBase):
                 np.savetxt(
                     prmfile,
                     nb_list,
-                    fmt=native_str(self._fmt["NONBONDED"]),
-                    delimiter=native_str(""))
+                    fmt=self._fmt["NONBONDED"],
+                    delimiter="")
             prmfile.write("\nEND\n".encode())
 
 

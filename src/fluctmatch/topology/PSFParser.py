@@ -14,19 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict,
-    open,
-    range,
-)
-from future.utils import (
-    native_str, )
+
 
 import logging
 import time
@@ -181,7 +169,7 @@ class PSF36Parser(PSFParser.PSFParser):
         # how to partition the line into the individual atom components
         atom_parsers = dict(
             STANDARD="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
-            STANDARD_XPLOR="'(I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2F14.6,I8",
+            STANDARD_XPLOR="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2F14.6,I8",
             EXTENDED="I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2F14.6,I8",
             EXTENDED_XPLOR="I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A6,1X,2F14.6,I8",
             NAMD="I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
@@ -310,7 +298,7 @@ class PSFWriter(base.TopologyWriterBase):
     units = dict(time=None, length=None)
     _fmt = dict(
         STD="%8d %-4s %-4d %-4s %-4s %4d %14.6f%14.6f%8d",
-        STD_XPLOR="{%8d %4s %-4d %-4s %-4s %-4s %14.6f%14.6f%8d",
+        STD_XPLOR="%8d %-4s %-4d %-4s %-4s %-4s %14.6f%14.6f%8d",
         STD_XPLOR_C35="%4d %-4s %-4d %-4s %-4s %-4s %14.6f%14.6f%8d",
         EXT="%10d %-8s %8d %-8s %-8s %4d %14.6f%14.6f%8d",
         EXT_XPLOR="%10d %-8s %-8d %-8s %-8s %-6s %14.6f%14.6f%8d",
@@ -346,17 +334,45 @@ class PSFWriter(base.TopologyWriterBase):
                                          8), ("donors", "NDON: donors\n", 8),
                          ("acceptors", "NACC: acceptors\n", 8))
 
-    def write(self, universe):
+    def write(self, universe, xplor=None, atom_type_source=None):
         """Write universe to PSF format.
 
         Parameters
         ----------
-        universe : :class:`~MDAnalysis.Universe` or :class:`~MDAnalysis.AtomGroup`
+        universe : MDAnalysis.Universe or MDAnalysis.AtomGroup
             A collection of atoms in a universe or atomgroup with bond
             definitions.
+        xplor : bool, optional
+            If True, force XPLOR PSF output.
+            If False, force standard/CHARMM PSF output.
+            If None, infer from atom type dtype (backward-compatible behavior).
+        atom_type_source : {"types", "names"}, optional
+            Controls which attribute is written into the PSF atom-type column.
+            If None, defaults to:
+                - "names" for xplor=True
+                - "types" otherwise
         """
         self._universe = universe
-        xplor = not np.issubdtype(universe.atoms.types.dtype, np.signedinteger)
+        # Backward-compatible default inference
+        if xplor is None:
+            xplor = not np.issubdtype(universe.atoms.types.dtype, np.signedinteger)
+        
+        # Choose what goes in the atom-type field
+        if atom_type_source is None:
+            atom_type_source = "names" if xplor else "types"
+
+        if atom_type_source == "types":
+            atomtypes_out = universe.atoms.types
+        elif atom_type_source == "names":
+            atomtypes_out = universe.atoms.names
+        else:
+            raise ValueError(
+                "atom_type_source must be one of: None, 'types', 'names'"
+            )
+
+        # Reset fmtkey every write so repeated calls on the same writer object
+        # do not accumulate suffixes like _XPLOR_XPLOR
+        self._fmtkey = "EXT" if self._extended else "STD"
 
         header = "PSF"
         if self._extended:
@@ -384,12 +400,12 @@ class PSFWriter(base.TopologyWriterBase):
                 psffile.write(_.encode())
                 psffile.write("\n".encode())
             psffile.write("\n".encode())
-            self._write_atoms(psffile)
+            self._write_atoms(psffile, atomtypes_out=atomtypes_out)
             for section in self.sections:
                 self._write_sec(psffile, section)
             self._write_other(psffile)
 
-    def _write_atoms(self, psffile):
+    def _write_atoms(self, psffile, atomtypes_out=None):
         """Write atom section in a Charmm PSF file.
 
         Normal (standard) and extended (EXT) PSF format are
@@ -420,19 +436,28 @@ class PSFWriter(base.TopologyWriterBase):
                                  "NATOM").encode())
         psffile.write("\n".encode())
         atoms = self._universe.atoms
-        lines = (np.arange(atoms.n_atoms) + 1, atoms.segids, atoms.resids,
-                 atoms.resnames, atoms.names, atoms.types, atoms.charges,
-                 atoms.masses, np.zeros_like(atoms.ids))
+        if atomtypes_out is None:
+            atomtypes_out = atoms.types
+        
+        lines = (np.arange(atoms.n_atoms) + 1, 
+                atoms.segids, 
+                atoms.resids,
+                atoms.resnames, 
+                atoms.names, 
+                np.asarray(atomtypes_out, dtype=object), 
+                atoms.charges,
+                atoms.masses, 
+                np.zeros_like(atoms.ids))
         lines = pd.concat([pd.DataFrame(_) for _ in lines], axis=1)
 
         if self._cheq:
             fmt += "%10.6f%18s"
             cheq = (np.zeros_like(atoms.masses),
                     np.full_like(
-                        atoms.names.astype(np.object), "-0.301140E-02"))
+                        atoms.names.astype(object), "-0.301140E-02"))
             cheq = pd.concat([pd.DataFrame(_) for _ in cheq], axis=1)
             lines = pd.concat([lines, cheq], axis=1)
-        np.savetxt(psffile, lines, fmt=native_str(fmt))
+        np.savetxt(psffile, lines, fmt=fmt)
         psffile.write("\n".encode())
 
     def _write_sec(self, psffile, section_info):
@@ -448,21 +473,21 @@ class PSFWriter(base.TopologyWriterBase):
             return
 
         values = np.asarray(getattr(self._universe, attr).to_indices()) + 1
-        values = values.astype(np.object)
+        values = values.astype(object)
         n_rows, n_cols = values.shape
         n_values = n_perline // n_cols
         if n_rows % n_values > 0:
             n_extra = n_values - (n_rows % n_values)
             values = np.concatenate(
-                (values, np.full((n_extra, n_cols), "", dtype=np.object)),
+                (values, np.full((n_extra, n_cols), "", dtype=object)),
                 axis=0)
         values = values.reshape((values.shape[0] // n_values, n_perline))
         psffile.write(self.sect_hdr.format(n_rows, header).encode())
         np.savetxt(
             psffile,
             values,
-            fmt=native_str("%{:d}s".format(self.col_width)),
-            delimiter=native_str(""))
+            fmt="%{:d}s".format(self.col_width),
+            delimiter="")
         psffile.write("\n".encode())
 
     def _write_other(self, psffile):
@@ -472,10 +497,10 @@ class PSFWriter(base.TopologyWriterBase):
         missing = n_cols - dn_cols if dn_cols > 0 else dn_cols
 
         # NNB
-        nnb = np.full(n_atoms, "0", dtype=np.object)
+        nnb = np.full(n_atoms, "0", dtype=object)
         if missing > 0:
             nnb = np.concatenate(
-                [nnb, np.full(missing, native_str(""), dtype=np.object)],
+                [nnb, np.full(missing, "", dtype=object)],
                 axis=0)
         nnb = nnb.reshape((nnb.size // n_cols, n_cols))
 
@@ -483,34 +508,34 @@ class PSFWriter(base.TopologyWriterBase):
         np.savetxt(
             psffile,
             nnb,
-            fmt=native_str("%{:d}s".format(self.col_width)),
-            delimiter=native_str(""))
+            fmt="%{:d}s".format(self.col_width),
+            delimiter="")
         psffile.write("\n".encode())
 
         # NGRP NST2
         psffile.write(self.sect_hdr2.format(1, 0, "NGRP NST2\n").encode())
-        line = np.zeros(3, dtype=np.int)
+        line = np.zeros(3, dtype=int)
         line = line.reshape((1, line.size))
         np.savetxt(
             psffile,
             line,
-            fmt=native_str("%{:d}d".format(self.col_width)),
-            delimiter=native_str(""))
+            fmt="%{:d}d".format(self.col_width),
+            delimiter="")
         psffile.write("\n".encode())
 
         # MOLNT
         if self._cheq:
-            line = np.full(n_atoms, "1", dtype=np.object)
+            line = np.full(n_atoms, "1", dtype=object)
             if dn_cols > 0:
                 line = np.concatenate(
-                    [line, np.zeros(missing, dtype=np.object)], axis=0)
+                    [line, np.zeros(missing, dtype=object)], axis=0)
             line = line.reshape((line.size // n_cols, n_cols))
             psffile.write(self.sect_hdr.format(1, "MOLNT\n").encode())
             np.savetxt(
                 psffile,
                 line,
-                fmt=native_str("%{:d}s".format(self.col_width)),
-                delimiter=native_str(""))
+                fmt="%{:d}s".format(self.col_width),
+                delimiter="")
             psffile.write("\n".encode())
         else:
             psffile.write(self.sect_hdr.format(0, "MOLNT\n").encode())

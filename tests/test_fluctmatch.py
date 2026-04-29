@@ -14,12 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
 
 from click.testing import CliRunner
 from fluctmatch.cli import main
@@ -27,6 +21,8 @@ from fluctmatch.cli import main
 
 def test_main():
     runner = CliRunner()
-    result = runner.invoke(main, [])
+    result = runner.invoke(main, ["--help"])
 
     assert result.exit_code == 0
+    assert "Commands:" in result.output
+    assert "splittraj" in result.output

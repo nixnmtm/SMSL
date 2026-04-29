@@ -14,14 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import open
-from future.utils import native_str
+
 
 import logging
 import logging.config
@@ -162,8 +155,8 @@ def cli(logfile, stats, hist, outdir, ressep, tbltype, table):
                 info = ps.interaction_stats().to_csv(
                     header=True,
                     index=True,
-                    sep=native_str(" "),
-                    float_format=native_str("%.4f"),
+                    sep=" ",
+                    float_format="%.4f",
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
@@ -178,8 +171,8 @@ def cli(logfile, stats, hist, outdir, ressep, tbltype, table):
                 info = ps.residue_stats().to_csv(
                     header=True,
                     index=True,
-                    sep=native_str(" "),
-                    float_format=native_str("%.4f"),
+                    sep=" ",
+                    float_format="%.4f",
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
@@ -192,8 +185,8 @@ def cli(logfile, stats, hist, outdir, ressep, tbltype, table):
             logger.info("Writing table histogram to {}".format(filename))
             info = ps.table_hist().to_csv(
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             stat_file.write(info.encode())
@@ -207,8 +200,8 @@ def cli(logfile, stats, hist, outdir, ressep, tbltype, table):
                 ps._table._ressep = 0
                 info = ps.interaction_hist().to_csv(
                     index=True,
-                    sep=native_str(" "),
-                    float_format=native_str("%.4f"),
+                    sep=" ",
+                    float_format="%.4f",
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())
@@ -222,8 +215,8 @@ def cli(logfile, stats, hist, outdir, ressep, tbltype, table):
                 ps._table._ressep = ressep
                 info = ps.residue_hist().to_csv(
                     index=True,
-                    sep=native_str(" "),
-                    float_format=native_str("%.4f"),
+                    sep=" ",
+                    float_format="%.4f",
                     encoding="utf-8",
                 )
                 stat_file.write(info.encode())

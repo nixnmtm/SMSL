@@ -14,13 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.utils import native_str
 
 from numpy import testing
 from fluctmatch.models import (
@@ -52,7 +45,7 @@ def test_merge_creation():
     testing.assert_equal(
         cg_universe.atoms.n_atoms,
         cg_natoms,
-        err_msg=native_str("Number of sites don't match."),
+        err_msg="Number of sites don't match.",
         verbose=True,
     )
 
@@ -70,7 +63,7 @@ def test_merge_positions():
     testing.assert_allclose(
         cg_universe.atoms.positions,
         positions,
-        err_msg=native_str("Coordinates don't match."),
+        err_msg="Coordinates don't match.",
     )
 
 
@@ -89,12 +82,12 @@ def test_rename_universe():
     cg_universe = protein.Ncsc(PDB_prot)
     rename_universe(cg_universe)
     testing.assert_string_equal(
-        native_str(cg_universe.atoms[0].name),
-        native_str("A001"),
+        cg_universe.atoms[0].name,
+        "A001",
     )
     testing.assert_string_equal(
-        native_str(cg_universe.residues[0].resname),
-        native_str("A001"),
+        cg_universe.residues[0].resname,
+        "A001",
     )
 
 

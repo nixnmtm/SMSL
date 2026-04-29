@@ -14,12 +14,6 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
 
 import numpy as np
 import pandas as pd
@@ -129,7 +123,7 @@ class Entropy(object):
         table = self._table._separate(self._table.table)
         hist, edges = np.histogram(
             table, range=(1e-4, table.values.max()), bins=bins)
-        hist = (hist / table.size).astype(dtype=np.float)
+        hist = (hist / table.size).astype(dtype=float)
         xaxis = (edges[:-1] + edges[1:]) / 2
         try:
             penalty = xaxis[np.where(hist == hist.max())][0]

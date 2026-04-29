@@ -14,14 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (dict, super)
-from future.utils import (PY2, native_str)
+
 
 import logging
 import os
@@ -39,9 +32,6 @@ import MDAnalysis.analysis.base as analysis
 from MDAnalysis.coordinates import memory
 from MDAnalysis.lib import util as mdutil
 from fluctmatch.fluctmatch.data import charmm_split
-
-if PY2:
-    FileNotFoundError = OSError
 
 logger = logging.getLogger(__name__)
 
@@ -194,8 +184,6 @@ def write_charmm_files(universe,
     title
         Title lines at the beginning of the file.
     """
-    from MDAnalysis.core import (
-        topologyattrs, )
 
     # Attempt to create the necessary subdirectory
     try:
@@ -225,39 +213,37 @@ def write_charmm_files(universe,
                                                     n_dihedrals, n_impropers))
 
     # Write required CHARMM input files.
-    with mda.Writer(native_str(filenames["topology_file"]), **kwargs) as rtf:
+    with mda.Writer(filenames["topology_file"], **kwargs) as rtf:
         logger.info("Writing {}...".format(filenames["topology_file"]))
         rtf.write(universe)
-    with mda.Writer(native_str(filenames["stream_file"]), **kwargs) as stream:
+    with mda.Writer(filenames["stream_file"], **kwargs) as stream:
         logger.info("Writing {}...".format(filenames["stream_file"]))
         stream.write(universe)
-    with mda.Writer(native_str(filenames["psf_file"]), **kwargs) as psf:
+    with mda.Writer(filenames["psf_file"], **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["psf_file"]))
-        psf.write(universe)
+        psf.write(universe, xplor=False, atom_type_source="types")
 
-    # Write the new trajectory in Gromacs XTC format.
+    # Write the new trajectory.
     if write_traj:
         universe.trajectory.rewind()
         with mda.Writer(
-            native_str(filenames["traj_file"]),
+            filenames["traj_file"],
             universe.atoms.n_atoms,
-            istart=1.0,
-                remarks="Written by fluctmatch.") as trj:
+            istart=1,
+            remarks="Written by fluctmatch.",
+        ) as trj:
             logger.info("Writing the trajectory {}...".format(
                 filenames["traj_file"]))
             logger.warning("This may take a while depending upon the size and "
-                           "length of the trajectory.")
+                        "length of the trajectory.")
             with click.progressbar(universe.trajectory) as bar:
-                for ts in bar:
-                    trj.write(ts)
+                for _ in bar:
+                    trj.write(universe.atoms)
 
-    # Write an XPLOR version of the PSF
-    atomtypes = topologyattrs.Atomtypes(universe.atoms.names)
-    universe._topology.add_TopologyAttr(topologyattr=atomtypes)
-    universe._generate_from_topology()
-    with mda.Writer(native_str(filenames["xplor_psf_file"]), **kwargs) as psf:
+    #universe._generate_from_topology()
+    with mda.Writer(filenames["xplor_psf_file"], **kwargs) as psf:
         logger.info("Writing {}...".format(filenames["xplor_psf_file"]))
-        psf.write(universe)
+        psf.write(universe, xplor=True, atom_type_source="names")
 
     # Calculate the average coordinates from the trajectory.
     logger.info("Determining the average structure of the trajectory. ")
@@ -287,7 +273,7 @@ def write_charmm_files(universe,
     # avg_universe.load_new(
     #     positions, )
     with mda.Writer(
-            native_str(filenames["crd_file"]), dt=1.0, **kwargs) as crd:
+            filenames["crd_file"], dt=1.0, **kwargs) as crd:
         logger.info("Writing {}...".format(filenames["crd_file"]))
         crd.write(avg_universe.atoms)
 
@@ -381,64 +367,74 @@ def split_gmx(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
             command, stdin=temp, stdout=log, stderr=subprocess.STDOUT)
     os.remove(fpath)
 
-
-def split_charmm(info, data_dir=path.join(os.getcwd(), "data"), **kwargs):
-    """Create a subtrajectory from a CHARMM trajectory.
+def split_mda(info, data_dir=path.join(os.getcwd(), "data"), frame_based=True, **kwargs):
+    """Create a subtrajectory from a trajectory using MDAnalysis.
 
     Parameters
     ----------
-    info : :class:`collections.namedTuple`
-        Contains information about the data subdirectory and start and
-        stop frames
+    info : tuple
+        Tuple of (subdir, start, stop), where subdir is the output folder
+        label and start/stop define the selected interval.
     data_dir : str, optional
-        Location of the main data directory
-    toppar : str, optional
-        Directory containing CHARMM topology/parameter files
-    trajectory : str, optional
-        A CHARMM trajectory file (e.g., dcd)
-    outfile : str, optional
-        A CHARMM trajectory file (e.g., dcd)
-    logfile : str, optional
-        Log file for output of command
-    charmm_version : int
-        Version of CHARMM
+        Location of the main data directory.
+    frame_based : bool, optional
+        If True, select using 1-based frame indices:
+        start <= ts.frame + 1 <= stop
+
+        If False, select using trajectory time:
+        start <= ts.time <= stop
+
+    Notes
+    -----
+    Frame-based selection is safer for concatenated trajectories because
+    trajectory time may reset between runs.
     """
-    # Trajectory splitting information
+
     subdir, start, stop = info
     subdir = path.join(data_dir, "{}".format(subdir))
-    charmm_exec = mdutil.which("charmm")
 
-    # Attempt to create the necessary subdirectory
     try:
         os.makedirs(subdir)
     except OSError:
         pass
 
-    # Various filenames
-    version = kwargs.get("charmm_version", 41)
-    toppar = kwargs.get("toppar",
-                        "/opt/local/charmm/c{:d}b1/toppar".format(version))
-    trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.dcd"))
-    outfile = path.join(subdir, kwargs.get("outfile", "aa.dcd"))
+    topology = kwargs.get("topology", "md.tpr")
+    trajectory = kwargs.get("trajectory", path.join(os.curdir, "md.xtc"))
+    outfile = path.join(subdir, kwargs.get("outfile", "aa.xtc"))
     logfile = path.join(subdir, kwargs.get("logfile", "split.log"))
-    inpfile = path.join(subdir, "split.inp")
+    precision = kwargs.get("precision", 5)
 
-    with mdutil.openany(inpfile, "w") as charmm_input:
-        charmm_inp = charmm_split.split_inp.format(
-            toppar=toppar,
-            trajectory=trajectory,
-            outfile=outfile,
-            version=version,
-            start=start,
-            stop=stop,
-        )
-        charmm_inp = textwrap.dedent(charmm_inp[1:])
-        print(charmm_inp, file=charmm_input)
-    command = [
-        charmm_exec,
-        "-i",
-        inpfile,
-        "-o",
-        path.join(subdir, logfile),
-    ]
-    subprocess.check_call(command)
+    u = mda.Universe(topology, trajectory)
+    ag = u.atoms
+    n_written = 0
+
+    logger.info(
+        "split_mda starting | outfile=%s | start=%s | stop=%s | frame_based=%s",
+        outfile, start, stop, frame_based
+    )
+
+    with mda.Writer(outfile, ag.n_atoms, precision=precision) as W:
+        if frame_based:
+            for ts in u.trajectory[start - 1:stop]:
+                W.write(ag)
+                n_written += 1
+        else:
+            for ts in u.trajectory:
+                current_value = ts.time
+                if current_value < start:
+                    continue
+                if current_value > stop:
+                    break
+                W.write(ag)
+                n_written += 1
+
+    with mdutil.openany(logfile, mode="w") as log:
+        print("Frames written: {}".format(n_written), file=log)
+        print("Start: {}".format(start), file=log)
+        print("Stop: {}".format(stop), file=log)
+        print("Frame based: {}".format(frame_based), file=log)
+
+    logger.info(
+        "split_mda completed | outfile=%s | frames_written=%d",
+        outfile, n_written
+    )

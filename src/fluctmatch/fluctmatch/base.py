@@ -14,22 +14,12 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import (
-    dict, )
-from future.utils import (
-    with_metaclass, )
 
 import abc
 import os
 
 
-class FluctMatch(with_metaclass(abc.ABCMeta, object)):
+class FluctMatch(object, metaclass=abc.ABCMeta):
     """Base class for fluctuation matching."""
 
     def __init__(self, *args, **kwargs):

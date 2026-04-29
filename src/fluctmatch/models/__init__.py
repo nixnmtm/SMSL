@@ -14,21 +14,15 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
 
 import logging
 
 from fluctmatch.models.protein import (
     Calpha,
-    Caside,
-    Ncsc,
+    Caside, 
+    Polar,
 )
-from fluctmatch.models.enm import Enm
+from fluctmatch.models.enm import Enm, EnmSparse
 from fluctmatch.models.nucleic import (
     Nucleic3,
     Nucleic4,
@@ -44,11 +38,17 @@ from fluctmatch.models.solvent import (
     Dma,
 )
 
+from fluctmatch.models.ligand import (
+    ADP,
+    OM,
+)
+
 __all__ = [
     "Calpha",
     "Caside",
-    "Ncsc",
+    "Polar",
     "Enm",
+    "EnmSparse",
     "Nucleic3",
     "Nucleic4",
     "Water",
@@ -57,6 +57,7 @@ __all__ = [
     "SolventIons",
     "BioIons",
     "NobleAtoms",
+    "OM", "ADP", # ligand models
 ]
 
 logger = logging.getLogger(__name__)

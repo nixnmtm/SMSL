@@ -14,14 +14,7 @@
 # Simulation. Meth Enzymology. 578 (2016), 327-342,
 # doi:10.1016/bs.mie.2016.05.024.
 #
-from __future__ import (
-    absolute_import,
-    division,
-    print_function,
-    unicode_literals,
-)
-from future.builtins import open
-from future.utils import native_str
+
 
 import functools
 import glob
@@ -49,7 +42,7 @@ def calculate_thermo(subdir, **kwargs):
             header=0,
             index_col=["segidI", "resI"],
             skipinitialspace=True,
-            delim_whitespace=True)
+            sep=r"\s+")
 
     return (window, table)
 
@@ -96,19 +89,19 @@ def create_thermo_tables(datadir, outdir, **kwargs):
     for window, result in results.get():
         entropy = pd.concat(
             [entropy, pd.DataFrame(result["Entropy"], columns=window)], axis=1)
-        entropy.columns = entropy.columns.astype(np.int)
+        entropy.columns = entropy.columns.astype(int)
         entropy = entropy[np.sort(entropy.columns)]
 
         enthalpy = pd.concat(
             [enthalpy,
              pd.DataFrame(result["Enthalpy"], columns=window)],
             axis=1)
-        enthalpy.columns = enthalpy.columns.astype(np.int)
+        enthalpy.columns = enthalpy.columns.astype(int)
         enthalpy = enthalpy[np.sort(enthalpy.columns)]
 
         heat = pd.concat(
             [heat, pd.DataFrame(result["Heatcap"], columns=window)], axis=1)
-        heat.columns = heat.columns.astype(np.int)
+        heat.columns = heat.columns.astype(int)
         heat = heat[np.sort(heat.columns)]
 
         temperature = kwargs.get("temperature", 300.)
@@ -119,8 +112,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = entropy.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
@@ -130,8 +123,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = enthalpy.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
@@ -141,8 +134,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = heat.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
@@ -152,8 +145,8 @@ def create_thermo_tables(datadir, outdir, **kwargs):
             table = gibbs.to_csv(
                 header=True,
                 index=True,
-                sep=native_str(" "),
-                float_format=native_str("%.4f"),
+                sep=" ",
+                float_format="%.4f",
                 encoding="utf-8",
             )
             thermo.write(table.encode())
