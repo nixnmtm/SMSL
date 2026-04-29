@@ -211,8 +211,8 @@ class TopologyTuning(object):
 
         # Write an XPLOR version of the PSF
         atomtypes = topologyattrs.Atomtypes(self.universe.atoms.names)
-        self.universe._topology.add_TopologyAttr(topologyattr=atomtypes)
-        self.universe._generate_from_topology()
+        self.universe._topology.add_TopologyAttr(atomtypes)
+        mda.Universe.__init__(self.universe, self.universe._topology)
         with mda.Writer(self.write_filenames["xplor_psf_file"], **kwargs) as psf:
             logger.info("Writing {}...".format(self.write_filenames["xplor_psf_file"]))
             psf.write(self.universe)
@@ -250,6 +250,5 @@ class TopologyTuning(object):
         new_bonds, bonds_trimmed = self.trim_get_new_bondlist_write_prm(fluctdiff)
         bonds = topologyattrs.Bonds(self.get_atm_idx_aft_trim(new_bonds))
         self.universe._topology.add_TopologyAttr(bonds)
-        self.universe._generate_from_topology()
+        mda.Universe.__init__(self.universe, self.universe._topology)
         return self.trim_write_topology_files()
-
