@@ -17,7 +17,7 @@
 
 import logging
 
-__version__ = "5.0"
+__version__ = "5.0.1"
 
 _MODELS = dict()
 _DESCRIBE = dict()

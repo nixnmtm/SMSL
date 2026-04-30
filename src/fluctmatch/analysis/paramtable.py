@@ -203,7 +203,7 @@ class ParamTable(object):
         with mp.Pool() as pool:
             tables = pool.map(create_table, directories)
 
-        self.table = pd.concat(tables.get(), axis=1)
+        self.table = pd.concat(tables, axis=1)
         self.table.columns = self.table.columns.astype(int)
         self.table = self.table[np.sort(self.table.columns)]
         self.table.reset_index(inplace=True)

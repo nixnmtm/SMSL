@@ -58,12 +58,21 @@ from fluctmatch.analysis import paramtable
 )
 @click.option(
     "-p",
-    "--prefix",
+    "--in-prefix",
+    "prefix",
     metavar="PREFIX",
-    default="cg",
+    default="fluctmatch",
     show_default=True,
     type=click.STRING,
-    help="Prefix for filenames",
+    help="Prefix for input filenames",
+)
+@click.option(
+    "--out-prefix",
+    "out_prefix",
+    metavar="PREFIX",
+    default=None,
+    type=click.STRING,
+    help="Prefix for output table filenames",
 )
 @click.option(
     "-t",
@@ -105,11 +114,6 @@ from fluctmatch.analysis import paramtable
     type=click.IntRange(0, None, clamp=True),
     help="End at given window directory")
 @click.option(
-    "-v",
-    "--verbose",
-    is_flag=True,
-)
-@click.option(
     "--trimmed",
     metavar="TRIMMED",
     type=click.BOOL,
@@ -125,7 +129,20 @@ from fluctmatch.analysis import paramtable
     show_default=True,
     help="If trimmed True, need trimmed cutoff",
 )
-def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end, trimmed, trimcut):
+def cli(
+    data_dir,
+    logfile,
+    outdir,
+    prefix,
+    out_prefix,
+    tbltype,
+    ressep,
+    verbose,
+    start,
+    end,
+    trimmed,
+    trimcut,
+):
     pt = paramtable.ParamTable(
         prefix=prefix,
         tbltype=tbltype,
@@ -176,11 +193,13 @@ def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end,
     pt.run(verbose=verbose)
 
     # Write the various tables to different files.
-    fn = path.join(outdir, filename(tbltype.lower(), ext="txt", keep=True))
+    output_prefix = "" if out_prefix is None else f"{out_prefix}_"
+
+    fn = path.join(outdir, filename(f"{output_prefix}{tbltype.lower()}", ext="txt", keep=True))
     pt.write(fn)
 
     if tbltype == "Kb":
-        fn = path.join(outdir, filename("perres", ext="txt"))
+        fn = path.join(outdir, filename(f"{output_prefix}perres", ext="txt"))
         with open(fn, mode="wb") as output:
             logger.info("Writing per-residue data to {}.".format(fn))
             table = pt.per_residue.to_csv(
@@ -193,7 +212,7 @@ def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end,
             output.write(table.encode())
             logger.info("Table successfully written.")
 
-        fn = path.join(outdir, filename("interactions", ext="txt"))
+        fn = path.join(outdir, filename(f"{output_prefix}interactions", ext="txt"))
         with open(fn, mode="wb") as output:
             logger.info("Writing interactions to {}.".format(fn))
             table = pt.interactions.to_csv(
@@ -205,4 +224,3 @@ def cli(data_dir, logfile, outdir, prefix, tbltype, ressep, verbose, start, end,
             )
             output.write(table.encode())
             logger.info("Table successfully written.")
-

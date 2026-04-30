@@ -223,11 +223,10 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             else:
                 self.unconverged_bond_list &= mask
 
-    def _compute_convergence_and_error(self, vib_ic, bond_values, tol, i, fdiff):
+    def _compute_convergence_and_error(self, vib_ic, bond_values, tol, i):
         fluct_diff_series = np.abs(
             vib_ic[bond_values[0]] - self.target["BONDS"][bond_values[0]]
         )
-        fdiff.append(fluct_diff_series)
         current_kb_series = self.parameters["BONDS"][bond_values[0]]
         self._update_convergence_mask(fluct_diff_series, current_kb_series, tol, i)
 
@@ -604,14 +603,26 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             os.remove(self.filenames["checkpoint"])
         if path.exists(self.filenames["bond_mask"]):
             os.remove(self.filenames["bond_mask"])
+        if path.exists(self.filenames["bond_convergence"]):
+            os.remove(self.filenames["bond_convergence"])
 
-    def _finalize_fluctuation_convergence(self, fdiff, completed_cycles):
-        if not fdiff:
-            return
-        fluct_conv = pd.concat(fdiff, axis=1).round(6)
-        fluct_conv.columns = [j for j in range(1, completed_cycles + 1)]
-        fluct_conv.to_csv(self.filenames["bond_convergence"])
+    def _write_bond_convergence_cycle(self, fluct_diff, cycle_idx):
+        cycle_column = str(cycle_idx)
+        cycle_data = fluct_diff.round(6).rename(cycle_column)
+        cycle_data.index.names = self.bond_def
 
+        if path.exists(self.filenames["bond_convergence"]):
+            convergence = pd.read_csv(
+                self.filenames["bond_convergence"],
+                index_col=list(range(len(self.bond_def))),
+            )
+            convergence.index.names = self.bond_def
+            convergence = convergence.reindex(cycle_data.index)
+            convergence[cycle_column] = cycle_data
+        else:
+            convergence = cycle_data.to_frame()
+
+        convergence.to_csv(self.filenames["bond_convergence"])
 
     # Initial average and fluctuation values are calculated 
     # Using ic dyna aver and ic dyna fluct in CHARMM
@@ -833,8 +844,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             logger.info("Lower bound after 75%% iteration is set to %s", low_bound)
 
         st = time.perf_counter()
-        fdiff = []
-        completed_cycles = 0
 
         for cycle_idx in range(last_completed_step + 1, n_cycles + 1):
             cycle_t0 = time.perf_counter()
@@ -864,8 +873,8 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 bond_values=bond_values,
                 tol=tol,
                 i=cycle_idx - 1,
-                fdiff=fdiff,
             )
+            self._write_bond_convergence_cycle(fluct_diff, cycle_idx)
             timings["convergence"] = time.perf_counter() - t0
 
             t0 = time.perf_counter()
@@ -895,7 +904,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
             timings["checkpoint"] = time.perf_counter() - t0
 
             timings["cycle_total"] = time.perf_counter() - cycle_t0
-            completed_cycles = cycle_idx
 
             logged_time_dt = datetime.now()
             estimated_next_end = logged_time_dt + timedelta(seconds=timings["cycle_total"])
@@ -917,7 +925,6 @@ class CharmmFluctMatch(fmbase.FluctMatch):
                 self._write_cycle_checkpoint(cycle_idx, tol, n_cycles, low_bound)
                 break
 
-        self._finalize_fluctuation_convergence(fdiff, completed_cycles)
         logger.info(
             "Fluctuation matching completed in %.3fs",
             time.perf_counter() - st
